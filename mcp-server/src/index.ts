@@ -64,6 +64,51 @@ class PsychoacousticServer {
           }
         },
         {
+          name: "configure_multi_component_complex",
+          description: "Create a complex stimulus by specifying individual frequency components.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              components: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    frequency: { type: "number" },
+                    levelDb: { type: "number" },
+                    phase: { type: "number", description: "Phase in radians" }
+                  },
+                  required: ["frequency", "levelDb"]
+                }
+              },
+              duration: { type: "number" },
+              envelope: {
+                type: "object",
+                properties: {
+                  attack: { type: "number" },
+                  release: { type: "number" }
+                }
+              }
+            },
+            required: ["components", "duration"]
+          }
+        },
+        {
+          name: "configure_log_spaced_complex",
+          description: "Create a complex with logarithmically spaced frequency components.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              fromFreq: { type: "number", description: "Start frequency in Hz" },
+              toFreq: { type: "number", description: "End frequency in Hz" },
+              numComponents: { type: "number", description: "Number of components" },
+              levelDbTotal: { type: "number", description: "Total power level in dB SPL" },
+              duration: { type: "number" }
+            },
+            required: ["fromFreq", "toFreq", "numComponents", "levelDbTotal", "duration"]
+          }
+        },
+        {
           name: "configure_experiment",
           description: "Add paradigm, adaptive logic, and perturbations to a stimulus configuration.",
           inputSchema: {
@@ -95,6 +140,10 @@ class PsychoacousticServer {
       switch (request.params.name) {
         case "configure_stimulus":
           return this.handleConfigureStimulus(request.params.arguments);
+        case "configure_multi_component_complex":
+          return this.handleConfigureMultiComponent(request.params.arguments);
+        case "configure_log_spaced_complex":
+          return this.handleConfigureLogSpaced(request.params.arguments);
         case "configure_experiment":
           return this.handleConfigureExperiment(request.params.arguments);
         case "validate_experiment":
@@ -131,6 +180,28 @@ class PsychoacousticServer {
         content: [{ type: "text", text: error.message }]
       };
     }
+  }
+
+  private handleConfigureMultiComponent(args: any) {
+    const stimulus = {
+      type: "component_complex",
+      ...args,
+      envelope: args.envelope || { attack: 10, release: 10 }
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(stimulus, null, 2) }]
+    };
+  }
+
+  private handleConfigureLogSpaced(args: any) {
+    const stimulus = {
+      type: "log_spaced_complex",
+      ...args,
+      envelope: args.envelope || { attack: 10, release: 10 }
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(stimulus, null, 2) }]
+    };
   }
 
   private handleConfigureExperiment(args: any) {

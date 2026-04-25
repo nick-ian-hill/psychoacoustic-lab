@@ -54,9 +54,34 @@ export const ToneGeneratorSchema = z.object({
   envelope: EnvelopeSchema,
 });
 
+export const ComponentSchema = z.object({
+  frequency: z.number(),
+  levelDb: z.number(),
+  phase: z.number().optional().default(0), // radians
+});
+
+export const ComponentComplexGeneratorSchema = z.object({
+  type: z.literal("component_complex"),
+  components: z.array(ComponentSchema),
+  duration: z.number(),
+  envelope: EnvelopeSchema,
+});
+
+export const LogSpacedComplexGeneratorSchema = z.object({
+  type: z.literal("log_spaced_complex"),
+  fromFreq: z.number(),
+  toFreq: z.number(),
+  numComponents: z.number(),
+  levelDbTotal: z.number(),
+  duration: z.number(),
+  envelope: EnvelopeSchema,
+});
+
 export const StimulusGeneratorSchema = z.union([
   ToneGeneratorSchema,
   HarmonicComplexGeneratorSchema,
+  ComponentComplexGeneratorSchema,
+  LogSpacedComplexGeneratorSchema,
 ]);
 
 /**
