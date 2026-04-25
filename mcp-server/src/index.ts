@@ -34,6 +34,11 @@ class PsychoacousticServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
+          name: "get_toolkit_guidance",
+          description: "Get high-level architectural guidance on how to use this psychoacoustic toolkit to build experiments.",
+          inputSchema: { type: "object", properties: {} }
+        },
+        {
           name: "calc_frequencies",
           description: "Calculate frequency components (linear, log, or ERB spacing).",
           inputSchema: {
@@ -89,6 +94,18 @@ class PsychoacousticServer {
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       switch (request.params.name) {
+        case "get_toolkit_guidance":
+          return {
+            content: [{
+              type: "text",
+              text: `This MCP server is part of the 'Psychoacoustic Lab'. 
+ARCHITECTURE: 'Smart Server / Dumb Engine'.
+- Use 'calc_frequencies', 'calc_phases', and 'calc_amplitudes' to generate explicit numerical arrays for stimulus components.
+- The Audio Engine is 'dumb'; it only renders the explicit components you provide. It does NOT know how to generate 'log-spaced complexes' by itself—you must calculate the frequencies here first.
+- Use 'evaluate_and_finalize_experiment' as your FINAL step. It performs expert validation, checking for clipping risks and adaptive stability.
+- Support for dichotic routing (left/right/both), AM/FM modulators, and hardware calibration is available in the component schemas.`
+            }]
+          };
         case "calc_frequencies":
           return this.handleCalcFrequencies(request.params.arguments);
         case "calc_phases":
