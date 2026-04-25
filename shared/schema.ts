@@ -57,7 +57,7 @@ export const ToneGeneratorSchema = z.object({
 export const ComponentSchema = z.object({
   frequency: z.number(),
   levelDb: z.number(),
-  phase: z.number().optional().default(0), // radians
+  phase: z.number().optional(), // radians
 });
 
 export const ComponentComplexGeneratorSchema = z.object({
@@ -77,11 +77,24 @@ export const LogSpacedComplexGeneratorSchema = z.object({
   envelope: EnvelopeSchema,
 });
 
+export const NoiseGeneratorSchema = z.object({
+  type: z.literal("noise"),
+  noiseType: z.enum(["white", "pink", "brown"]),
+  bandLimit: z.object({
+    lowFreq: z.number(),
+    highFreq: z.number(),
+  }).optional(),
+  levelDb: z.number(),
+  duration: z.number(),
+  envelope: EnvelopeSchema,
+});
+
 export const StimulusGeneratorSchema = z.union([
   ToneGeneratorSchema,
   HarmonicComplexGeneratorSchema,
   ComponentComplexGeneratorSchema,
   LogSpacedComplexGeneratorSchema,
+  NoiseGeneratorSchema,
 ]);
 
 /**
@@ -137,8 +150,8 @@ export const AdaptiveConfigSchema = z.object({
     correctDown: z.number(),
     incorrectUp: z.number(),
   }),
-  initialN: z.number().optional().default(1), // Fast start
-  switchReversalCount: z.number().optional().default(2), // When to switch from initialN to rule.correctDown
+  initialN: z.number().optional(), // Fast start
+  switchReversalCount: z.number().optional(), // When to switch from initialN to rule.correctDown
   minValue: z.number(),
   maxValue: z.number(),
   reversals: z.number(),

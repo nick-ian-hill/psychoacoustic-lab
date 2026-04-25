@@ -54,6 +54,12 @@ export class AudioEngine {
       this.synthesizeHarmonicComplex(data, gen, perturbations);
     } else if (gen.type === "tone") {
       this.synthesizeTone(data, gen, perturbations);
+    } else if (gen.type === "component_complex") {
+      this.synthesizeComponentComplex(data, gen, perturbations);
+    } else if (gen.type === "log_spaced_complex") {
+      this.synthesizeLogSpacedComplex(data, gen, perturbations);
+    } else if (gen.type === "noise") {
+      this.synthesizeNoise(data, gen, perturbations);
     }
 
     return buffer;
@@ -117,6 +123,75 @@ export class AudioEngine {
       const t = i / sampleRate;
       const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
       data[i] = amp * envelope * Math.sin(2 * Math.PI * freq * t);
+    }
+  }
+
+  private synthesizeComponentComplex(data: Float32Array, gen: any, perturbations?: Perturbation[]) {
+    const sampleRate = this.ctx.sampleRate;
+    for (const comp of gen.components) {
+      let freq = comp.frequency;
+      let amp = Math.pow(10, comp.levelDb / 20);
+      let phase = comp.phase || 0;
+
+      if (perturbations) {
+        for (const p of perturbations) {
+          if (p.type === "spectral_profile" && (p.targetHarmonic === freq)) {
+            amp *= Math.pow(10, (p.deltaDb as number) / 20);
+          }
+        }
+      }
+
+      for (let i = 0; i < data.length; i++) {
+        const t = i / sampleRate;
+        const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
+        data[i] += amp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
+      }
+    }
+  }
+
+  private synthesizeLogSpacedComplex(data: Float32Array, gen: any, _perturbations?: Perturbation[]) {
+    const sampleRate = this.ctx.sampleRate;
+    const logStart = Math.log10(gen.fromFreq);
+    const logEnd = Math.log10(gen.toFreq);
+    const step = (logEnd - logStart) / (gen.numComponents - 1);
+    
+    const ampTotal = Math.pow(10, gen.levelDbTotal / 20);
+    const ampPerComp = ampTotal / Math.sqrt(gen.numComponents); // Equal power distribution
+
+    for (let n = 0; n < gen.numComponents; n++) {
+      const freq = Math.pow(10, logStart + n * step);
+      const phase = this.rng() * 2 * Math.PI;
+
+      for (let i = 0; i < data.length; i++) {
+        const t = i / sampleRate;
+        const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
+        data[i] += ampPerComp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
+      }
+    }
+  }
+
+  private synthesizeNoise(data: Float32Array, gen: any, perturbations?: Perturbation[]) {
+    const amp = Math.pow(10, gen.levelDb / 20);
+    const sampleRate = this.ctx.sampleRate;
+
+    for (let i = 0; i < data.length; i++) {
+      const t = i / sampleRate;
+      const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
+      let val = (this.rng() * 2 - 1) * amp * envelope;
+
+      // Special case: Add tone-in-noise perturbation if needed
+      if (perturbations) {
+        for (const p of perturbations) {
+          if (p.type === "spectral_profile") {
+            // Very simplified: treating 'spectral_profile' as a target tone in noise
+            // Realistically we'd need a more specific perturbation type for this
+            const targetFreq = 1000; // Hardcoded default for now
+            const toneAmp = Math.pow(10, (p.deltaDb as number) / 20) * (amp / 10); // Scale relative to noise
+            val += toneAmp * envelope * Math.sin(2 * Math.PI * targetFreq * t);
+          }
+        }
+      }
+      data[i] = val;
     }
   }
 
