@@ -90,6 +90,7 @@ export class AudioEngine {
 
     for (const comp of gen.components) {
       let freq = comp.frequency;
+      let phase = (comp.phaseDegrees || 0) * Math.PI / 180;
       let onsetSamples = ((comp.onsetDelayMs || 0) + maxLeadMs) / 1000 * sampleRate;
       const ear = comp.ear || "both";
 
@@ -110,6 +111,10 @@ export class AudioEngine {
               const delta = typeof p.delayMs === 'object' ? (adaptiveValue || 0) : p.delayMs;
               onsetSamples += (delta / 1000) * sampleRate;
             }
+            if (p.type === "phase_shift") {
+              const delta = typeof p.deltaDegrees === 'object' ? (adaptiveValue || 0) : p.deltaDegrees;
+              phase += delta * Math.PI / 180;
+            }
           }
         }
       }
@@ -118,7 +123,6 @@ export class AudioEngine {
       const calibrationOffset = this.getCalibrationOffset(freq, calibration);
       const finalDigitalDb = comp.levelDb + pertAmpOffset + calibrationOffset;
       const amp = Math.pow(10, finalDigitalDb / 20);
-      const phase = (comp.phaseDegrees || 0) * Math.PI / 180;
 
       // 3. Synthesis
       for (let i = 0; i < globalDurationSamples; i++) {

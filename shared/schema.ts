@@ -85,10 +85,17 @@ export const MistuningPerturbationSchema = z.object({
   deltaPercent: z.union([z.number(), AdaptiveParamRefSchema]),
 });
 
+export const PhaseShiftPerturbationSchema = z.object({
+  type: z.literal("phase_shift"),
+  targetFrequency: z.number(),
+  deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema]),
+});
+
 export const PerturbationSchema = z.union([
   SpectralProfilePerturbationSchema,
   AsynchronyPerturbationSchema,
   MistuningPerturbationSchema,
+  PhaseShiftPerturbationSchema,
 ]);
 
 /**
