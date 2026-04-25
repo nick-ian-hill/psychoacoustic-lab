@@ -1,177 +1,229 @@
-import './style.css'
-import { AudioEngine } from './audio/engine'
-import { StaircaseController } from './logic/staircase'
-import type { ExperimentConfig } from '../../shared/schema'
+import { AudioEngine } from './audio/engine';
+import { Staircase } from './staircase';
+import { ExperimentConfigSchema } from '../../shared/schema';
+import * as examples from '../../examples/examples';
 
-// Example Profile Analysis Config
-const exampleConfig: ExperimentConfig = {
-  meta: {
-    name: "Profile Analysis (Green 1988)",
-    version: "1.0.0",
-    seed: 42,
-    rationale: "Classic spectral profile analysis experiment."
-  },
-  audio: { sampleRate: 44100 },
-  stimulus: {
-    type: "harmonic_complex",
-    f0: 200,
-    harmonics: { from: 1, to: 21 },
-    amplitudeProfile: { type: "flat", levelDb: 60 },
-    phase: "random",
-    duration: 500,
-    envelope: { attack: 10, release: 10 }
-  },
-  perturbations: [
-    {
-      type: "spectral_profile",
-      targetHarmonic: 11, // 2200 Hz
-      deltaDb: { adaptive: true } as any
-    }
-  ],
-  conditions: { reference: {}, target: {} },
-  paradigm: {
-    type: "2AFC",
-    intervals: [{ condition: "reference" }, { condition: "target" }],
-    randomizeOrder: true,
-    timing: { isi: 500 }
-  },
-  adaptive: {
-    type: "staircase",
-    parameter: "perturbations[0].deltaDb",
-    initialValue: 10,
-    stepSizes: [4, 2, 1],
-    rule: { correctDown: 2, incorrectUp: 1 },
-    initialN: 1,
-    switchReversalCount: 2,
-    minValue: 0,
-    maxValue: 40,
-    reversals: 12
-  },
-  termination: { reversals: 12 }
-};
+const configSelect = document.getElementById('config-select') as HTMLSelectElement;
+const customJsonGroup = document.getElementById('custom-json-group') as HTMLDivElement;
+const customFileInput = document.getElementById('custom-file') as HTMLInputElement;
+const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div class="container">
-    <h1>Psychoacoustic Lab</h1>
-    <div id="setup-panel">
-      <button id="start-btn">Start Experiment</button>
-    </div>
-    <div id="trial-panel" style="display: none;">
-      <div class="status">Trial <span id="trial-num">1</span></div>
-      <div class="intervals">
-        <div id="int-1" class="interval">1</div>
-        <div id="int-2" class="interval">2</div>
-      </div>
-      <div class="controls">
-        <button id="choice-1" disabled>Choice 1</button>
-        <button id="choice-2" disabled>Choice 2</button>
-      </div>
-      <div class="progress">
-        <div id="progress-bar" style="width: 0%"></div>
-      </div>
-    </div>
-    <div id="results-panel" style="display: none;">
-      <h2>Experiment Complete</h2>
-      <p>Estimated Threshold: <span id="threshold-val"></span> dB</p>
-      <button id="download-btn">Download Data</button>
-    </div>
-  </div>
-`
+const setupArea = document.getElementById('setup-area') as HTMLDivElement;
+const experimentArea = document.getElementById('experiment-area') as HTMLDivElement;
+
+const statusBadge = document.getElementById('status-badge') as HTMLDivElement;
+const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
+const resp1Btn = document.getElementById('resp-1') as HTMLButtonElement;
+const resp2Btn = document.getElementById('resp-2') as HTMLButtonElement;
+
+const resultsArea = document.getElementById('results-area') as HTMLDivElement;
+const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
+const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement;
+const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
 
 let engine: AudioEngine;
-let staircase: StaircaseController;
-let currentTrialBuffer: AudioBuffer | null = null;
-let currentTargetInterval: number = 0;
+let staircase: Staircase;
+let currentConfig: any;
+let targetIntervalIndex = -1;
 
-const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
-const choice1Btn = document.getElementById('choice-1') as HTMLButtonElement;
-const choice2Btn = document.getElementById('choice-2') as HTMLButtonElement;
-const trialNum = document.getElementById('trial-num') as HTMLElement;
-const int1 = document.getElementById('int-1') as HTMLElement;
-const int2 = document.getElementById('int-2') as HTMLElement;
-
-startBtn.onclick = async () => {
-  engine = new AudioEngine(exampleConfig.audio.sampleRate, exampleConfig.meta.seed);
-  staircase = new StaircaseController(exampleConfig.adaptive!);
-  
-  document.getElementById('setup-panel')!.style.display = 'none';
-  document.getElementById('trial-panel')!.style.display = 'block';
-  
-  await nextTrial();
-};
-
-async function nextTrial() {
-  if (staircase.isFinished(exampleConfig.termination)) {
-    finishExperiment();
-    return;
+configSelect.addEventListener('change', () => {
+  if (configSelect.value === 'custom') {
+    customJsonGroup.classList.remove('hidden');
+  } else {
+    customJsonGroup.classList.add('hidden');
   }
+});
 
-  const value = staircase.getCurrentValue();
-  trialNum.innerText = (staircase.getHistory().length + 1).toString();
+startBtn.addEventListener('click', async () => {
+  try {
+    let rawConfig;
+    if (configSelect.value === 'custom') {
+      if (!customFileInput.files || customFileInput.files.length === 0) {
+        alert("Please select a JSON file first.");
+        return;
+      }
+      const file = customFileInput.files[0];
+      const text = await file.text();
+      rawConfig = JSON.parse(text);
+    } else {
+      rawConfig = (examples as any)[`${configSelect.value}Config`];
+    }
+
+    const parseResult = ExperimentConfigSchema.safeParse(rawConfig);
+    if (!parseResult.success) {
+      alert("Invalid Configuration: \n" + JSON.stringify(parseResult.error.format(), null, 2));
+      return;
+    }
+
+    currentConfig = parseResult.data;
+    
+    // Initialize Audio Engine
+    engine = new AudioEngine(currentConfig.audio.sampleRate, currentConfig.meta.seed);
+    
+    // Initialize Staircase
+    if (currentConfig.adaptive && currentConfig.adaptive.type === 'staircase') {
+      staircase = new Staircase({
+        initialValue: currentConfig.adaptive.initialValue,
+        stepSizes: currentConfig.adaptive.stepSizes,
+        rule: currentConfig.adaptive.rule,
+        minValue: currentConfig.adaptive.minValue,
+        maxValue: currentConfig.adaptive.maxValue,
+      });
+    }
+
+    setupArea.classList.add('hidden');
+    experimentArea.classList.remove('hidden');
+    updateStatus();
+    
+    // Ensure AudioContext starts cleanly (requires user gesture)
+    const buf = engine['ctx'].createBuffer(1, 1, 44100);
+    const src = engine['ctx'].createBufferSource();
+    src.buffer = buf;
+    src.connect(engine['ctx'].destination);
+    src.start();
+
+  } catch (e: any) {
+    alert("Error loading experiment: " + e.message);
+  }
+});
+
+playBtn.addEventListener('click', async () => {
+  if (!engine || !staircase) return;
   
-  // Prepare trial
-  currentTargetInterval = Math.random() < 0.5 ? 0 : 1;
-  const intervals = exampleConfig.paradigm.intervals.map((_, i) => {
-    const isTarget = i === currentTargetInterval;
-    const perturbations = isTarget ? [{
-      ...exampleConfig.perturbations![0],
-      deltaDb: value
-    }] : [];
-    return { generator: exampleConfig.stimulus, perturbations: perturbations as any };
+  playBtn.disabled = true;
+  playBtn.classList.add('playing');
+  playBtn.textContent = "Playing...";
+  resp1Btn.disabled = true;
+  resp2Btn.disabled = true;
+
+  try {
+    const intervalsConfig = [...currentConfig.paradigm.intervals];
+    if (currentConfig.paradigm.randomizeOrder) {
+      for (let i = intervalsConfig.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [intervalsConfig[i], intervalsConfig[j]] = [intervalsConfig[j], intervalsConfig[i]];
+      }
+    }
+
+    targetIntervalIndex = intervalsConfig.findIndex(i => i.condition === 'target');
+    
+    // Build trial data
+    const trialData = intervalsConfig.map(interval => {
+      if (interval.condition === 'target') {
+        return {
+          generator: currentConfig.stimulus,
+          perturbations: currentConfig.perturbations
+        };
+      } else {
+        return {
+          generator: currentConfig.stimulus
+        };
+      }
+    });
+
+    const buffer = await engine.renderTrial(
+      trialData, 
+      currentConfig.paradigm.timing.isiMs, 
+      staircase.currentValue,
+      currentConfig.calibration
+    );
+
+    const source = engine.playBuffer(buffer);
+    
+    source.onended = () => {
+      playBtn.classList.remove('playing');
+      playBtn.textContent = "Listen Again";
+      playBtn.disabled = false;
+      resp1Btn.disabled = false;
+      resp2Btn.disabled = false;
+    };
+  } catch (e: any) {
+    console.error(e);
+    alert("Playback error: " + e.message);
+    playBtn.classList.remove('playing');
+    playBtn.textContent = "Error";
+  }
+});
+
+function handleResponse(responseIndex: number) {
+  const isCorrect = responseIndex === targetIntervalIndex;
+  
+  // Flash correct/incorrect
+  const btn = responseIndex === 0 ? resp1Btn : resp2Btn;
+  const originalColor = btn.style.borderColor;
+  btn.style.borderColor = isCorrect ? 'var(--success)' : 'var(--error)';
+  btn.style.color = isCorrect ? 'var(--success)' : 'var(--error)';
+  
+  setTimeout(() => {
+    btn.style.borderColor = originalColor;
+    btn.style.color = '';
+    
+    staircase.recordResponse(isCorrect);
+    
+    if (staircase.reversals >= currentConfig.termination.reversals) {
+      endExperiment();
+    } else {
+      updateStatus();
+      resp1Btn.disabled = true;
+      resp2Btn.disabled = true;
+      playBtn.textContent = "Play Next Trial";
+    }
+  }, 500);
+}
+
+resp1Btn.addEventListener('click', () => handleResponse(0));
+resp2Btn.addEventListener('click', () => handleResponse(1));
+
+function updateStatus() {
+  const trialNum = staircase.getHistory().length + 1;
+  statusBadge.textContent = `Trial ${trialNum} | Reversals: ${staircase.reversals}/${currentConfig.termination.reversals}`;
+}
+
+function endExperiment() {
+  playBtn.classList.add('hidden');
+  resp1Btn.classList.add('hidden');
+  resp2Btn.classList.add('hidden');
+  statusBadge.classList.add('hidden');
+  document.getElementById('instruction-text')?.classList.add('hidden');
+  
+  resultsArea.classList.remove('hidden');
+  
+  // Simple averaging of last N even reversals for threshold
+  finalThreshold.textContent = `Estimated Threshold: ${staircase.currentValue.toFixed(2)}`;
+}
+
+downloadBtn.addEventListener('click', () => {
+  if (!staircase || !currentConfig) return;
+
+  const history = staircase.getHistory();
+  const timestamp = new Date().toISOString();
+  
+  let content = `Psychoacoustic Lab - Experiment Results\n`;
+  content += `======================================\n`;
+  content += `Date: ${timestamp}\n`;
+  content += `Experiment: ${currentConfig.meta.name}\n`;
+  content += `Seed: ${currentConfig.meta.seed}\n`;
+  content += `Final Threshold: ${staircase.currentValue.toFixed(4)}\n\n`;
+  
+  content += `Trial History:\n`;
+  content += `Trial # | Parameter Value | Correct\n`;
+  content += `------------------------------------\n`;
+  
+  history.forEach(h => {
+    content += `${h.trial.toString().padEnd(8)} | ${h.value.toFixed(4).padEnd(15)} | ${h.correct}\n`;
   });
 
-  currentTrialBuffer = await engine.renderTrial(intervals, exampleConfig.paradigm.timing.isi);
-  
-  // Play and visual feedback
-  engine.playBuffer(currentTrialBuffer);
-
-  // Interval highlighting
-  const intervalDur = exampleConfig.stimulus.duration / 1000;
-  const isiDur = exampleConfig.paradigm.timing.isi / 1000;
-
-  setTimeout(() => int1.classList.add('active'), 100);
-  setTimeout(() => int1.classList.remove('active'), 100 + intervalDur * 1000);
-  
-  setTimeout(() => int2.classList.add('active'), 100 + (intervalDur + isiDur) * 1000);
-  setTimeout(() => int2.classList.remove('active'), 100 + (2 * intervalDur + isiDur) * 1000);
-
-  // Enable buttons after playback
-  setTimeout(() => {
-    choice1Btn.disabled = false;
-    choice2Btn.disabled = false;
-  }, 100 + (2 * intervalDur + isiDur) * 1000);
-}
-
-const handleChoice = (choice: number) => {
-  choice1Btn.disabled = true;
-  choice2Btn.disabled = true;
-  
-  const correct = choice === currentTargetInterval;
-  staircase.processResponse(correct);
-  
-  nextTrial();
-};
-
-choice1Btn.onclick = () => handleChoice(0);
-choice2Btn.onclick = () => handleChoice(1);
-
-function finishExperiment() {
-  document.getElementById('trial-panel')!.style.display = 'none';
-  document.getElementById('results-panel')!.style.display = 'block';
-  document.getElementById('threshold-val')!.innerText = staircase.calculateThreshold().toFixed(2);
-}
-
-const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement;
-downloadBtn.onclick = () => {
-  const data = {
-    config: exampleConfig,
-    history: staircase.getHistory(),
-    threshold: staircase.calculateThreshold()
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const blob = new Blob([content], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `experiment_results_${Date.now()}.json`;
+  a.download = `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${new Date().getTime()}.txt`;
+  document.body.appendChild(a);
   a.click();
-};
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+restartBtn.addEventListener('click', () => {
+  window.location.reload();
+});

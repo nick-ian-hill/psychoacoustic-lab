@@ -1,13 +1,64 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Psychoacoustic Lab</title>
+    <link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="app"></div>
+    <div class="container">
+      <header>
+        <h1>Psychoacoustic Lab</h1>
+        <p class="subtitle">Agentic Experiment Runner</p>
+      </header>
+
+      <div id="setup-area">
+        <div class="control-group">
+          <label for="config-select">Load Example Configuration</label>
+          <select id="config-select">
+            <option value="freqDiscrim">Frequency Discrimination</option>
+            <option value="auditoryGrouping">Auditory Grouping</option>
+            <option value="logSpaced">Log-Spaced Complex Detection</option>
+            <option value="ipdDiscrim">IPD Discrimination (TFS)</option>
+            <option value="srim">Spatial Release from Informational Masking</option>
+            <option value="custom">Upload Custom JSON Configuration</option>
+          </select>
+        </div>
+
+        <div class="control-group hidden" id="custom-json-group">
+          <label for="custom-file">Select Experiment JSON File</label>
+          <input type="file" id="custom-file" accept=".json" style="background: var(--bg); color: var(--text); padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
+        </div>
+
+        <button id="start-btn" class="btn">Initialize Experiment</button>
+      </div>
+
+      <div id="experiment-area" class="experiment-area hidden">
+        <div id="status-badge" class="status-badge">Trial 1</div>
+        <p id="instruction-text" style="text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+          Listen to the intervals and select the target.
+        </p>
+
+        <button id="play-btn" class="btn">Play Next Trial</button>
+
+        <div class="response-buttons">
+          <button id="resp-1" class="response-btn" disabled>Interval 1</button>
+          <button id="resp-2" class="response-btn" disabled>Interval 2</button>
+        </div>
+        
+        <div id="results-area" class="hidden" style="width: 100%; text-align: center; margin-top: 1rem;">
+          <h2 style="color: var(--success); margin-bottom: 0.5rem;">Experiment Complete!</h2>
+          <p id="final-threshold" style="font-size: 1.2rem; font-weight: bold;"></p>
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button id="download-btn" class="btn" style="background: var(--border);">Download Results (.txt)</button>
+            <button id="restart-btn" class="btn">New Experiment</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

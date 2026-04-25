@@ -1,5 +1,6 @@
 import seedrandom from "seedrandom";
 import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema";
+import { generateFFTNoise } from "./fft";
 
 export class AudioEngine {
   private ctx: AudioContext;
@@ -130,7 +131,26 @@ export class AudioEngine {
         if (t < 0 || t > gen.durationMs / 1000) continue;
 
         const envelope = this.calculateEnvelope(t, gen.durationMs / 1000, gen.globalEnvelope);
-        const sample = amp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
+        
+        // Calculate Modulators
+        let currentAmp = amp * envelope;
+        let currentFreq = freq;
+        
+        if (comp.modulators) {
+          for (const mod of comp.modulators) {
+            const modPhase = (mod.phaseDegrees || 0) * Math.PI / 180;
+            const modVal = Math.sin(2 * Math.PI * mod.rateHz * t + modPhase);
+            if (mod.type === "AM") {
+              // Standard AM: carrier * (1 + depth * sin(w * t))
+              currentAmp *= (1 + mod.depth * modVal);
+            } else if (mod.type === "FM") {
+              // FM: carrierFreq + depth * sin(w * t)
+              currentFreq += mod.depth * modVal;
+            }
+          }
+        }
+
+        const sample = currentAmp * Math.sin(2 * Math.PI * currentFreq * t + phase);
 
         if (ear === "left" || ear === "both") leftData[i] += sample;
         if (ear === "right" || ear === "both") rightData[i] += sample;
@@ -175,11 +195,41 @@ export class AudioEngine {
     const amp = Math.pow(10, gen.levelDb / 20);
     const sampleRate = this.ctx.sampleRate;
     const ear = gen.ear || "both";
+    const targetSamples = leftData.length;
 
-    for (let i = 0; i < leftData.length; i++) {
+    // Generate the base noise buffer using FFT for spectral shaping and band-limiting
+    const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, this.rng);
+
+    for (let i = 0; i < targetSamples; i++) {
       const t = i / sampleRate;
       const envelope = this.calculateEnvelope(t, gen.durationMs / 1000, gen.envelope);
-      let sample = (this.rng() * 2 - 1) * amp * envelope;
+      
+      let currentAmp = amp * envelope;
+      
+      // Calculate dynamic AM depth from perturbations
+      let dynamicAmDepth = 0;
+      if (perturbations) {
+        for (const p of perturbations) {
+          if (p.type === "am_depth") {
+            const delta = typeof p.deltaDepth === 'object' ? (adaptiveValue || 0) : p.deltaDepth;
+            dynamicAmDepth += delta;
+          }
+        }
+      }
+
+      if (gen.modulators) {
+        for (const mod of gen.modulators) {
+          if (mod.type === "AM") {
+            const modPhase = (mod.phaseDegrees || 0) * Math.PI / 180;
+            const modVal = Math.sin(2 * Math.PI * mod.rateHz * t + modPhase);
+            // Apply static depth + dynamic perturbation depth
+            const finalDepth = Math.max(0, Math.min(1, mod.depth + dynamicAmDepth));
+            currentAmp *= (1 + finalDepth * modVal);
+          }
+        }
+      }
+
+      let sample = baseNoise[i] * currentAmp;
 
       if (perturbations) {
         for (const p of perturbations) {

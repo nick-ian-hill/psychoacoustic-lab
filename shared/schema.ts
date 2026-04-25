@@ -29,12 +29,20 @@ export const EnvelopeSchema = z.object({
   releaseMs: z.number(),
 });
 
+export const ModulatorSchema = z.object({
+  type: z.enum(["AM", "FM"]),
+  rateHz: z.number(),
+  depth: z.number(), // 0 to 1 for AM, or Hz deviation for FM
+  phaseDegrees: z.number().optional(),
+});
+
 export const StimulusComponentSchema = z.object({
   frequency: z.number(),
   levelDb: z.number(),
   phaseDegrees: z.number().optional(),
   onsetDelayMs: z.number().optional(),
   ear: EarRoutingSchema.optional(),
+  modulators: z.array(ModulatorSchema).optional(),
 });
 
 export type StimulusComponent = z.infer<typeof StimulusComponentSchema>;
@@ -57,6 +65,7 @@ export const NoiseGeneratorSchema = z.object({
   durationMs: z.number(),
   envelope: EnvelopeSchema,
   ear: EarRoutingSchema.optional(),
+  modulators: z.array(ModulatorSchema).optional(),
 });
 
 export const StimulusGeneratorSchema = z.union([
@@ -91,11 +100,18 @@ export const PhaseShiftPerturbationSchema = z.object({
   deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema]),
 });
 
+export const AMDepthPerturbationSchema = z.object({
+  type: z.literal("am_depth"),
+  targetFrequency: z.number().optional(), // optional if applying to broadband noise
+  deltaDepth: z.union([z.number(), AdaptiveParamRefSchema]),
+});
+
 export const PerturbationSchema = z.union([
   SpectralProfilePerturbationSchema,
   AsynchronyPerturbationSchema,
   MistuningPerturbationSchema,
   PhaseShiftPerturbationSchema,
+  AMDepthPerturbationSchema,
 ]);
 
 /**
@@ -107,9 +123,9 @@ export const ParadigmSchema = z.object({
     condition: z.enum(["reference", "target", "probe"]),
   })),
   randomizeOrder: z.boolean(),
-  timing: {
+  timing: z.object({
     isiMs: z.number(),
-  },
+  }),
 });
 
 /**
