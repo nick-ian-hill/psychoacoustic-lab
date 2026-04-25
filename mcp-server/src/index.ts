@@ -34,9 +34,25 @@ class PsychoacousticServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: "get_toolkit_guidance",
+          name: "about_toolkit",
           description: "Get high-level architectural guidance on how to use this psychoacoustic toolkit to build experiments.",
           inputSchema: { type: "object", properties: {} }
+        },
+        {
+          name: "list_examples",
+          description: "List the names of all included classic and modern psychoacoustic experiment examples.",
+          inputSchema: { type: "object", properties: {} }
+        },
+        {
+          name: "get_example_config",
+          description: "Retrieve the full JSON configuration for a specific example.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Name of the example (e.g., 'freqDiscrim', 'srim')" }
+            },
+            required: ["name"]
+          }
         },
         {
           name: "calc_frequencies",
@@ -94,7 +110,7 @@ class PsychoacousticServer {
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       switch (request.params.name) {
-        case "get_toolkit_guidance":
+        case "about_toolkit":
           return {
             content: [{
               type: "text",
@@ -106,6 +122,15 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
 - Support for dichotic routing (left/right/both), AM/FM modulators, and hardware calibration is available in the component schemas.`
             }]
           };
+        case "list_examples":
+          return {
+            content: [{
+              type: "text",
+              text: "Available Examples: freqDiscrim, auditoryGrouping, logSpaced, ipdDiscrim, srim, tenTest, amDetection"
+            }]
+          };
+        case "get_example_config":
+          return this.handleGetExample(request.params.arguments);
         case "calc_frequencies":
           return this.handleCalcFrequencies(request.params.arguments);
         case "calc_phases":
@@ -208,6 +233,20 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
         }, null, 2)
       }]
     };
+  }
+
+  private async handleGetExample(args: any) {
+    const { name } = args;
+    try {
+      // Note: In some environments, dynamic imports from outside the server root
+      // may require specific config. For this toolkit, we'll try to import.
+      const examples = await import("../../examples/examples.js");
+      const config = (examples as any)[`${name}Config`];
+      if (!config) throw new Error(`Example '${name}Config' not found`);
+      return { content: [{ type: "text", text: JSON.stringify(config, null, 2) }] };
+    } catch (e: any) {
+      return { content: [{ type: "text", text: `Error loading example: ${e.message}` }], isError: true };
+    }
   }
 
   async run() {
