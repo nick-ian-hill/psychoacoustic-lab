@@ -39,8 +39,8 @@ export const ModulatorSchema = z.object({
 export const StimulusComponentSchema = z.object({
   frequency: z.number(),
   levelDb: z.number(),
-  phaseDegrees: z.number().optional(),
-  onsetDelayMs: z.number().optional(),
+  phaseDegrees: z.number().optional().describe("Fine-structure phase shift (use for IPD)."),
+  onsetDelayMs: z.number().optional().describe("Whole-stimulus temporal offset (use for ITD)."),
   ear: EarRoutingSchema.optional(),
   modulators: z.array(ModulatorSchema).optional(),
 });

@@ -119,7 +119,10 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
 - Use 'calc_frequencies', 'calc_phases', and 'calc_amplitudes' to generate explicit numerical arrays for stimulus components.
 - The Audio Engine is 'dumb'; it only renders the explicit components you provide. It does NOT know how to generate 'log-spaced complexes' by itself—you must calculate the frequencies here first.
 - Use 'evaluate_and_finalize_experiment' as your FINAL step. It performs expert validation, checking for clipping risks and adaptive stability.
-- Support for dichotic routing (left/right/both), AM/FM modulators, and hardware calibration is available in the component schemas.`
+- BINAURAL PRECISION:
+  * For IPD (Interaural Phase Difference): Set 'onsetDelayMs' to 0 and use 'phaseDegrees' to shift the fine structure.
+  * For True ITD (Interaural Time Difference): Use 'onsetDelayMs' to shift the entire gated stimulus.
+  * The engine handles 'maxAbsoluteDelay' automatically to ensure leading sounds start at 0 and no samples are clipped.`
             }]
           };
         case "list_examples":

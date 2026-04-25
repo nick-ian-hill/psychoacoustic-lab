@@ -8,7 +8,7 @@ The project is split into three main components:
 
 1. **`shared/schema.ts`**: The source of truth. Defines Zod schemas for `ExperimentConfig`, including a highly flexible `MultiComponentGenerator` capable of modeling arbitrary acoustic scenes with explicit frequency, level, phase, and dichotic routing per component.
 2. **`mcp-server`**: A "Math Toolkit" and Expert Advisor. It exposes tools to an AI agent to calculate complex arrays (e.g., log-spaced frequencies, Schroeder phases, pink noise tilts) and provides a final validation endpoint that warns about physical clipping risks and adaptive stability.
-3. **`web-app`**: A complete frontend execution environment. It features a real-time audio engine and a sleek UI for running adaptive staircase trials, recording responses, and estimating thresholds.
+3. **`web-app`**: A complete frontend execution environment. It features a sleek UI for running adaptive staircase trials, and a high-performance **Web Worker** based audio engine that handles complex real-time synthesis without blocking the main thread.
 
 ## Features
 
@@ -16,6 +16,8 @@ The project is split into three main components:
 - **Adaptive Staircase**: Integrated `Staircase` logic supporting N-down/1-up rules with dynamic step-size reductions on reversals.
 - **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Supports White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp "brick-wall" band-limiting.
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
+- **Web Worker Synthesis**: Offloads all heavy sample-by-sample calculations and FFT operations to a background thread, ensuring a stutter-free 60fps UI and utilizing zero-copy Transferable objects for maximum efficiency.
+- **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing complex buffer padding to prevent sample clipping.
 - **Dichotic Routing**: Support for routing components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (e.g., Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
