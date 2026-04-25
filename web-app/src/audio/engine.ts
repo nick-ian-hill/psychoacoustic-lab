@@ -1,5 +1,5 @@
 import seedrandom from "seedrandom";
-import type { StimulusGenerator, Perturbation } from "../../../shared/schema";
+import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema";
 
 export class AudioEngine {
   private ctx: AudioContext;
@@ -12,28 +12,31 @@ export class AudioEngine {
     this.rng = seedrandom(seed.toString());
   }
 
-  /**
-   * Render a complete trial sequence into a single AudioBuffer
-   */
   async renderTrial(
     intervals: { generator: StimulusGenerator; perturbations?: Perturbation[] }[],
-    isiMs: number
+    isiMs: number,
+    adaptiveValue?: number,
+    calibration?: CalibrationProfile
   ): Promise<AudioBuffer> {
     const renderedIntervals: AudioBuffer[] = [];
     for (const interval of intervals) {
-      renderedIntervals.push(await this.synthesizeStimulus(interval.generator, interval.perturbations));
+      renderedIntervals.push(await this.synthesizeStimulus(interval.generator, interval.perturbations, adaptiveValue, calibration));
     }
 
     const totalLength = renderedIntervals.reduce((acc, buf) => acc + buf.length, 0) + 
                        (intervals.length - 1) * (isiMs / 1000) * this.ctx.sampleRate;
     
-    const trialBuffer = this.ctx.createBuffer(1, Math.ceil(totalLength), this.ctx.sampleRate);
-    const data = trialBuffer.getChannelData(0);
+    const trialBuffer = this.ctx.createBuffer(2, Math.ceil(totalLength), this.ctx.sampleRate);
+    const leftData = trialBuffer.getChannelData(0);
+    const rightData = trialBuffer.getChannelData(1);
 
     let offset = 0;
     for (let i = 0; i < renderedIntervals.length; i++) {
-      data.set(renderedIntervals[i].getChannelData(0), offset);
-      offset += renderedIntervals[i].length;
+      const intervalBuffer = renderedIntervals[i];
+      leftData.set(intervalBuffer.getChannelData(0), offset);
+      rightData.set(intervalBuffer.getChannelData(1), offset);
+      
+      offset += intervalBuffer.length;
       if (i < renderedIntervals.length - 1) {
         offset += (isiMs / 1000) * this.ctx.sampleRate;
       }
@@ -44,174 +47,179 @@ export class AudioEngine {
 
   private async synthesizeStimulus(
     gen: StimulusGenerator,
-    perturbations?: Perturbation[]
+    perturbations?: Perturbation[],
+    adaptiveValue?: number,
+    calibration?: CalibrationProfile
   ): Promise<AudioBuffer> {
-    const duration = gen.duration / 1000;
-    const buffer = this.ctx.createBuffer(1, Math.ceil(duration * this.ctx.sampleRate), this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    if (gen.type === "harmonic_complex") {
-      this.synthesizeHarmonicComplex(data, gen, perturbations);
-    } else if (gen.type === "tone") {
-      this.synthesizeTone(data, gen, perturbations);
-    } else if (gen.type === "component_complex") {
-      this.synthesizeComponentComplex(data, gen, perturbations);
-    } else if (gen.type === "log_spaced_complex") {
-      this.synthesizeLogSpacedComplex(data, gen, perturbations);
-    } else if (gen.type === "noise") {
-      this.synthesizeNoise(data, gen, perturbations);
+    if (gen.type === "noise") {
+      const duration = gen.durationMs / 1000;
+      const buffer = this.ctx.createBuffer(2, Math.ceil(duration * this.ctx.sampleRate), this.ctx.sampleRate);
+      this.synthesizeNoise(buffer, gen, perturbations, adaptiveValue);
+      return buffer;
     }
+
+    if (gen.type === "multi_component") {
+      return this.synthesizeMultiComponent(gen, perturbations, adaptiveValue, calibration);
+    }
+
+    throw new Error(`Unknown generator type: ${(gen as any).type}`);
+  }
+
+  private synthesizeMultiComponent(
+    gen: any,
+    perturbations?: Perturbation[],
+    adaptiveValue?: number,
+    calibration?: CalibrationProfile
+  ): AudioBuffer {
+    const sampleRate = this.ctx.sampleRate;
+    
+    let maxLeadMs = 0;
+    if (perturbations) {
+      for (const p of perturbations) {
+        if (p.type === "onset_asynchrony") {
+          const delay = typeof p.delayMs === 'object' ? (adaptiveValue || 0) : p.delayMs;
+          if (delay < 0) maxLeadMs = Math.max(maxLeadMs, Math.abs(delay));
+        }
+      }
+    }
+
+    const globalDurationSamples = Math.ceil((gen.durationMs + maxLeadMs) / 1000 * sampleRate);
+    const buffer = this.ctx.createBuffer(2, globalDurationSamples, sampleRate);
+    const leftData = buffer.getChannelData(0);
+    const rightData = buffer.getChannelData(1);
+
+    for (const comp of gen.components) {
+      let freq = comp.frequency;
+      let onsetSamples = ((comp.onsetDelayMs || 0) + maxLeadMs) / 1000 * sampleRate;
+      const ear = comp.ear || "both";
+
+      // 1. Resolve Runtime Perturbations
+      let pertAmpOffset = 0;
+      if (perturbations) {
+        for (const p of perturbations) {
+          if (p.targetFrequency === comp.frequency) {
+            if (p.type === "spectral_profile") {
+              const delta = typeof p.deltaDb === 'object' ? (adaptiveValue || 0) : p.deltaDb;
+              pertAmpOffset += delta;
+            }
+            if (p.type === "mistuning") {
+              const delta = typeof p.deltaPercent === 'object' ? (adaptiveValue || 0) : p.deltaPercent;
+              freq *= (1 + delta / 100);
+            }
+            if (p.type === "onset_asynchrony") {
+              const delta = typeof p.delayMs === 'object' ? (adaptiveValue || 0) : p.delayMs;
+              onsetSamples += (delta / 1000) * sampleRate;
+            }
+          }
+        }
+      }
+
+      // 2. Apply Hardware Calibration
+      const calibrationOffset = this.getCalibrationOffset(freq, calibration);
+      const finalDigitalDb = comp.levelDb + pertAmpOffset + calibrationOffset;
+      const amp = Math.pow(10, finalDigitalDb / 20);
+      const phase = (comp.phaseDegrees || 0) * Math.PI / 180;
+
+      // 3. Synthesis
+      for (let i = 0; i < globalDurationSamples; i++) {
+        const t = (i - onsetSamples) / sampleRate;
+        if (t < 0 || t > gen.durationMs / 1000) continue;
+
+        const envelope = this.calculateEnvelope(t, gen.durationMs / 1000, gen.globalEnvelope);
+        const sample = amp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
+
+        if (ear === "left" || ear === "both") leftData[i] += sample;
+        if (ear === "right" || ear === "both") rightData[i] += sample;
+      }
+    }
+
+    this.normalizeStereo(buffer);
 
     return buffer;
   }
 
-  private synthesizeHarmonicComplex(
-    data: Float32Array,
-    gen: any,
-    perturbations?: Perturbation[]
-  ) {
-    const f0 = gen.f0;
-    const { from, to } = gen.harmonics;
-    const sampleRate = this.ctx.sampleRate;
-    const durationSamples = data.length;
-
-    for (let n = from; n <= to; n++) {
-      let freq = n * f0;
-      let amp = Math.pow(10, gen.amplitudeProfile.levelDb / 20);
-      let phase = gen.phase === "random" ? this.rng() * 2 * Math.PI : 0;
-      let onsetDelaySamples = 0;
-
-      // Apply perturbations
-      if (perturbations) {
-        for (const p of perturbations) {
-          if (p.type === "spectral_profile" && this.matchTarget(p.targetHarmonic, n)) {
-            amp *= Math.pow(10, (p.deltaDb as number) / 20);
-          }
-          if (p.type === "onset_asynchrony" && this.matchTarget(p.targetHarmonic, n)) {
-            onsetDelaySamples = ((p.delayMs as number) / 1000) * sampleRate;
-          }
-          if (p.type === "mistuning" && this.matchTarget(p.targetHarmonic, n)) {
-            freq *= (1 + (p.deltaPercent as number) / 100);
-          }
-        }
-      }
-
-      // Generate harmonic
-      for (let i = 0; i < durationSamples; i++) {
-        const t = (i - onsetDelaySamples) / sampleRate;
-        if (t < 0) continue;
-
-        const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
-        data[i] += amp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
-      }
-    }
-
-    // Normalize to prevent clipping (conservative)
-    const numHarmonics = to - from + 1;
-    for (let i = 0; i < data.length; i++) {
-      data[i] /= numHarmonics; 
-    }
-  }
-
-  private synthesizeTone(data: Float32Array, gen: any, _perturbations?: Perturbation[]) {
-    // Basic tone implementation
-    const freq = typeof gen.frequency === "number" ? gen.frequency : 1000;
-    const amp = Math.pow(10, gen.levelDb / 20);
-    const sampleRate = this.ctx.sampleRate;
-
-    for (let i = 0; i < data.length; i++) {
-      const t = i / sampleRate;
-      const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
-      data[i] = amp * envelope * Math.sin(2 * Math.PI * freq * t);
-    }
-  }
-
-  private synthesizeComponentComplex(data: Float32Array, gen: any, perturbations?: Perturbation[]) {
-    const sampleRate = this.ctx.sampleRate;
-    for (const comp of gen.components) {
-      let freq = comp.frequency;
-      let amp = Math.pow(10, comp.levelDb / 20);
-      let phase = comp.phase || 0;
-
-      if (perturbations) {
-        for (const p of perturbations) {
-          if (p.type === "spectral_profile" && (p.targetHarmonic === freq)) {
-            amp *= Math.pow(10, (p.deltaDb as number) / 20);
-          }
-        }
-      }
-
-      for (let i = 0; i < data.length; i++) {
-        const t = i / sampleRate;
-        const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
-        data[i] += amp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
-      }
-    }
-  }
-
-  private synthesizeLogSpacedComplex(data: Float32Array, gen: any, _perturbations?: Perturbation[]) {
-    const sampleRate = this.ctx.sampleRate;
-    const logStart = Math.log10(gen.fromFreq);
-    const logEnd = Math.log10(gen.toFreq);
-    const step = (logEnd - logStart) / (gen.numComponents - 1);
+  private getCalibrationOffset(frequency: number, calibration?: CalibrationProfile): number {
+    if (!calibration || calibration.points.length === 0) return 0;
     
-    const ampTotal = Math.pow(10, gen.levelDbTotal / 20);
-    const ampPerComp = ampTotal / Math.sqrt(gen.numComponents); // Equal power distribution
+    const pts = calibration.points.sort((a, b) => a.frequency - b.frequency);
+    
+    // If frequency is outside the bounds, clamp to the nearest point
+    if (frequency <= pts[0].frequency) return pts[0].offsetDb;
+    if (frequency >= pts[pts.length - 1].frequency) return pts[pts.length - 1].offsetDb;
 
-    for (let n = 0; n < gen.numComponents; n++) {
-      const freq = Math.pow(10, logStart + n * step);
-      const phase = this.rng() * 2 * Math.PI;
-
-      for (let i = 0; i < data.length; i++) {
-        const t = i / sampleRate;
-        const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
-        data[i] += ampPerComp * envelope * Math.sin(2 * Math.PI * freq * t + phase);
+    // Find the surrounding points
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (frequency >= pts[i].frequency && frequency <= pts[i+1].frequency) {
+        const p1 = pts[i];
+        const p2 = pts[i+1];
+        
+        // Interpolate based on log10 of frequency
+        const logF = Math.log10(frequency);
+        const logF1 = Math.log10(p1.frequency);
+        const logF2 = Math.log10(p2.frequency);
+        
+        const fraction = (logF - logF1) / (logF2 - logF1);
+        return p1.offsetDb + fraction * (p2.offsetDb - p1.offsetDb);
       }
     }
+    return 0;
   }
 
-  private synthesizeNoise(data: Float32Array, gen: any, perturbations?: Perturbation[]) {
+  private synthesizeNoise(buffer: AudioBuffer, gen: any, perturbations?: Perturbation[], adaptiveValue?: number) {
+    const leftData = buffer.getChannelData(0);
+    const rightData = buffer.getChannelData(1);
     const amp = Math.pow(10, gen.levelDb / 20);
     const sampleRate = this.ctx.sampleRate;
+    const ear = gen.ear || "both";
 
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < leftData.length; i++) {
       const t = i / sampleRate;
-      const envelope = this.calculateEnvelope(t, gen.duration / 1000, gen.envelope);
-      let val = (this.rng() * 2 - 1) * amp * envelope;
+      const envelope = this.calculateEnvelope(t, gen.durationMs / 1000, gen.envelope);
+      let sample = (this.rng() * 2 - 1) * amp * envelope;
 
-      // Special case: Add tone-in-noise perturbation if needed
       if (perturbations) {
         for (const p of perturbations) {
           if (p.type === "spectral_profile") {
-            // Very simplified: treating 'spectral_profile' as a target tone in noise
-            // Realistically we'd need a more specific perturbation type for this
-            const targetFreq = 1000; // Hardcoded default for now
-            const toneAmp = Math.pow(10, (p.deltaDb as number) / 20) * (amp / 10); // Scale relative to noise
-            val += toneAmp * envelope * Math.sin(2 * Math.PI * targetFreq * t);
+            const targetFreq = 1000;
+            const delta = typeof p.deltaDb === 'object' ? (adaptiveValue || 0) : p.deltaDb;
+            const toneAmp = Math.pow(10, delta / 20) * (amp / 10);
+            sample += toneAmp * envelope * Math.sin(2 * Math.PI * targetFreq * t);
           }
         }
       }
-      data[i] = val;
+      
+      if (ear === "left" || ear === "both") leftData[i] = sample;
+      if (ear === "right" || ear === "both") rightData[i] = sample;
+    }
+
+    this.normalizeStereo(buffer);
+  }
+
+  private normalizeStereo(buffer: AudioBuffer) {
+    const leftData = buffer.getChannelData(0);
+    const rightData = buffer.getChannelData(1);
+    
+    let peak = 0;
+    for (let i = 0; i < leftData.length; i++) {
+      peak = Math.max(peak, Math.abs(leftData[i]), Math.abs(rightData[i]));
+    }
+
+    if (peak > 1.0) {
+      console.warn(`[AudioEngine] Stereo Clipping detected (Peak: ${peak.toFixed(2)}). Applying ILD-preserving normalization.`);
+      for (let i = 0; i < leftData.length; i++) {
+        leftData[i] /= peak;
+        rightData[i] /= peak;
+      }
     }
   }
 
-  private calculateEnvelope(t: number, duration: number, env: { attack: number; release: number }) {
-    const attack = env.attack / 1000;
-    const release = env.release / 1000;
+  private calculateEnvelope(t: number, durationSec: number, env: { attackMs: number; releaseMs: number }) {
+    const attack = env.attackMs / 1000;
+    const release = env.releaseMs / 1000;
     if (t < attack) return t / attack;
-    if (t > duration - release) return (duration - t) / release;
-    if (t > duration) return 0;
+    if (t > durationSec - release) return (durationSec - t) / release;
+    if (t > durationSec) return 0;
     return 1;
-  }
-
-  private matchTarget(target: any, n: number): boolean {
-    if (typeof target === "number") return target === n;
-    if (target.random && target.random.type === "choice") {
-       // Deterministic choice based on current RNG state? 
-       // For simplicity, we assume target is resolved before synthesis or matched here
-       return target.random.values.includes(n);
-    }
-    return false;
   }
 
   playBuffer(buffer: AudioBuffer): AudioBufferSourceNode {

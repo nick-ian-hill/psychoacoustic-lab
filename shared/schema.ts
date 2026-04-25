@@ -1,80 +1,49 @@
 import { z } from "zod";
 
 /**
- * Randomization Primitives
+ * Randomization & Adaptive Primitives
  */
 export const RandomUniformSchema = z.object({
-  random: z.object({
-    type: z.literal("uniform"),
-    min: z.number(),
-    max: z.number(),
-  }),
+  type: z.literal("uniform"),
+  min: z.number(),
+  max: z.number(),
 });
 
 export const RandomChoiceSchema = z.object({
-  random: z.object({
-    type: z.literal("choice"),
-    values: z.array(z.any()),
-  }),
+  type: z.literal("choice"),
+  values: z.array(z.any()),
 });
 
 export const AdaptiveParamRefSchema = z.object({
   adaptive: z.literal(true),
 });
 
+export const EarRoutingSchema = z.enum(["left", "right", "both"]);
+export type EarRouting = z.infer<typeof EarRoutingSchema>;
+
 /**
  * Stimulus Generators
  */
 export const EnvelopeSchema = z.object({
-  attack: z.number(),
-  release: z.number(),
+  attackMs: z.number(),
+  releaseMs: z.number(),
 });
 
-export const HarmonicComplexGeneratorSchema = z.object({
-  type: z.literal("harmonic_complex"),
-  f0: z.number(),
-  harmonics: z.object({
-    from: z.number(),
-    to: z.number(),
-  }),
-  amplitudeProfile: z.object({
-    type: z.enum(["flat", "logarithmic"]),
-    levelDb: z.number(),
-  }),
-  phase: z.enum(["sine", "random"]),
-  duration: z.number(),
-  envelope: EnvelopeSchema,
-});
-
-export const ToneGeneratorSchema = z.object({
-  type: z.literal("tone"),
-  frequency: z.number().or(RandomUniformSchema).or(RandomChoiceSchema),
-  levelDb: z.number(),
-  duration: z.number(),
-  envelope: EnvelopeSchema,
-});
-
-export const ComponentSchema = z.object({
+export const StimulusComponentSchema = z.object({
   frequency: z.number(),
   levelDb: z.number(),
-  phase: z.number().optional(), // radians
+  phaseDegrees: z.number().optional(),
+  onsetDelayMs: z.number().optional(),
+  ear: EarRoutingSchema.optional(),
 });
 
-export const ComponentComplexGeneratorSchema = z.object({
-  type: z.literal("component_complex"),
-  components: z.array(ComponentSchema),
-  duration: z.number(),
-  envelope: EnvelopeSchema,
-});
+export type StimulusComponent = z.infer<typeof StimulusComponentSchema>;
 
-export const LogSpacedComplexGeneratorSchema = z.object({
-  type: z.literal("log_spaced_complex"),
-  fromFreq: z.number(),
-  toFreq: z.number(),
-  numComponents: z.number(),
-  levelDbTotal: z.number(),
-  duration: z.number(),
-  envelope: EnvelopeSchema,
+export const MultiComponentGeneratorSchema = z.object({
+  type: z.literal("multi_component"),
+  components: z.array(StimulusComponentSchema),
+  durationMs: z.number(),
+  globalEnvelope: EnvelopeSchema,
 });
 
 export const NoiseGeneratorSchema = z.object({
@@ -85,15 +54,13 @@ export const NoiseGeneratorSchema = z.object({
     highFreq: z.number(),
   }).optional(),
   levelDb: z.number(),
-  duration: z.number(),
+  durationMs: z.number(),
   envelope: EnvelopeSchema,
+  ear: EarRoutingSchema.optional(),
 });
 
 export const StimulusGeneratorSchema = z.union([
-  ToneGeneratorSchema,
-  HarmonicComplexGeneratorSchema,
-  ComponentComplexGeneratorSchema,
-  LogSpacedComplexGeneratorSchema,
+  MultiComponentGeneratorSchema,
   NoiseGeneratorSchema,
 ]);
 
@@ -102,20 +69,20 @@ export const StimulusGeneratorSchema = z.union([
  */
 export const SpectralProfilePerturbationSchema = z.object({
   type: z.literal("spectral_profile"),
-  targetHarmonic: z.number().or(RandomChoiceSchema),
-  deltaDb: z.number().or(AdaptiveParamRefSchema).or(RandomUniformSchema),
+  targetFrequency: z.number(),
+  deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
 });
 
 export const AsynchronyPerturbationSchema = z.object({
   type: z.literal("onset_asynchrony"),
-  targetHarmonic: z.number().or(RandomChoiceSchema),
-  delayMs: z.number().or(AdaptiveParamRefSchema),
+  targetFrequency: z.number(),
+  delayMs: z.union([z.number(), AdaptiveParamRefSchema]),
 });
 
 export const MistuningPerturbationSchema = z.object({
   type: z.literal("mistuning"),
-  targetHarmonic: z.number().or(RandomChoiceSchema),
-  deltaPercent: z.number().or(AdaptiveParamRefSchema),
+  targetFrequency: z.number(),
+  deltaPercent: z.union([z.number(), AdaptiveParamRefSchema]),
 });
 
 export const PerturbationSchema = z.union([
@@ -133,9 +100,9 @@ export const ParadigmSchema = z.object({
     condition: z.enum(["reference", "target", "probe"]),
   })),
   randomizeOrder: z.boolean(),
-  timing: z.object({
-    isi: z.number(), // Inter-stimulus interval in ms
-  }),
+  timing: {
+    isiMs: z.number(),
+  },
 });
 
 /**
@@ -150,15 +117,28 @@ export const AdaptiveConfigSchema = z.object({
     correctDown: z.number(),
     incorrectUp: z.number(),
   }),
-  initialN: z.number().optional(), // Fast start
-  switchReversalCount: z.number().optional(), // When to switch from initialN to rule.correctDown
+  initialN: z.number().optional(),
+  switchReversalCount: z.number().optional(),
   minValue: z.number(),
   maxValue: z.number(),
   reversals: z.number(),
 });
 
+export const CalibrationPointSchema = z.object({
+  frequency: z.number(),
+  offsetDb: z.number(),
+});
+
+export const CalibrationProfileSchema = z.object({
+  id: z.string(),
+  description: z.string().optional(),
+  points: z.array(CalibrationPointSchema),
+});
+
+export type CalibrationProfile = z.infer<typeof CalibrationProfileSchema>;
+
 /**
- * Config
+ * Final Experiment Configuration
  */
 export const ExperimentConfigSchema = z.object({
   meta: z.object({
@@ -172,12 +152,13 @@ export const ExperimentConfigSchema = z.object({
   audio: z.object({
     sampleRate: z.number().default(44100),
   }),
+  calibration: CalibrationProfileSchema.optional(),
   stimulus: StimulusGeneratorSchema,
   perturbations: z.array(PerturbationSchema).optional(),
   conditions: z.object({
-    reference: z.any(), // Usually just empty or base
-    target: z.any(),
-  }),
+    reference: z.any().optional(),
+    target: z.any().optional(),
+  }).optional(),
   paradigm: ParadigmSchema,
   adaptive: AdaptiveConfigSchema.optional(),
   termination: z.object({
@@ -189,5 +170,4 @@ export const ExperimentConfigSchema = z.object({
 export type ExperimentConfig = z.infer<typeof ExperimentConfigSchema>;
 export type StimulusGenerator = z.infer<typeof StimulusGeneratorSchema>;
 export type Perturbation = z.infer<typeof PerturbationSchema>;
-export type Paradigm = z.infer<typeof ParadigmSchema>;
-export type AdaptiveConfig = z.infer<typeof AdaptiveConfigSchema>;
+export type AdaptiveParamRef = z.infer<typeof AdaptiveParamRefSchema>;

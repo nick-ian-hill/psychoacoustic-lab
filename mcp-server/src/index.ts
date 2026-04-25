@@ -8,11 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import {
   ExperimentConfigSchema,
-  StimulusGeneratorSchema,
-  ParadigmSchema,
-  AdaptiveConfigSchema,
 } from "../../shared/schema.js";
-import { z } from "zod";
 
 class PsychoacousticServer {
   private server: Server;
@@ -20,8 +16,8 @@ class PsychoacousticServer {
   constructor() {
     this.server = new Server(
       {
-        name: "psychoacoustic-expert",
-        version: "1.0.0",
+        name: "psychoacoustic-math-toolkit",
+        version: "2.0.0",
       },
       {
         capabilities: {
@@ -31,100 +27,55 @@ class PsychoacousticServer {
     );
 
     this.setupTools();
-    
     this.server.onerror = (error) => console.error("[MCP Error]", error);
-    process.on("SIGINT", async () => {
-      await this.server.close();
-      process.exit(0);
-    });
   }
 
   private setupTools() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: "configure_stimulus",
-          description: "Configure the basic stimulus (tone or harmonic complex) for the experiment.",
+          name: "calc_frequencies",
+          description: "Calculate frequency components (linear, log, or ERB spacing).",
           inputSchema: {
             type: "object",
             properties: {
-              type: { type: "string", enum: ["tone", "harmonic_complex"] },
-              f0: { type: "number", description: "Fundamental frequency in Hz" },
-              harmonics: {
-                type: "object",
-                properties: {
-                  from: { type: "number" },
-                  to: { type: "number" }
-                }
-              },
-              duration: { type: "number", description: "Duration in ms" },
-              levelDb: { type: "number", description: "Level in dB SPL" }
+              type: { type: "string", enum: ["linear", "log", "erb"] },
+              minFreq: { type: "number" },
+              maxFreq: { type: "number" },
+              numComponents: { type: "number" }
             },
-            required: ["type", "duration", "levelDb"]
+            required: ["type", "minFreq", "maxFreq", "numComponents"]
           }
         },
         {
-          name: "configure_multi_component_complex",
-          description: "Create a complex stimulus by specifying individual frequency components.",
+          name: "calc_phases",
+          description: "Calculate starting phases for components (Sine, Random, or Schroeder) in DEGREES.",
           inputSchema: {
             type: "object",
             properties: {
-              components: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    frequency: { type: "number" },
-                    levelDb: { type: "number" },
-                    phase: { type: "number", description: "Phase in radians" }
-                  },
-                  required: ["frequency", "levelDb"]
-                }
-              },
-              duration: { type: "number" },
-              envelope: {
-                type: "object",
-                properties: {
-                  attack: { type: "number" },
-                  release: { type: "number" }
-                }
-              }
+              type: { type: "string", enum: ["sine", "random", "schroeder_positive", "schroeder_negative"] },
+              numComponents: { type: "number" },
+              seed: { type: "number", description: "Optional seed for random phases" }
             },
-            required: ["components", "duration"]
+            required: ["type", "numComponents"]
           }
         },
         {
-          name: "configure_log_spaced_complex",
-          description: "Create a complex with logarithmically spaced frequency components.",
+          name: "calc_amplitudes",
+          description: "Calculate component levels in dB SPL (Flat or Pink Tilt).",
           inputSchema: {
             type: "object",
             properties: {
-              fromFreq: { type: "number", description: "Start frequency in Hz" },
-              toFreq: { type: "number", description: "End frequency in Hz" },
-              numComponents: { type: "number", description: "Number of components" },
-              levelDbTotal: { type: "number", description: "Total power level in dB SPL" },
-              duration: { type: "number" }
+              type: { type: "string", enum: ["flat", "pink_noise_tilt"] },
+              baseLevelDb: { type: "number", description: "Overall level or starting level" },
+              numComponents: { type: "number" }
             },
-            required: ["fromFreq", "toFreq", "numComponents", "levelDbTotal", "duration"]
+            required: ["type", "baseLevelDb", "numComponents"]
           }
         },
         {
-          name: "configure_experiment",
-          description: "Add paradigm, adaptive logic, and perturbations to a stimulus configuration.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              stimulus: { type: "object" },
-              paradigmType: { type: "string", enum: ["2AFC", "3AFC", "Probe-Signal"] },
-              targetPerturbation: { type: "string", enum: ["spectral_profile", "onset_asynchrony", "mistuning"] },
-              adaptiveParam: { type: "string" }
-            },
-            required: ["stimulus", "paradigmType", "targetPerturbation"]
-          }
-        },
-        {
-          name: "validate_experiment",
-          description: "Validate an ExperimentConfig for acoustic safety and logical consistency.",
+          name: "evaluate_and_finalize_experiment",
+          description: "Final validation and expert review of an ExperimentConfig.",
           inputSchema: {
             type: "object",
             properties: {
@@ -138,150 +89,114 @@ class PsychoacousticServer {
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       switch (request.params.name) {
-        case "configure_stimulus":
-          return this.handleConfigureStimulus(request.params.arguments);
-        case "configure_multi_component_complex":
-          return this.handleConfigureMultiComponent(request.params.arguments);
-        case "configure_log_spaced_complex":
-          return this.handleConfigureLogSpaced(request.params.arguments);
-        case "configure_experiment":
-          return this.handleConfigureExperiment(request.params.arguments);
-        case "validate_experiment":
-          return this.handleValidateExperiment(request.params.arguments);
+        case "calc_frequencies":
+          return this.handleCalcFrequencies(request.params.arguments);
+        case "calc_phases":
+          return this.handleCalcPhases(request.params.arguments);
+        case "calc_amplitudes":
+          return this.handleCalcAmplitudes(request.params.arguments);
+        case "evaluate_and_finalize_experiment":
+          return this.handleFinalize(request.params.arguments);
         default:
-          throw new McpError(
-            ErrorCode.MethodNotFound,
-            `Unknown tool: ${request.params.name}`
-          );
+          throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
       }
     });
   }
 
-  private handleConfigureStimulus(args: any) {
-    try {
-      // Logic for stimulus configuration
-      // We'll apply "Expert" defaults here
-      const stimulus = {
-        ...args,
-        envelope: args.envelope || { attack: 10, release: 10 },
-        phase: args.phase || "random"
-      };
+  private handleCalcFrequencies(args: any) {
+    const { type, minFreq, maxFreq, numComponents } = args;
+    const freqs: number[] = [];
+    if (numComponents === 1) return { content: [{ type: "text", text: JSON.stringify([minFreq]) }] };
 
-      if (args.type === "harmonic_complex" && !args.harmonics) {
-        stimulus.harmonics = { from: 1, to: 20 };
-      }
-
-      return {
-        content: [{ type: "text", text: JSON.stringify(stimulus, null, 2) }]
-      };
-    } catch (error: any) {
-      return {
-        isError: true,
-        content: [{ type: "text", text: error.message }]
-      };
+    if (type === "linear") {
+      const step = (maxFreq - minFreq) / (numComponents - 1);
+      for (let i = 0; i < numComponents; i++) freqs.push(minFreq + i * step);
+    } else if (type === "log") {
+      const logStart = Math.log10(minFreq);
+      const logEnd = Math.log10(maxFreq);
+      const step = (logEnd - logStart) / (numComponents - 1);
+      for (let i = 0; i < numComponents; i++) freqs.push(Math.pow(10, logStart + i * step));
+    } else if (type === "erb") {
+      // Moore & Glasberg (1983) formula
+      const hzToErb = (hz: number) => 21.4 * Math.log10(4.37 * (hz / 1000) + 1);
+      const erbToHz = (erb: number) => ((Math.pow(10, erb / 21.4) - 1) / 4.37) * 1000;
+      const startErb = hzToErb(minFreq);
+      const endErb = hzToErb(maxFreq);
+      const step = (endErb - startErb) / (numComponents - 1);
+      for (let i = 0; i < numComponents; i++) freqs.push(erbToHz(startErb + i * step));
     }
+    return { content: [{ type: "text", text: JSON.stringify(freqs) }] };
   }
 
-  private handleConfigureMultiComponent(args: any) {
-    const stimulus = {
-      type: "component_complex",
-      ...args,
-      envelope: args.envelope || { attack: 10, release: 10 }
-    };
-    return {
-      content: [{ type: "text", text: JSON.stringify(stimulus, null, 2) }]
-    };
+  private handleCalcPhases(args: any) {
+    const { type, numComponents } = args;
+    const phases: number[] = [];
+    if (type === "sine") {
+      for (let i = 0; i < numComponents; i++) phases.push(0);
+    } else if (type === "random") {
+      for (let i = 0; i < numComponents; i++) phases.push(Math.random() * 360);
+    } else if (type.startsWith("schroeder")) {
+      const sign = type === "schroeder_positive" ? 1 : -1;
+      for (let k = 1; k <= numComponents; k++) {
+        // Schroeder formula in radians converted to degrees
+        const rad = sign * Math.PI * k * (k - 1) / numComponents;
+        phases.push((rad * 180 / Math.PI) % 360);
+      }
+    }
+    return { content: [{ type: "text", text: JSON.stringify(phases) }] };
   }
 
-  private handleConfigureLogSpaced(args: any) {
-    const stimulus = {
-      type: "log_spaced_complex",
-      ...args,
-      envelope: args.envelope || { attack: 10, release: 10 }
-    };
-    return {
-      content: [{ type: "text", text: JSON.stringify(stimulus, null, 2) }]
-    };
+  private handleCalcAmplitudes(args: any) {
+    const { type, baseLevelDb, numComponents } = args;
+    const levels: number[] = [];
+    if (type === "flat") {
+      for (let i = 0; i < numComponents; i++) levels.push(baseLevelDb);
+    } else if (type === "pink_noise_tilt") {
+      // 3dB per octave tilt
+      for (let i = 0; i < numComponents; i++) {
+        levels.push(baseLevelDb - 10 * Math.log10(i + 1));
+      }
+    }
+    return { content: [{ type: "text", text: JSON.stringify(levels) }] };
   }
 
-  private handleConfigureExperiment(args: any) {
-    // Logic for experiment configuration
-    // Apply adaptive rules (2-down, 1-up default)
-    const config = {
-      meta: {
-        name: "New Experiment",
-        version: "1.0.0",
-        seed: Math.floor(Math.random() * 1000000),
-        rationale: "Generated by Expert Psychoacoustician."
-      },
-      audio: { sampleRate: 44100 },
-      stimulus: args.stimulus,
-      paradigm: {
-        type: args.paradigmType,
-        intervals: args.paradigmType === "2AFC" 
-          ? [{ condition: "reference" }, { condition: "target" }]
-          : [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
-        randomizeOrder: true,
-        timing: { isi: 500 }
-      },
-      adaptive: {
-        type: "staircase",
-        parameter: args.adaptiveParam || "perturbations[0].deltaDb",
-        initialValue: 10,
-        stepSizes: [4, 2, 1],
-        rule: { correctDown: 2, incorrectUp: 1 },
-        initialN: 1,
-        switchReversalCount: 2,
-        minValue: 0,
-        maxValue: 40,
-        reversals: 12
-      },
-      termination: { reversals: 12 }
-    };
-
-    return {
-      content: [{ type: "text", text: JSON.stringify(config, null, 2) }]
-    };
-  }
-
-  private handleValidateExperiment(args: any) {
+  private handleFinalize(args: any) {
     const result = ExperimentConfigSchema.safeParse(args.config);
     if (!result.success) {
-      return {
-        isError: true,
-        content: [{ type: "text", text: JSON.stringify(result.error.format(), null, 2) }]
-      };
+      return { isError: true, content: [{ type: "text", text: JSON.stringify(result.error.format(), null, 2) }] };
     }
-    
     const config = result.data;
     const warnings: string[] = [];
 
-    // Expert validation: Clipping check
-    if (config.stimulus.type === "harmonic_complex") {
-      const numHarmonics = config.stimulus.harmonics.to - config.stimulus.harmonics.from + 1;
-      const levelDb = config.stimulus.amplitudeProfile.levelDb;
-      // Very rough estimate: peak can be high if phases align
-      if (levelDb + 20 * Math.log10(numHarmonics) > 90) {
-        warnings.push("High risk of digital clipping! Sum of harmonics may exceed 0 dBFS. Consider lower levelDb or random phases.");
-      }
+    // Expert Logic
+    if (config.stimulus.type === "multi_component") {
+      const totalPower = config.stimulus.components.reduce((acc, c) => acc + Math.pow(10, c.levelDb / 10), 0);
+      const totalDb = 10 * Math.log10(totalPower);
+      if (totalDb > 95) warnings.push("CLIPPING RISK: Total stimulus level exceeds 95 dB SPL.");
+    }
+
+    if (config.adaptive && config.adaptive.reversals < 10) {
+      warnings.push("STABILITY WARNING: Adaptive staircase reversals are below 10. Threshold estimate may be unreliable.");
     }
 
     return {
-      content: [
-        { 
-          type: "text", 
-          text: warnings.length > 0 
-            ? `Validation Failed/Warnings:\n${warnings.join("\n")}` 
-            : "Configuration is valid and acoustically safe." 
-        }
-      ]
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          validatedConfig: config,
+          expertReview: {
+            status: warnings.length > 0 ? "REVIEW_REQUIRED" : "APPROVED",
+            warnings: warnings
+          }
+        }, null, 2)
+      }]
     };
   }
 
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Psychoacoustic MCP Server running on stdio");
+    console.error("Psychoacoustic Math Toolkit Server running");
   }
 }
 

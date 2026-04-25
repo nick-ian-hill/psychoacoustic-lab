@@ -1,36 +1,36 @@
 import type { ExperimentConfig } from "../shared/schema.js";
 
 /**
- * 1. Basic Frequency Discrimination (Classic)
+ * 1. Basic Frequency Discrimination
  */
 export const freqDiscrimConfig: ExperimentConfig = {
   meta: {
     name: "Frequency Discrimination",
-    version: "1.0.0",
+    version: "2.0.0",
     seed: 123,
-    rationale: "Threshold for detecting frequency difference between two tones."
+    rationale: "Threshold for detecting frequency difference."
   },
   audio: { sampleRate: 44100 },
   stimulus: {
-    type: "tone",
-    frequency: 1000,
-    levelDb: 65,
-    duration: 250,
-    envelope: { attack: 10, release: 10 }
+    type: "multi_component",
+    components: [
+      { frequency: 1000, levelDb: 65, phaseDegrees: 0 }
+    ],
+    durationMs: 250,
+    globalEnvelope: { attackMs: 10, releaseMs: 10 }
   },
   perturbations: [
     {
       type: "mistuning",
-      targetHarmonic: 1,
-      deltaPercent: { adaptive: true } as any
+      targetFrequency: 1000,
+      deltaPercent: { adaptive: true }
     }
   ],
-  conditions: { reference: {}, target: {} },
   paradigm: {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isi: 400 }
+    timing: { isiMs: 400 }
   },
   adaptive: {
     type: "staircase",
@@ -38,8 +38,6 @@ export const freqDiscrimConfig: ExperimentConfig = {
     initialValue: 5,
     stepSizes: [2, 1, 0.5, 0.25],
     rule: { correctDown: 3, incorrectUp: 1 },
-    initialN: 1,
-    switchReversalCount: 2,
     minValue: 0,
     maxValue: 50,
     reversals: 12
@@ -48,90 +46,45 @@ export const freqDiscrimConfig: ExperimentConfig = {
 };
 
 /**
- * 2. Intensity Discrimination (Classic)
- * Just-Noticeable Difference (JND) for sound level.
- */
-export const intensityDiscrimConfig: ExperimentConfig = {
-  meta: {
-    name: "Intensity Discrimination",
-    version: "1.0.0",
-    seed: 456,
-    rationale: "Classic JND measurement for intensity using a pedestal tone."
-  },
-  audio: { sampleRate: 44100 },
-  stimulus: {
-    type: "tone",
-    frequency: 1000,
-    levelDb: 70,
-    duration: 500,
-    envelope: { attack: 20, release: 20 }
-  },
-  perturbations: [
-    {
-      type: "spectral_profile",
-      targetHarmonic: 1,
-      deltaDb: { adaptive: true } as any
-    }
-  ],
-  conditions: { reference: {}, target: {} },
-  paradigm: {
-    type: "2AFC",
-    intervals: [{ condition: "reference" }, { condition: "target" }],
-    randomizeOrder: true,
-    timing: { isi: 500 }
-  },
-  adaptive: {
-    type: "staircase",
-    parameter: "perturbations[0].deltaDb",
-    initialValue: 6,
-    stepSizes: [2, 1, 0.5],
-    rule: { correctDown: 2, incorrectUp: 1 },
-    minValue: 0,
-    maxValue: 20,
-    reversals: 12
-  },
-  termination: { reversals: 12 }
-};
-
-/**
- * 3. Auditory Grouping (Hill & Bailey)
- * Profile analysis with an asynchronous target.
+ * 2. Harmonic Complex with Lead Target (Hill & Bailey)
  */
 export const auditoryGroupingConfig: ExperimentConfig = {
   meta: {
-    name: "Auditory Grouping: Asynchronous Target",
-    version: "1.0.0",
+    name: "Auditory Grouping: Lead Target",
+    version: "2.0.0",
     seed: 999,
-    rationale: "Replicating the effect where onset asynchrony reduces the ability to perform profile analysis."
+    rationale: "Using explicit components to model onset asynchrony LEAD."
   },
   audio: { sampleRate: 44100 },
   stimulus: {
-    type: "harmonic_complex",
-    f0: 200,
-    harmonics: { from: 1, to: 21 },
-    amplitudeProfile: { type: "flat", levelDb: 60 },
-    phase: "random",
-    duration: 500,
-    envelope: { attack: 10, release: 10 }
+    type: "multi_component",
+    components: [
+      { frequency: 200, levelDb: 60, phaseDegrees: 5.7 },
+      { frequency: 400, levelDb: 60, phaseDegrees: 28.6 },
+      { frequency: 600, levelDb: 60, phaseDegrees: 68.8 },
+      { frequency: 800, levelDb: 60, phaseDegrees: 120.3 },
+      { frequency: 1000, levelDb: 60, phaseDegrees: 0 } // Target component
+    ],
+    durationMs: 500,
+    globalEnvelope: { attackMs: 10, releaseMs: 10 }
   },
   perturbations: [
     {
       type: "spectral_profile",
-      targetHarmonic: 11,
-      deltaDb: { adaptive: true } as any
+      targetFrequency: 1000,
+      deltaDb: { adaptive: true }
     },
     {
       type: "onset_asynchrony",
-      targetHarmonic: 11,
-      delayMs: -100
+      targetFrequency: 1000,
+      delayMs: -100 // Target leads by 100ms
     }
   ],
-  conditions: { reference: {}, target: {} },
   paradigm: {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isi: 600 }
+    timing: { isiMs: 600 }
   },
   adaptive: {
     type: "staircase",
@@ -139,8 +92,6 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     initialValue: 15,
     stepSizes: [4, 2, 1],
     rule: { correctDown: 2, incorrectUp: 1 },
-    initialN: 1,
-    switchReversalCount: 2,
     minValue: 0,
     maxValue: 40,
     reversals: 12
@@ -149,96 +100,48 @@ export const auditoryGroupingConfig: ExperimentConfig = {
 };
 
 /**
- * 4. Tone in Noise (Classic)
- * Detection of a tone in broadband white noise.
+ * 3. Log-Spaced Complex (Finalized via Toolkit)
  */
-export const toneInNoiseConfig: ExperimentConfig = {
+export const logSpacedConfig: ExperimentConfig = {
   meta: {
-    name: "Tone in Noise Detection",
-    version: "1.0.0",
+    name: "Log-Spaced Detection",
+    version: "2.0.0",
     seed: 777,
-    rationale: "Classical simultaneous masking measurement."
+    rationale: "Explicit components calculated via calc_frequencies toolkit."
   },
   audio: { sampleRate: 44100 },
   stimulus: {
-    type: "noise",
-    noiseType: "white",
-    levelDb: 50,
-    duration: 1000,
-    envelope: { attack: 50, release: 50 }
-  },
-  perturbations: [
-    {
-      type: "spectral_profile", // We use spectral profile to 'add' the tone component
-      targetHarmonic: 0, // Special case for noise + tone? Or we need a better schema
-      deltaDb: { adaptive: true } as any
-    }
-  ],
-  conditions: { reference: {}, target: {} },
-  paradigm: {
-    type: "2AFC",
-    intervals: [{ condition: "reference" }, { condition: "target" }],
-    randomizeOrder: true,
-    timing: { isi: 500 }
-  },
-  adaptive: {
-    type: "staircase",
-    parameter: "perturbations[0].deltaDb",
-    initialValue: 20,
-    stepSizes: [4, 2, 1],
-    rule: { correctDown: 2, incorrectUp: 1 },
-    minValue: -10,
-    maxValue: 40,
-    reversals: 12
-  },
-  termination: { reversals: 12 }
-};
-
-/**
- * 5. Informational Masking with Random Maskers (Modern)
- * Detection of a target tone among random frequency maskers.
- */
-export const infoMaskingConfig: ExperimentConfig = {
-  meta: {
-    name: "Informational Masking: Random Multi-tone Maskers",
-    version: "1.0.0",
-    seed: 888,
-    rationale: "Recent paradigm studying central vs peripheral masking using uncertain masker frequencies."
-  },
-  audio: { sampleRate: 44100 },
-  stimulus: {
-    type: "component_complex",
+    type: "multi_component",
     components: [
-      { frequency: 400, levelDb: 50 },
-      { frequency: 600, levelDb: 50 },
-      { frequency: 1500, levelDb: 50 },
-      { frequency: 2200, levelDb: 50 }
+      { frequency: 200, levelDb: 50, phaseDegrees: 0 },
+      { frequency: 317.48, levelDb: 50, phaseDegrees: 68.8 },
+      { frequency: 503.97, levelDb: 50, phaseDegrees: 137.5 },
+      { frequency: 800, levelDb: 50, phaseDegrees: 28.6 }
     ],
-    duration: 300,
-    envelope: { attack: 10, release: 10 }
+    durationMs: 400,
+    globalEnvelope: { attackMs: 20, releaseMs: 20 }
   },
   perturbations: [
     {
       type: "spectral_profile",
-      targetHarmonic: 1000, // Explicit frequency target
-      deltaDb: { adaptive: true } as any
+      targetFrequency: 503.97,
+      deltaDb: { adaptive: true }
     }
   ],
-  conditions: { reference: {}, target: {} },
   paradigm: {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isi: 400 }
+    timing: { isiMs: 500 }
   },
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDb",
-    initialValue: 25,
+    initialValue: 10,
     stepSizes: [4, 2, 1],
     rule: { correctDown: 2, incorrectUp: 1 },
-    minValue: -10,
-    maxValue: 50,
+    minValue: 0,
+    maxValue: 40,
     reversals: 12
   },
   termination: { reversals: 12 }
