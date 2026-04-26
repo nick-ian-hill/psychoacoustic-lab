@@ -46,17 +46,17 @@ class PsychoacousticServer {
       tools: [
         {
           name: "about_toolkit",
-          description: "CRITICAL DIRECTIVE: You MUST call this tool before attempting to design an experiment or generate a configuration. It contains mandatory architectural rules and behavioral instructions. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Before drafting a config, think critically about the experimental paradigm—actively identify and discuss how to control for confounding cues (e.g., controlling absolute pitch cues in a mistuning task). 3) Propose a detailed, plain-text experimental plan to the user. 4) STOP. You are strictly forbidden from generating the final JSON ExperimentConfig until the user explicitly approves your plain-text plan.",
+          description: "CRITICAL DIRECTIVE: You MUST call this tool before attempting to design an experiment or generate a configuration. It contains mandatory architectural rules and behavioral instructions. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters (duration, ISI, etc.). 4) Web search to validate parameters. 5) Propose a text plan. 6) STOP. You are strictly forbidden from generating the final JSON ExperimentConfig until the user explicitly approves your plain-text plan.",
           inputSchema: { type: "object", properties: {} }
         },
         {
           name: "list_examples",
-          description: "List the names of all included classic and modern psychoacoustic experiment examples.",
+          description: "List the names of all included classic and modern psychoacoustic experiment examples. USE THIS before designing custom paradigms to see established patterns and ensure your configuration aligns with standard practices.",
           inputSchema: { type: "object", properties: {} }
         },
         {
           name: "get_example_config",
-          description: "Retrieve the full JSON configuration for a specific example.",
+          description: "Retrieve the full JSON configuration for a specific example. This is the best way to understand how the ExperimentConfig schema is applied in practice.",
           inputSchema: {
             type: "object",
             properties: {
@@ -67,12 +67,12 @@ class PsychoacousticServer {
         },
         {
           name: "get_schema_reference",
-          description: "Return annotated documentation for the full ExperimentConfig schema — all fields, types, and usage notes. Use this before building a new experiment to understand what fields are available.",
+          description: "Return annotated documentation for the full ExperimentConfig schema — all fields, types, and usage notes. Use this before building a new experiment to understand what fields are available, and strictly validate your proposed configurations against these rules.",
           inputSchema: { type: "object", properties: {} }
         },
         {
           name: "calc_frequencies",
-          description: "Calculate frequency components (linear, log, or ERB spacing).",
+          description: "Calculate frequency components. GUARDRAIL: Use 'erb' spacing for experiments involving human auditory filter models. Use 'log' for musical pitch or general spectral spacing. Use 'linear' for harmonic complexes.",
           inputSchema: {
             type: "object",
             properties: {
@@ -86,7 +86,7 @@ class PsychoacousticServer {
         },
         {
           name: "calc_phases",
-          description: "Calculate starting phases for components (Sine, Random, or Schroeder) in DEGREES. Pass a seed for reproducible random phases.",
+          description: "Calculate starting phases for components in DEGREES. GUARDRAIL: Use 'random' phases (with a seed) to prevent unintended phase-coherence cues or high peak-to-average power ratios, unless specifically testing phase effects. Use 'schroeder' for specific masker temporal properties.",
           inputSchema: {
             type: "object",
             properties: {
@@ -99,7 +99,7 @@ class PsychoacousticServer {
         },
         {
           name: "calc_amplitudes",
-          description: "Calculate component levels in dB SPL (Flat or Pink Tilt).",
+          description: "Calculate component levels in dB SPL. GUARDRAIL: Use 'pink_noise_tilt' to achieve equal energy per auditory band, often required for uniform masking across frequencies.",
           inputSchema: {
             type: "object",
             properties: {
@@ -117,7 +117,7 @@ class PsychoacousticServer {
         },
         {
           name: "calc_itd",
-          description: "Convert an Interaural Time Difference (ITD) in microseconds to the onsetDelayMs value needed by the engine, and compute the equivalent Interaural Phase Difference (IPD) in degrees at a given frequency. Essential for BMLD and lateralisation experiments.",
+          description: "Convert an Interaural Time Difference (ITD) in microseconds to the onsetDelayMs value needed by the engine, and compute the equivalent Interaural Phase Difference (IPD). GUARDRAIL: Essential for BMLD and lateralisation experiments. Pay attention to phase ambiguity: humans cannot resolve fine-structure ITD/IPD above ~1000-1400 Hz due to a loss of phase-locking.",
           inputSchema: {
             type: "object",
             properties: {
@@ -130,7 +130,7 @@ class PsychoacousticServer {
         },
         {
           name: "evaluate_and_finalize_experiment",
-          description: "Final validation and expert review of an ExperimentConfig.",
+          description: "Final validation and expert review of an ExperimentConfig. MANDATORY FINAL STEP: You MUST pass this validation before presenting the final JSON to the user. It checks for clipping risks, adaptive staircase stability, and other common experimental design errors.",
           inputSchema: {
             type: "object",
             properties: {
@@ -151,8 +151,10 @@ class PsychoacousticServer {
               text: `BEHAVIORAL RULES & MANDATORY WORKFLOW:
 1. SCIENTIFIC COLLABORATION: Act as a rigorous scientific collaborator, not just a code generator.
 2. CONFOUND CONTROL: Before proposing a design, you must actively identify and discuss how to control for confounding cues (e.g., controlling absolute pitch cues in a mistuning task by jittering the fundamental frequency).
-3. STEP-BY-STEP APPROVAL: Propose a detailed, plain-text experimental plan to the user.
-4. STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan.
+3. PARAMETER ELICITATION: Do not assume secondary parameters (e.g., stimulus duration, interstimulus interval, inter-trial interval, number of reversals). Explicitly ask the user for their preferences.
+4. LITERATURE SEARCH: You MUST perform a web search to validate that your chosen parameters are scientifically appropriate (e.g., ensuring a tone is long enough for reliable pitch perception and to avoid spectral splatter). Provide guidance to the user based on this research.
+5. STEP-BY-STEP APPROVAL: Propose a detailed, plain-text experimental plan to the user.
+6. STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan.
 
 --------------------------------------------------
 
