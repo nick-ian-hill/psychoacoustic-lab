@@ -42,7 +42,8 @@ export const freqDiscrimConfig: ExperimentConfig = {
     rule: { correctDown: 3 },
     minValue: 0,
     maxValue: 50,
-    reversals: 12
+    reversals: 12,
+    unit: "%"
   },
   termination: { reversals: 12 }
 };
@@ -98,7 +99,8 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
-    reversals: 12
+    reversals: 12,
+    unit: "dB"
   },
   termination: { reversals: 12 }
 };
@@ -148,7 +150,8 @@ export const logSpacedConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
-    reversals: 12
+    reversals: 12,
+    unit: "dB"
   },
   termination: { reversals: 12 }
 };
@@ -200,7 +203,8 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 180,
-    reversals: 12
+    reversals: 12,
+    unit: "°"
   },
   termination: { reversals: 12 }
 };
@@ -255,7 +259,8 @@ export const srimConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: -10,
     maxValue: 40,
-    reversals: 12
+    reversals: 12,
+    unit: "dB"
   },
   termination: { reversals: 12 }
 };
@@ -305,7 +310,8 @@ export const tenTestConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: -10,
     maxValue: 30,
-    reversals: 10
+    reversals: 10,
+    unit: "dB"
   },
   termination: { reversals: 10 }
 };
@@ -355,9 +361,75 @@ export const amDetectionConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1,
-    reversals: 8
+    reversals: 8,
+    unit: "depth"
   },
   termination: { reversals: 8 }
 };
 
-
+/**
+ * 8. Profile Analysis (Green, 1988)
+ * Demonstrates complex masking, global level roving, and individual component level randomization.
+ */
+export const profileAnalysisConfig: ExperimentConfig = {
+  meta: {
+    name: "Profile Analysis",
+    version: "2.0.0",
+    seed: 111,
+    rationale: "Detect an intensity increment in one component of a multi-tone complex. Global and individual roving force the listener to use spectral shape (profile) cues rather than absolute loudness.",
+    instructions: "Two sounds will play. One has a slightly different 'timbre' or 'shape' because the middle tone is louder. Which interval was it? Press Interval 1 or Interval 2.",
+    literature_references: ["Green (1988) Profile Analysis"]
+  },
+  audio: { sampleRate: 44100 },
+  stimuli: [{
+    type: "multi_component",
+    components: [
+      { frequency: 200, levelDb: 50, phaseDegrees: 0 },
+      { frequency: 400, levelDb: 50, phaseDegrees: 0 },
+      { frequency: 800, levelDb: 50, phaseDegrees: 0 }, // Target
+      { frequency: 1600, levelDb: 50, phaseDegrees: 0 },
+      { frequency: 3200, levelDb: 50, phaseDegrees: 0 }
+    ],
+    durationMs: 300,
+    globalEnvelope: { attackMs: 10, releaseMs: 10 }
+  }],
+  perturbations: [
+    // Global Level Roving: Applies to ALL intervals independently. +- 5 dB.
+    {
+      type: "gain",
+      applyTo: "all",
+      deltaDb: { type: "uniform", min: -5, max: 5 }
+    },
+    // Individual Component Roving: Applies to ALL intervals independently. +- 2 dB per component.
+    { type: "spectral_profile", targetFrequency: 200, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
+    { type: "spectral_profile", targetFrequency: 400, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
+    { type: "spectral_profile", targetFrequency: 800, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
+    { type: "spectral_profile", targetFrequency: 1600, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
+    { type: "spectral_profile", targetFrequency: 3200, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
+    // Target Signal: An adaptive increment added ONLY to the 800 Hz component in the TARGET interval.
+    {
+      type: "spectral_profile",
+      targetFrequency: 800,
+      applyTo: "target",
+      deltaDb: { adaptive: true }
+    }
+  ],
+  paradigm: {
+    type: "2AFC",
+    intervals: [{ condition: "reference" }, { condition: "target" }],
+    randomizeOrder: true,
+    timing: { isiMs: 500 }
+  },
+  adaptive: {
+    type: "staircase",
+    parameter: "perturbations[6].deltaDb", // The 7th perturbation is the adaptive one
+    initialValue: 15,
+    stepSizes: [4, 2, 1],
+    rule: { correctDown: 2 },
+    minValue: 0,
+    maxValue: 30,
+    reversals: 12,
+    unit: "dB"
+  },
+  termination: { reversals: 12 }
+};

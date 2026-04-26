@@ -16,6 +16,8 @@ const statusBadge = document.getElementById('status-badge') as HTMLDivElement;
 const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
 const responseButtonsContainer = document.getElementById('response-buttons-container') as HTMLDivElement;
 let responseButtons: HTMLButtonElement[] = [];
+let targetIntervalIndex = -1;
+let lastTrialData: any = null; // Store the exact resolved stimuli for logging
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
@@ -26,7 +28,6 @@ const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
 let engine: AudioEngine;
 let staircase: StaircaseController;
 let currentConfig: any;
-let targetIntervalIndex = -1;
 // Seeded RNG for reproducible interval order randomization
 let trialRng: () => number;
 
@@ -129,19 +130,43 @@ playBtn.addEventListener('click', async () => {
 
     targetIntervalIndex = intervalsConfig.findIndex(i => i.condition === 'target');
 
-    // Build trial data
+    // Helper to resolve a perturbation parameter to a strict number
+    const resolveParam = (val: any) => {
+      if (typeof val === 'number') return val;
+      if (val?.adaptive) return staircase.getCurrentValue();
+      if (val?.type === 'uniform') return val.min + trialRng() * (val.max - val.min);
+      return 0;
+    };
+
+    // Build trial data with fully resolved perturbations for perfect logging
     const trialData = intervalsConfig.map(interval => {
-      if (interval.condition === 'target') {
-        return {
-          generators: currentConfig.stimuli,
-          perturbations: currentConfig.perturbations
-        };
-      } else {
-        return {
-          generators: currentConfig.stimuli
-        };
+      // Create a fresh set of resolved perturbations for this specific interval
+      const resolvedPerturbations: any[] = [];
+      
+      if (currentConfig.perturbations) {
+        currentConfig.perturbations.forEach((p: any) => {
+          const applyTo = p.applyTo || "target";
+          if (applyTo === "all" || interval.condition === "target") {
+            const rp = { ...p }; // Shallow copy
+            if (rp.deltaDb !== undefined) rp.deltaDb = resolveParam(rp.deltaDb);
+            if (rp.deltaPercent !== undefined) rp.deltaPercent = resolveParam(rp.deltaPercent);
+            if (rp.delayMs !== undefined) rp.delayMs = resolveParam(rp.delayMs);
+            if (rp.deltaDegrees !== undefined) rp.deltaDegrees = resolveParam(rp.deltaDegrees);
+            if (rp.deltaDepth !== undefined) rp.deltaDepth = resolveParam(rp.deltaDepth);
+            resolvedPerturbations.push(rp);
+          }
+        });
       }
+
+      // We attach the resolved perturbations directly to the generator definition
+      // so the worker doesn't have to guess, and so we can log exactly what was played.
+      return {
+        generators: currentConfig.stimuli,
+        perturbations: resolvedPerturbations
+      };
     });
+    
+    lastTrialData = trialData;
 
     const { buffer, intervalLengths } = await engine.renderTrial(
       trialData,
@@ -192,7 +217,13 @@ function handleResponse(responseIndex: number) {
     btn.style.borderColor = originalBorderColor;
     btn.style.color = '';
 
-    staircase.processResponse(isCorrect);
+    staircase.processResponse(isCorrect, {
+      targetInterval: targetIntervalIndex + 1,
+      response: responseIndex + 1,
+      parameterValue: staircase.getCurrentValue(),
+      unit: currentConfig.adaptive.unit || "",
+      trialState: lastTrialData
+    });
 
     if (staircase.isFinished(currentConfig.termination)) {
       endExperiment();
@@ -263,7 +294,8 @@ function endExperiment() {
   // Use reversal-averaging
   const defaultDiscard = currentConfig.termination.discardReversals ?? 4;
   const threshold = staircase.calculateThreshold(defaultDiscard);
-  finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(4)}`;
+  const unit = currentConfig.adaptive.unit || "";
+  finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(4)}${unit ? ' ' + unit : ''}`;
 }
 
 // ─── Download Handlers ────────────────────────────────────────────────────────
@@ -286,10 +318,11 @@ downloadTxtBtn.addEventListener('click', () => {
   content += `Seed: ${currentConfig.meta.seed}\n`;
   content += `Estimated Threshold (reversal avg, discard ${currentConfig.termination?.discardReversals ?? 4}): ${threshold.toFixed(4)}\n\n`;
   content += `Trial History:\n`;
-  content += `Trial # | Parameter Value | Correct | Reversal\n`;
-  content += `--------------------------------------------------\n`;
+  content += `Trial # | Parameter Value | Correct | Reversal | Target | Response | Unit\n`;
+  content += `--------------------------------------------------------------------------------\n`;
   history.forEach(h => {
-    content += `${String(h.trialIndex + 1).padEnd(8)} | ${h.value.toFixed(4).padEnd(15)} | ${String(h.correct).padEnd(7)} | ${h.isReversal}\n`;
+    const meta = h.metadata || {};
+    content += `${String(h.trialIndex + 1).padEnd(8)} | ${h.value.toFixed(4).padEnd(15)} | ${String(h.correct).padEnd(7)} | ${String(h.isReversal).padEnd(8)} | ${String(meta.targetInterval || '').padEnd(6)} | ${String(meta.response || '').padEnd(8)} | ${meta.unit || ''}\n`;
   });
 
   triggerDownload(content, 'text/plain', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.txt`);
@@ -306,8 +339,17 @@ downloadCsvBtn.addEventListener('click', () => {
     [`# Seed: ${currentConfig.meta.seed}`],
     [`# Estimated Threshold: ${threshold.toFixed(4)}`],
     [],
-    ['trial', 'parameter_value', 'correct', 'is_reversal'],
-    ...history.map(h => [h.trialIndex + 1, h.value.toFixed(6), h.correct, h.isReversal]),
+    ['trial', 'parameter_value', 'unit', 'correct', 'is_reversal', 'target_interval', 'participant_response', 'resolved_stimulus_state_json'],
+    ...history.map(h => [
+      h.trialIndex + 1, 
+      h.value.toFixed(6), 
+      h.metadata?.unit || '',
+      h.correct, 
+      h.isReversal,
+      h.metadata?.targetInterval || '',
+      h.metadata?.response || '',
+      JSON.stringify(h.metadata?.trialState || []).replace(/"/g, '""') // Escape quotes for CSV
+    ]),
   ];
 
   const csv = rows.map(r => r.join(',')).join('\r\n');

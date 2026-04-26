@@ -27,7 +27,7 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     for (const gen of interval.generators) {
       let result;
       if (gen.type === "multi_component") {
-        result = synthesizeMultiComponent(gen, sampleRate, interval.perturbations, adaptiveValue, calibration);
+        result = synthesizeMultiComponent(gen, sampleRate, rng, interval.perturbations, adaptiveValue, calibration);
       } else if (gen.type === "noise") {
         result = synthesizeNoise(gen, sampleRate, rng, interval.perturbations, adaptiveValue, calibration);
       }

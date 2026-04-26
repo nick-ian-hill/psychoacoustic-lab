@@ -54,17 +54,28 @@ export function normalizeStereo(left: Float32Array, right: Float32Array) {
     peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
   }
 
-  if (peak > 1.0) {
+  if (peak > 0.9) {
+    const scale = 0.9 / peak;
     for (let i = 0; i < left.length; i++) {
-      left[i] /= peak;
-      right[i] /= peak;
+      left[i] *= scale;
+      right[i] *= scale;
     }
   }
+}
+
+function resolveValue(val: any, adaptiveValue: number | undefined, rng: () => number): number {
+  if (typeof val === 'number') return val;
+  if (val.adaptive) return adaptiveValue || 0;
+  if (val.type === 'uniform') {
+    return val.min + rng() * (val.max - val.min);
+  }
+  return 0;
 }
 
 export function synthesizeMultiComponent(
   gen: any,
   sampleRate: number,
+  rng: () => number,
   perturbations?: Perturbation[],
   adaptiveValue?: number,
   calibration?: CalibrationProfile
@@ -79,13 +90,24 @@ export function synthesizeMultiComponent(
     if (perturbations) {
       for (const p of perturbations) {
         if (p.type === "onset_asynchrony" && p.targetFrequency === comp.frequency) {
-          const delta = typeof p.delayMs === 'object' ? (adaptiveValue || 0) : p.delayMs;
+          const delta = resolveValue(p.delayMs, adaptiveValue, rng);
           compDelay += delta;
         }
       }
     }
     maxDelayMs = Math.max(maxDelayMs, Math.abs(compDelay));
   }
+
+  // Calculate Global Gain for this interval (e.g., for roving)
+  let intervalGainDb = 0;
+  if (perturbations) {
+    perturbations.forEach(p => {
+      if (p.type === "gain") {
+        intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+      }
+    });
+  }
+  const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
 
   const globalDurationSamples = Math.ceil((gen.durationMs + maxDelayMs) / 1000 * sampleRate);
   const left = new Float32Array(globalDurationSamples);
@@ -102,26 +124,22 @@ export function synthesizeMultiComponent(
     let pertAmpOffset = 0;
     if (perturbations) {
       for (const p of perturbations) {
-        if (p.targetFrequency === comp.frequency) {
-          if (p.type === "spectral_profile") {
-            const delta = typeof p.deltaDb === 'object' ? (adaptiveValue || 0) : p.deltaDb;
-            pertAmpOffset += delta;
-          }
-          if (p.type === "mistuning") {
-            const delta = typeof p.deltaPercent === 'object' ? (adaptiveValue || 0) : p.deltaPercent;
-            freq *= (1 + delta / 100);
-          }
-          if (p.type === "onset_asynchrony") {
-            const delta = typeof p.delayMs === 'object' ? (adaptiveValue || 0) : p.delayMs;
-            onsetMs += delta;
-          }
-          if (p.type === "phase_shift") {
-            // Only apply if this perturbation targets this component's ear (or no ear specified = apply to all)
-            const earMatch = !p.ear || p.ear === ear || (p.ear === 'both' && ear === 'both');
-            if (earMatch) {
-              const delta = typeof p.deltaDegrees === 'object' ? (adaptiveValue || 0) : p.deltaDegrees;
-              phase += delta * Math.PI / 180;
-            }
+        if (p.type === "spectral_profile" && p.targetFrequency === comp.frequency) {
+          pertAmpOffset += resolveValue(p.deltaDb, adaptiveValue, rng);
+        }
+        if (p.type === "mistuning" && p.targetFrequency === comp.frequency) {
+          const delta = resolveValue(p.deltaPercent, adaptiveValue, rng);
+          freq *= (1 + delta / 100);
+        }
+        if (p.type === "onset_asynchrony" && p.targetFrequency === comp.frequency) {
+          const delta = resolveValue(p.delayMs, adaptiveValue, rng);
+          onsetMs += delta;
+        }
+        if (p.type === "phase_shift") {
+          const earMatch = !p.ear || p.ear === ear || (p.ear === 'both' && ear === 'both');
+          if (earMatch) {
+            const delta = resolveValue(p.deltaDegrees, adaptiveValue, rng);
+            phase += delta * Math.PI / 180;
           }
         }
       }
@@ -132,7 +150,10 @@ export function synthesizeMultiComponent(
     const finalDigitalDb = comp.levelDb + pertAmpOffset + calibrationOffset;
     const amp = Math.pow(10, finalDigitalDb / 20);
 
-    // 3. Synthesis
+    // Use a phase accumulator for perfectly smooth frequency modulation
+    let currentPhase = phase;
+    const dt = 1 / sampleRate;
+
     for (let i = 0; i < globalDurationSamples; i++) {
       // 't' is local time relative to the component onset
       const t = (i - onsetSamples) / sampleRate;
@@ -141,24 +162,26 @@ export function synthesizeMultiComponent(
       if (t < 0 || t > gen.durationMs / 1000) continue;
 
       const envelope = calculateEnvelope(t, gen.durationMs / 1000, gen.globalEnvelope);
-      let currentAmp = amp * envelope;
-      let currentFreq = freq;
-      
+      let instFreq = freq;
+      let instAmp = amp;
+
       if (comp.modulators) {
         for (const mod of comp.modulators) {
-          const modPhase = (mod.phaseDegrees || 0) * Math.PI / 180;
-          const modVal = Math.sin(2 * Math.PI * mod.rateHz * t + modPhase);
+          const modVal = Math.sin(2 * Math.PI * mod.rateHz * t + (mod.phaseDegrees || 0) * Math.PI / 180);
           if (mod.type === "AM") {
-            currentAmp *= (1 + mod.depth * modVal);
+            instAmp *= (1 + mod.depth * modVal);
           } else if (mod.type === "FM") {
-            currentFreq += mod.depth * modVal;
+            instFreq += mod.depth * modVal;
           }
         }
       }
 
-      const sample = currentAmp * Math.sin(2 * Math.PI * currentFreq * t + phase);
+      const sample = instAmp * Math.sin(currentPhase) * envelope * intervalGainAmp;
       if (ear === "left" || ear === "both") left[i] += sample;
       if (ear === "right" || ear === "both") right[i] += sample;
+
+      // Increment phase based on the instantaneous frequency
+      currentPhase += 2 * Math.PI * instFreq * dt;
     }
   }
 
@@ -187,15 +210,20 @@ export function synthesizeNoise(
     const envelope = calculateEnvelope(t, gen.durationMs / 1000, gen.envelope);
     let currentAmp = amp * envelope;
     
+    // Calculate Global Gain for this interval (e.g., for roving)
+    let intervalGainDb = 0;
     let dynamicAmDepth = 0;
     if (perturbations) {
       for (const p of perturbations) {
+        if (p.type === "gain") {
+          intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+        }
         if (p.type === "am_depth") {
-          const delta = typeof p.deltaDepth === 'object' ? (adaptiveValue || 0) : p.deltaDepth;
-          dynamicAmDepth += delta;
+          dynamicAmDepth += resolveValue(p.deltaDepth, adaptiveValue, rng);
         }
       }
     }
+    const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
 
     if (gen.modulators) {
       for (const mod of gen.modulators) {
@@ -208,7 +236,7 @@ export function synthesizeNoise(
       }
     }
 
-    let sample = baseNoise[i] * currentAmp;
+    let sample = baseNoise[i] * currentAmp * intervalGainAmp;
 
     if (perturbations) {
       for (const p of perturbations) {

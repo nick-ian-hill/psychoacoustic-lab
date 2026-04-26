@@ -5,6 +5,7 @@ export type TrialResult = {
   value: number;
   correct: boolean;
   isReversal: boolean;
+  metadata?: any;
 };
 
 export class StaircaseController {
@@ -32,7 +33,7 @@ export class StaircaseController {
     return this.reversalCount;
   }
 
-  processResponse(correct: boolean): TrialResult {
+  processResponse(correct: boolean, metadata?: any): TrialResult {
     let isReversal = false;
     const previousValue = this.currentValue;
 
@@ -70,7 +71,8 @@ export class StaircaseController {
       trialIndex: this.history.length,
       value: previousValue,
       correct,
-      isReversal
+      isReversal,
+      metadata
     };
 
     this.history.push(result);

@@ -77,35 +77,45 @@ export const StimulusGeneratorSchema = z.union([
 /**
  * Perturbations
  */
-export const SpectralProfilePerturbationSchema = z.object({
+export const BasePerturbationSchema = z.object({
+  applyTo: z.enum(["target", "all"]).optional().describe("Whether this perturbation applies only to the target interval (default) or all intervals (useful for roving)."),
+});
+
+export const SpectralProfilePerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("spectral_profile"),
   targetFrequency: z.number(),
   deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
 });
 
-export const AsynchronyPerturbationSchema = z.object({
+export const AsynchronyPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("onset_asynchrony"),
   targetFrequency: z.number(),
-  delayMs: z.union([z.number(), AdaptiveParamRefSchema]),
+  delayMs: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
 });
 
-export const MistuningPerturbationSchema = z.object({
+export const MistuningPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("mistuning"),
   targetFrequency: z.number(),
-  deltaPercent: z.union([z.number(), AdaptiveParamRefSchema]),
+  deltaPercent: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
 });
 
-export const PhaseShiftPerturbationSchema = z.object({
+export const PhaseShiftPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("phase_shift"),
-  targetFrequency: z.number(),
-  ear: EarRoutingSchema.optional().describe("If set, only applies the phase shift to the component on this ear. Essential for creating a true IPD."),
-  deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema]),
+  targetFrequency: z.number().optional(), // optional if applying to broadband noise
+  deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  ear: z.enum(["left", "right", "both"]).optional(),
 });
 
-export const AMDepthPerturbationSchema = z.object({
+export const AMDepthPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("am_depth"),
   targetFrequency: z.number().optional(), // optional if applying to broadband noise
-  deltaDepth: z.union([z.number(), AdaptiveParamRefSchema]),
+  deltaDepth: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+});
+
+export const GainPerturbationSchema = BasePerturbationSchema.extend({
+  type: z.literal("gain"),
+  deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  ear: z.enum(["left", "right", "both"]).optional().describe("Optional: target only one ear for dichotic level roving."),
 });
 
 export const PerturbationSchema = z.union([
@@ -114,6 +124,7 @@ export const PerturbationSchema = z.union([
   MistuningPerturbationSchema,
   PhaseShiftPerturbationSchema,
   AMDepthPerturbationSchema,
+  GainPerturbationSchema,
 ]);
 
 /**
@@ -148,6 +159,7 @@ export const AdaptiveConfigSchema = z.object({
   minValue: z.number(),
   maxValue: z.number(),
   reversals: z.number().optional().describe("Deprecated: use termination.reversals instead. Kept for MCP validator compatibility."),
+  unit: z.string().optional().describe("The unit of the adaptive parameter (e.g., 'Hz', 'dB', '%', '°')."),
 });
 
 export const CalibrationPointSchema = z.object({
