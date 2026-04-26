@@ -376,7 +376,6 @@ function handleResponse(responseIndex: number) {
  * hardware output latency, rather than unreliable wall-clock setTimeout drift.
  */
 function highlightIntervals(lengths: number[], audioStartTime: number) {
-  const outputLatency = engine.getOutputLatency();
   const sampleRate = currentConfig.audio.sampleRate || 44100;
   const isiSec = (currentConfig.paradigm.timing.isiMs || 0) / 1000;
   
@@ -385,28 +384,30 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
   lengths.forEach((len, i) => {
     const duration = len / sampleRate;
     intervals.push({
-      start: audioStartTime + offset + outputLatency,
-      end: audioStartTime + offset + duration + outputLatency,
+      start: audioStartTime + offset,
+      end: audioStartTime + offset + duration,
       btn: responseButtons[i]
     });
     offset += duration + isiSec;
   });
 
-  // Debugging info
-  console.log(`[Highlight] Starting at ${audioStartTime.toFixed(3)}, latency: ${outputLatency.toFixed(3)}, first interval start: ${intervals[0].start.toFixed(3)}`);
-
   const timer = setInterval(() => {
     const now = engine.getTime();
     let allFinished = true;
-    
-    intervals.forEach(interval => {
-      const isActive = now >= interval.start && now <= interval.end;
-      // Only toggle if necessary to avoid unnecessary DOM thrashing
-      if (interval.btn.classList.contains('active') !== isActive) {
-        interval.btn.classList.toggle('active', isActive);
+    let activeIdx = -1;
+
+    intervals.forEach((interval, idx) => {
+      if (now >= interval.start && now <= interval.end) {
+        activeIdx = idx;
       }
-      // Safety: keep loop running until slightly after the last interval should have ended
       if (now < interval.end + 0.1) allFinished = false;
+    });
+
+    intervals.forEach((interval, idx) => {
+      const shouldBeActive = (idx === activeIdx);
+      if (interval.btn.classList.contains('active') !== shouldBeActive) {
+        interval.btn.classList.toggle('active', shouldBeActive);
+      }
     });
 
     if (allFinished) {
@@ -414,7 +415,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       const idx = highlightTimeouts.indexOf(timer);
       if (idx > -1) highlightTimeouts.splice(idx, 1);
     }
-  }, 10); // Check every 10ms (100fps) for high-precision feedback
+  }, 10);
   
   highlightTimeouts.push(timer);
 }

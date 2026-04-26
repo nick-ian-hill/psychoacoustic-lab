@@ -49,9 +49,15 @@ button {
   font-family: inherit;
   background-color: #334155;
   cursor: pointer;
-  transition: all 0.25s;
   color: white;
   margin: 10px;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus, button:active, button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 button:hover {
@@ -89,7 +95,6 @@ button:disabled {
   justify-content: center;
   font-size: 1.5rem;
   font-weight: bold;
-  transition: all 0.1s;
   border: 4px solid #1e293b;
 }
 
