@@ -89,7 +89,7 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 600 }
+    timing: { isiMs: 600, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
@@ -140,7 +140,7 @@ export const logSpacedConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 500 }
+    timing: { isiMs: 500, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
@@ -193,7 +193,7 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 500 }
+    timing: { isiMs: 500, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
@@ -249,7 +249,7 @@ export const srimConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 400 }
+    timing: { isiMs: 400, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
@@ -300,7 +300,7 @@ export const tenTestConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 400 }
+    timing: { isiMs: 400, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
@@ -351,7 +351,7 @@ export const amDetectionConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 500 }
+    timing: { isiMs: 500, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
@@ -418,7 +418,7 @@ export const profileAnalysisConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 500 }
+    timing: { isiMs: 500, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",
