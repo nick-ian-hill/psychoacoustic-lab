@@ -44,6 +44,13 @@ window.addEventListener('keydown', (e) => {
   
   if (digit && digit <= responseButtons.length) {
     handleResponse(digit - 1);
+    return;
+  }
+
+  // Handle Spacebar to trigger 'Play Next' if the button is enabled (manual mode)
+  if (e.code === 'Space' && !playBtn.disabled) {
+    e.preventDefault();
+    playBtn.click();
   }
 });
 
@@ -128,6 +135,11 @@ startBtn.addEventListener('click', async () => {
 playBtn.addEventListener('click', async () => {
   if (!engine || !staircase) return;
 
+  const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
+  if (hasITI) {
+    playBtn.classList.add('hidden'); // Hide permanently if automated
+  }
+  
   playBtn.disabled = true;
   playBtn.classList.add('playing');
   playBtn.textContent = "\u00A0";
@@ -203,7 +215,7 @@ playBtn.addEventListener('click', async () => {
       const canReplay = currentConfig.paradigm.timing.allowReplay ?? false;
 
       if (hasITI || !canReplay) {
-        playBtn.textContent = "Waiting for Response...";
+        if (!hasITI) playBtn.textContent = "Next Trial";
         playBtn.disabled = true;
       } else {
         playBtn.textContent = "Listen Again";
@@ -321,7 +333,7 @@ function endExperiment() {
   const defaultDiscard = currentConfig.termination.discardReversals ?? 4;
   const threshold = staircase.calculateThreshold(defaultDiscard);
   const unit = currentConfig.adaptive.unit || "";
-  finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(4)}${unit ? ' ' + unit : ''}`;
+  finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(2)}${unit ? ' ' + unit : ''}`;
 }
 
 // ─── Download Handlers ────────────────────────────────────────────────────────
