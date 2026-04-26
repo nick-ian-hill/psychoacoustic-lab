@@ -16,11 +16,31 @@
 
       <div id="setup-area">
         <div class="control-group">
-          <label for="config-select">Load Example Configuration</label>
-          <select id="config-select">
+          <label>Experiment Configuration</label>
+          <div class="custom-select" id="custom-dropdown">
+            <div class="select-trigger" id="dropdown-trigger">
+              <span id="selected-text">Frequency Discrimination</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            <div class="select-options hidden" id="dropdown-options">
+              <div class="option selected" data-value="freqDiscrim">Frequency Discrimination</div>
+              <div class="option" data-value="grouping">Auditory Grouping</div>
+              <div class="option" data-value="logDetection">Log-Spaced Detection</div>
+              <div class="option" data-value="ipdDiscrim">IPD Discrimination (TFS)</div>
+              <div class="option" data-value="srim">Spatial Release from Informational Masking</div>
+              <div class="option" data-value="tenTest">TEN Test (Cochlear Dead Regions)</div>
+              <div class="option" data-value="amDetection">AM Detection</div>
+              <div class="option" data-value="profileAnalysis">Profile Analysis (Green, 1988)</div>
+              <div class="option" data-value="custom">Upload Custom JSON Configuration</div>
+            </div>
+          </div>
+          <!-- Keep hidden select for compatibility with existing JS -->
+          <select id="config-select" class="hidden">
             <option value="freqDiscrim">Frequency Discrimination</option>
-            <option value="auditoryGrouping">Auditory Grouping</option>
-            <option value="logSpaced">Log-Spaced Complex Detection</option>
+            <option value="grouping">Auditory Grouping</option>
+            <option value="logDetection">Log-Spaced Detection</option>
             <option value="ipdDiscrim">IPD Discrimination (TFS)</option>
             <option value="srim">Spatial Release from Informational Masking</option>
             <option value="tenTest">TEN Test (Cochlear Dead Regions)</option>

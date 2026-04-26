@@ -2,6 +2,79 @@
 
 An advanced, flexible platform for designing and running psychoacoustic experiments. It combines a Web Audio synthesis engine with an MCP (Model Context Protocol) Server "Math Toolkit" to provide lab-grade acoustic precision and AI-assisted experiment generation.
 
+## AI Integration (MCP)
+
+This project includes a built-in **Model Context Protocol (MCP)** server that allows AI agents to help you design experiments and validate configurations. This server communicates via **stdio**.
+
+### 1. Antigravity / Gemini CLI
+Add the following to your `mcp_config.json` (typically in `%USERPROFILE%\.gemini\antigravity\`):
+
+```json
+{
+  "mcpServers": {
+    "psychoacoustic-lab": {
+      "command": "node",
+      "args": [
+        "--loader",
+        "ts-node/esm",
+        "C:/Users/Nick/Development/psychoacoustic-lab/mcp-server/src/index.ts"
+      ],
+      "cwd": "C:/Users/Nick/Development/psychoacoustic-lab/mcp-server",
+      "env": {
+        "NODE_OPTIONS": "--no-warnings"
+      }
+    }
+  }
+}
+```
+
+### 2. GitHub Copilot (VS Code)
+### 2. GitHub Copilot (VS Code)
+To use the psychoacoustic toolkit within VS Code, you can configure it as a workspace-specific server:
+
+1. **Create a workspace**: Open your project folder in VS Code.
+2. **Create the MCP configuration**:
+   - Inside the folder, create a `.vscode` directory.
+   - Inside that directory, create a file named `mcp.json`.
+3. **Add the server reference**: Paste the following configuration into `mcp.json`:
+
+```json
+{
+  "servers": {
+    "psychoacoustic-lab": {
+      "command": "node",
+      "args": [
+        "--loader",
+        "ts-node/esm",
+        "C:/Users/Nick/Development/psychoacoustic-lab/mcp-server/src/index.ts"
+      ],
+      "cwd": "C:/Users/Nick/Development/psychoacoustic-lab/mcp-server",
+      "env": {
+        "NODE_OPTIONS": "--no-warnings"
+      }
+    }
+  }
+}
+```
+
+### 3. Claude Desktop
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "psychoacoustic-lab": {
+      "command": "node",
+      "args": [
+        "--loader",
+        "ts-node/esm",
+        "C:/Users/Nick/Development/psychoacoustic-lab/mcp-server/src/index.ts"
+      ]
+    }
+  }
+}
+```
+
 ## Architecture
 
 The project is split into three main components:

@@ -31,7 +31,28 @@ let currentConfig: any;
 // Seeded RNG for reproducible interval order randomization
 let trialRng: () => number;
 
+// Global keydown handler handles both experiment responses and dropdown navigation
 window.addEventListener('keydown', (e) => {
+  const isDropdownOpen = customDropdown.classList && customDropdown.classList.contains('open');
+  
+  if (isDropdownOpen) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlightedIndex = Math.min(highlightedIndex + 1, optionsList.length - 1);
+      updateHighlights();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlightedIndex = Math.max(highlightedIndex - 1, 0);
+      updateHighlights();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      selectOption(highlightedIndex);
+    } else if (e.key === 'Escape') {
+      toggleDropdown(false);
+    }
+    return;
+  }
+
   // Only handle if we are in the experiment area and buttons are enabled
   if (experimentArea.classList.contains('hidden')) return;
   if (responseButtons.length === 0 || responseButtons[0].disabled) return;
@@ -53,6 +74,71 @@ window.addEventListener('keydown', (e) => {
     playBtn.click();
   }
 });
+
+// ─── Custom Dropdown Logic ───────────────────────────────────────────────────
+const customDropdown = document.getElementById('custom-dropdown') as HTMLDivElement;
+const dropdownTrigger = document.getElementById('dropdown-trigger') as HTMLDivElement;
+const dropdownOptions = document.getElementById('dropdown-options') as HTMLDivElement;
+const selectedText = document.getElementById('selected-text') as HTMLSpanElement;
+const optionsList = Array.from(dropdownOptions.querySelectorAll('.option')) as HTMLDivElement[];
+let highlightedIndex = -1;
+
+function toggleDropdown(show?: boolean) {
+  const isCurrentlyOpen = customDropdown.classList.contains('open');
+  const shouldOpen = show !== undefined ? show : !isCurrentlyOpen;
+  
+  if (shouldOpen) {
+    customDropdown.classList.add('open');
+    dropdownOptions.classList.remove('hidden');
+    // Set initial highlight to the currently selected item
+    highlightedIndex = optionsList.findIndex(opt => opt.classList.contains('selected'));
+    updateHighlights();
+  } else {
+    customDropdown.classList.remove('open');
+    dropdownOptions.classList.add('hidden');
+    highlightedIndex = -1;
+  }
+}
+
+function updateHighlights() {
+  optionsList.forEach((opt, i) => {
+    opt.classList.toggle('highlighted', i === highlightedIndex);
+    if (i === highlightedIndex) {
+      opt.scrollIntoView({ block: 'nearest' });
+    }
+  });
+}
+
+function selectOption(index: number) {
+  if (index < 0 || index >= optionsList.length) return;
+  const option = optionsList[index];
+  const value = option.getAttribute('data-value')!;
+  const text = option.textContent!;
+  
+  configSelect.value = value;
+  configSelect.dispatchEvent(new Event('change'));
+  
+  selectedText.textContent = text;
+  optionsList.forEach(opt => opt.classList.remove('selected'));
+  option.classList.add('selected');
+  toggleDropdown(false);
+}
+
+dropdownTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleDropdown();
+});
+
+optionsList.forEach((option, i) => {
+  option.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectOption(i);
+  });
+});
+
+window.addEventListener('click', () => toggleDropdown(false));
+
+
 
 configSelect.addEventListener('change', () => {
   if (configSelect.value === 'custom') {
@@ -145,6 +231,11 @@ playBtn.addEventListener('click', async () => {
   playBtn.textContent = "\u00A0";
   responseButtons.forEach(btn => btn.disabled = true);
 
+  // Add a 1000ms lead-in delay for the first trial ONLY to allow participant preparation
+  if (staircase.getHistory().length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  
   try {
     const intervalsConfig = [...currentConfig.paradigm.intervals];
 
