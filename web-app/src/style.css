@@ -93,13 +93,12 @@ button:disabled {
   border: 4px solid #1e293b;
 }
 
-.interval.active,
-.response-btn.active {
+.interval.active, .response-btn.active {
   background: #38bdf8;
   box-shadow: 0 0 30px #38bdf8;
   transform: scale(1.05);
   border-color: #38bdf8;
-  transition: all 0.05s;
+  transition: none !important; /* Instant feedback for psychoacoustic timing */
 }
 
 .controls {

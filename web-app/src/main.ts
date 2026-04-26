@@ -414,7 +414,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       const idx = highlightTimeouts.indexOf(timer);
       if (idx > -1) highlightTimeouts.splice(idx, 1);
     }
-  }, 15); // Check every ~15ms (aligned with common refresh rates)
+  }, 10); // Check every 10ms (100fps) for high-precision feedback
   
   highlightTimeouts.push(timer);
 }
