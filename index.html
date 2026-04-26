@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Psychoacoustic Lab</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/psychoacoustic-lab/assets/index-DxUOq5qs.js"></script>
+    <link rel="stylesheet" crossorigin href="/psychoacoustic-lab/assets/index-BsqqsL4s.css">
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Psychoacoustic Lab</h1>
+      </header>
+
+      <div id="setup-area">
+        <div class="control-group">
+          <label>Experiment Configuration</label>
+          <div class="custom-select" id="custom-dropdown">
+            <div class="select-trigger" id="dropdown-trigger">
+              <span id="selected-text">Frequency Discrimination</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            <div class="select-options hidden" id="dropdown-options">
+              <div class="option selected" data-value="freqDiscrim">Frequency Discrimination</div>
+              <div class="option" data-value="grouping">Auditory Grouping</div>
+              <div class="option" data-value="logDetection">Log-Spaced Detection</div>
+              <div class="option" data-value="ipdDiscrim">IPD Discrimination (TFS)</div>
+              <div class="option" data-value="srim">Spatial Release from Informational Masking</div>
+              <div class="option" data-value="tenTest">TEN Test (Cochlear Dead Regions)</div>
+              <div class="option" data-value="amDetection">AM Detection</div>
+              <div class="option" data-value="profileAnalysis">Profile Analysis (Green, 1988)</div>
+              <div class="option" data-value="custom">Upload Custom JSON Configuration</div>
+            </div>
+          </div>
+          <!-- Keep hidden select for compatibility with existing JS -->
+          <select id="config-select" class="hidden">
+            <option value="freqDiscrim">Frequency Discrimination</option>
+            <option value="grouping">Auditory Grouping</option>
+            <option value="logDetection">Log-Spaced Detection</option>
+            <option value="ipdDiscrim">IPD Discrimination (TFS)</option>
+            <option value="srim">Spatial Release from Informational Masking</option>
+            <option value="tenTest">TEN Test (Cochlear Dead Regions)</option>
+            <option value="amDetection">AM Detection</option>
+            <option value="profileAnalysis">Profile Analysis (Green, 1988)</option>
+            <option value="custom">Upload Custom JSON Configuration</option>
+          </select>
+        </div>
+
+        <div class="control-group hidden" id="custom-json-group">
+          <label for="custom-file">Select Experiment JSON File</label>
+          <input type="file" id="custom-file" accept=".json" style="background: var(--bg); color: var(--text); padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
+        </div>
+
+        <button id="start-btn" class="btn">Confirm Selection</button>
+      </div>
+
+      <div id="experiment-area" class="experiment-area hidden">
+        <div id="status-badge" class="status-badge">Trial 1</div>
+        <p id="instruction-text" style="text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+          Listen to the intervals and select the target.
+        </p>
+
+        <button id="play-btn" class="btn">Start Experiment</button>
+
+        <div class="response-buttons" id="response-buttons-container">
+        </div>
+        
+        <div id="results-area" class="hidden" style="width: 100%; text-align: center; margin-top: 1rem;">
+          <h2 style="color: var(--success); margin-bottom: 0.5rem;">Experiment Complete!</h2>
+          <p id="final-threshold" style="font-size: 1.2rem; font-weight: bold;"></p>
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button id="download-txt-btn" class="btn" style="background: var(--border);">Download (.txt)</button>
+            <button id="download-csv-btn" class="btn" style="background: var(--border);">Download (.csv)</button>
+            <button id="restart-btn" class="btn">New Experiment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
