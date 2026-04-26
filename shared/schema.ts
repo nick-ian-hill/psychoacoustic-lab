@@ -138,7 +138,7 @@ export const ParadigmSchema = z.object({
   randomizeOrder: z.boolean(),
   timing: z.object({
     isiMs: z.number(),
-    itiMs: z.number().optional().describe("Inter-trial interval in milliseconds. If set, the next trial starts automatically."),
+    itiMs: z.number().default(1000).describe("Inter-trial interval in milliseconds. The next trial always starts automatically after this interval."),
     allowReplay: z.boolean().optional().describe("If true, the user can replay the stimulus before responding."),
   }),
 });

@@ -22,8 +22,7 @@ let highlightTimeouts: any[] = [];
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
-const downloadTxtBtn = document.getElementById('download-txt-btn') as HTMLButtonElement;
-const downloadCsvBtn = document.getElementById('download-csv-btn') as HTMLButtonElement;
+const downloadResultsBtn = document.getElementById('download-results-btn') as HTMLButtonElement;
 const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
 
 let engine: AudioEngine;
@@ -223,10 +222,8 @@ playBtn.addEventListener('click', async () => {
   if (!engine || !staircase) return;
   await engine.resume();
 
-  const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
-  if (hasITI) {
-    playBtn.classList.add('hidden'); // Hide permanently if automated
-  }
+  // Always hide play button after first click as we are always in automated mode
+  playBtn.classList.add('hidden');
   
   playBtn.disabled = true;
   playBtn.classList.add('playing');
@@ -305,16 +302,12 @@ playBtn.addEventListener('click', async () => {
 
       source.onended = () => {
         playBtn.classList.remove('playing');
-        const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
         const canReplay = currentConfig.paradigm.timing.allowReplay ?? false;
 
-        if (hasITI || !canReplay) {
-          if (!hasITI) playBtn.textContent = "Next Trial";
-          playBtn.disabled = true;
-        } else {
-          playBtn.textContent = "Listen Again";
-          playBtn.disabled = false;
-        }
+        // In automated mode, we only allow replay if explicitly enabled, 
+        // but itiMs always takes precedence for disabling the button if we want strict flow.
+        // Current logic: if itiMs is present (which it always is), disable play button to prevent manual overrides.
+        playBtn.disabled = true;
 
         responseButtons.forEach(btn => btn.disabled = false);
       };
@@ -359,18 +352,13 @@ function handleResponse(responseIndex: number) {
       });
 
       const itiMs = currentConfig.paradigm.timing.itiMs;
-      if (itiMs !== undefined) {
-        playBtn.textContent = "\u00A0"; // Clear text but maintain button height
-        playBtn.disabled = true;
-        setTimeout(() => {
-          if (experimentArea.classList.contains('hidden')) return;
-          playBtn.disabled = false;
-          playBtn.click();
-        }, itiMs);
-      } else {
-        playBtn.textContent = "Next Trial";
+      playBtn.textContent = "\u00A0"; // Clear text but maintain button height
+      playBtn.disabled = true;
+      setTimeout(() => {
+        if (experimentArea.classList.contains('hidden')) return;
         playBtn.disabled = false;
-      }
+        playBtn.click();
+      }, itiMs);
     }
   }, 500);
 }
@@ -485,60 +473,29 @@ function endExperiment() {
 
 // ─── Download Handlers ────────────────────────────────────────────────────────
 
-function buildDownloadData(): { timestamp: string; history: ReturnType<StaircaseController['getHistory']>; threshold: number } {
+function buildDownloadData() {
   const history = staircase.getHistory();
   const threshold = staircase.calculateThreshold(currentConfig.termination?.discardReversals ?? 4);
   const timestamp = new Date().toISOString();
-  return { timestamp, history, threshold };
+  
+  return { 
+    metadata: {
+      timestamp,
+      experimentName: currentConfig.meta.name,
+      seed: currentConfig.meta.seed,
+      threshold,
+      unit: currentConfig.adaptive?.unit || ""
+    },
+    config: currentConfig,
+    history
+  };
 }
 
-downloadTxtBtn.addEventListener('click', () => {
+downloadResultsBtn.addEventListener('click', () => {
   if (!staircase || !currentConfig) return;
-  const { timestamp, history, threshold } = buildDownloadData();
-
-  let content = `Psychoacoustic Lab - Experiment Results\n`;
-  content += `======================================\n`;
-  content += `Date: ${timestamp}\n`;
-  content += `Experiment: ${currentConfig.meta.name}\n`;
-  content += `Seed: ${currentConfig.meta.seed}\n`;
-  content += `Estimated Threshold (reversal avg, discard ${currentConfig.termination?.discardReversals ?? 4}): ${threshold.toFixed(4)}\n\n`;
-  content += `Trial History:\n`;
-  content += `Trial # | Parameter Value | Correct | Reversal | Target | Response | Unit\n`;
-  content += `--------------------------------------------------------------------------------\n`;
-  history.forEach(h => {
-    const meta = h.metadata || {};
-    content += `${String(h.trialIndex + 1).padEnd(8)} | ${h.value.toFixed(4).padEnd(15)} | ${String(h.correct).padEnd(7)} | ${String(h.isReversal).padEnd(8)} | ${String(meta.targetInterval || '').padEnd(6)} | ${String(meta.response || '').padEnd(8)} | ${meta.unit || ''}\n`;
-  });
-
-  triggerDownload(content, 'text/plain', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.txt`);
-});
-
-downloadCsvBtn.addEventListener('click', () => {
-  if (!staircase || !currentConfig) return;
-  const { timestamp, history, threshold } = buildDownloadData();
-
-  const rows = [
-    ['# Psychoacoustic Lab Results'],
-    [`# Experiment: ${currentConfig.meta.name}`],
-    [`# Date: ${timestamp}`],
-    [`# Seed: ${currentConfig.meta.seed}`],
-    [`# Estimated Threshold: ${threshold.toFixed(4)}`],
-    [],
-    ['trial', 'parameter_value', 'unit', 'correct', 'is_reversal', 'target_interval', 'participant_response', 'resolved_stimulus_state_json'],
-    ...history.map(h => [
-      h.trialIndex + 1, 
-      h.value.toFixed(6), 
-      h.metadata?.unit || '',
-      h.correct, 
-      h.isReversal,
-      h.metadata?.targetInterval || '',
-      h.metadata?.response || '',
-      `"${JSON.stringify(h.metadata?.trialState || []).replace(/"/g, '""')}"` // Escape quotes for CSV
-    ]),
-  ];
-
-  const csv = rows.map(r => r.join(',')).join('\r\n');
-  triggerDownload(csv, 'text/csv', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.csv`);
+  const data = buildDownloadData();
+  const content = JSON.stringify(data, null, 2);
+  triggerDownload(content, 'application/json', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.json`);
 });
 
 function triggerDownload(content: string, mimeType: string, filename: string) {

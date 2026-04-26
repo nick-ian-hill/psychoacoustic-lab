@@ -279,7 +279,7 @@ Applied only to the TARGET interval. Each type:
 - randomizeOrder: boolean — uses meta.seed for reproducibility
 - timing:
   - isiMs: number — inter-stimulus interval
-  - itiMs?: number — inter-trial interval; if set, next trial auto-starts
+  - itiMs: number — inter-trial interval (default 1000ms); next trial always starts automatically after this interval
   - allowReplay?: boolean — if true, participant can re-listen before responding
 
 ## adaptive? (optional)

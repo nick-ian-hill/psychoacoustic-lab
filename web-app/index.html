@@ -26,8 +26,8 @@
             </div>
             <div class="select-options hidden" id="dropdown-options">
               <div class="option selected" data-value="freqDiscrim">Frequency Discrimination</div>
-              <div class="option" data-value="grouping">Auditory Grouping</div>
-              <div class="option" data-value="logDetection">Log-Spaced Detection</div>
+              <div class="option" data-value="auditoryGrouping">Auditory Grouping</div>
+              <div class="option" data-value="logSpaced">Log-Spaced Detection</div>
               <div class="option" data-value="ipdDiscrim">IPD Discrimination (TFS)</div>
               <div class="option" data-value="srim">Spatial Release from Informational Masking</div>
               <div class="option" data-value="tenTest">TEN Test (Cochlear Dead Regions)</div>
@@ -39,8 +39,8 @@
           <!-- Keep hidden select for compatibility with existing JS -->
           <select id="config-select" class="hidden">
             <option value="freqDiscrim">Frequency Discrimination</option>
-            <option value="grouping">Auditory Grouping</option>
-            <option value="logDetection">Log-Spaced Detection</option>
+            <option value="auditoryGrouping">Auditory Grouping</option>
+            <option value="logSpaced">Log-Spaced Detection</option>
             <option value="ipdDiscrim">IPD Discrimination (TFS)</option>
             <option value="srim">Spatial Release from Informational Masking</option>
             <option value="tenTest">TEN Test (Cochlear Dead Regions)</option>
@@ -73,8 +73,7 @@
           <h2 style="color: var(--success); margin-bottom: 0.5rem;">Experiment Complete!</h2>
           <p id="final-threshold" style="font-size: 1.2rem; font-weight: bold;"></p>
           <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button id="download-txt-btn" class="btn" style="background: var(--border);">Download (.txt)</button>
-            <button id="download-csv-btn" class="btn" style="background: var(--border);">Download (.csv)</button>
+            <button id="download-results-btn" class="btn" style="background: var(--border);">Download Results (.json)</button>
             <button id="restart-btn" class="btn">New Experiment</button>
           </div>
         </div>
