@@ -298,7 +298,7 @@ playBtn.addEventListener('click', async () => {
 
     // Play and capture AudioContext startTime for synchronized highlighting
     clearFeedback();
-    const { source, startTime } = engine.playBuffer(buffer);
+    const { source, startTime } = await engine.playBuffer(buffer);
     highlightIntervals(intervalLengths, startTime);
 
       source.onended = () => {
@@ -378,8 +378,8 @@ function handleResponse(responseIndex: number) {
  */
 function highlightIntervals(lengths: number[], audioStartTime: number) {
   const outputLatency = engine.getOutputLatency();
-  const sampleRate = currentConfig.audio.sampleRate;
-  const isiSec = currentConfig.paradigm.timing.isiMs / 1000;
+  const sampleRate = currentConfig.audio.sampleRate || 44100;
+  const isiSec = (currentConfig.paradigm.timing.isiMs || 0) / 1000;
   
   const intervals: { start: number, end: number, btn: HTMLButtonElement }[] = [];
   let offset = 0;
@@ -392,6 +392,9 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     });
     offset += duration + isiSec;
   });
+
+  // Debugging info
+  console.log(`[Highlight] Starting at ${audioStartTime.toFixed(3)}, latency: ${outputLatency.toFixed(3)}, first interval start: ${intervals[0].start.toFixed(3)}`);
 
   const timer = setInterval(() => {
     const now = engine.getTime();
