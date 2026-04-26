@@ -31,6 +31,22 @@ let currentConfig: any;
 // Seeded RNG for reproducible interval order randomization
 let trialRng: () => number;
 
+window.addEventListener('keydown', (e) => {
+  // Only handle if we are in the experiment area and buttons are enabled
+  if (experimentArea.classList.contains('hidden')) return;
+  if (responseButtons.length === 0 || responseButtons[0].disabled) return;
+
+  // Handle '1'-'9' and Numpad '1'-'9'
+  const keyMatch = e.key.match(/^[1-9]$/);
+  const numpadMatch = e.code.match(/^Numpad([1-9])$/);
+  
+  const digit = keyMatch ? parseInt(keyMatch[0]) : (numpadMatch ? parseInt(numpadMatch[1]) : null);
+  
+  if (digit && digit <= responseButtons.length) {
+    handleResponse(digit - 1);
+  }
+});
+
 configSelect.addEventListener('change', () => {
   if (configSelect.value === 'custom') {
     customJsonGroup.classList.remove('hidden');
@@ -177,6 +193,7 @@ playBtn.addEventListener('click', async () => {
     );
 
     // Play and capture AudioContext startTime for synchronized highlighting
+    clearFeedback();
     const { source, startTime } = engine.playBuffer(buffer);
     highlightIntervals(intervalLengths, startTime);
 
@@ -209,13 +226,11 @@ function handleResponse(responseIndex: number) {
 
   // Flash correct/incorrect feedback on the chosen button
   const btn = responseButtons[responseIndex];
-  const originalBorderColor = btn.style.borderColor;
-  btn.style.borderColor = isCorrect ? 'var(--success)' : 'var(--error)';
-  btn.style.color = isCorrect ? 'var(--success)' : 'var(--error)';
+  btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+  btn.blur(); // Remove focus border
 
   setTimeout(() => {
-    btn.style.borderColor = originalBorderColor;
-    btn.style.color = '';
+    btn.classList.remove('correct', 'incorrect');
 
     staircase.processResponse(isCorrect, {
       targetInterval: targetIntervalIndex + 1,
@@ -229,7 +244,10 @@ function handleResponse(responseIndex: number) {
       endExperiment();
     } else {
       updateStatus();
-      responseButtons.forEach(btn => btn.disabled = true);
+      responseButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.classList.remove('active', 'correct', 'incorrect');
+      });
 
       const itiMs = currentConfig.paradigm.timing.itiMs;
       if (itiMs !== undefined) {
@@ -271,6 +289,14 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     setTimeout(() => btn.classList.remove('active'), delayMs + durationSec * 1000);
 
     offsetSec += durationSec + currentConfig.paradigm.timing.isiMs / 1000;
+  });
+}
+
+function clearFeedback() {
+  responseButtons.forEach(btn => {
+    btn.classList.remove('active', 'correct', 'incorrect');
+    btn.style.borderColor = '';
+    btn.style.color = '';
   });
 }
 

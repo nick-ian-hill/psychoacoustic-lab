@@ -189,3 +189,15 @@ textarea {
   transform: scale(1.03);
 }
 
+.response-btn.correct {
+  border-color: var(--success) !important;
+  color: var(--success) !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.response-btn.incorrect {
+  border-color: var(--error) !important;
+  color: var(--error) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
