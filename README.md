@@ -13,6 +13,7 @@ The project is split into three main components:
 ## Features
 
 - **Synchronized UI Feedback**: Interval buttons highlight in precise synchrony with audio stimuli by scheduling `setTimeout` callbacks against the `AudioContext` clock (including hardware output latency), rather than the wall clock. This eliminates drift from GC pauses and event-loop jitter.
+- **Raised Cosine Ramps**: Support for both Linear and Raised Cosine (Hann) onset/offset ramps. Raised Cosine ramps provide the cleanest possible spectrum by ensuring a zero-slope transition at the start and end of the sound.
 - **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
 - **Fully Reproducible Experiments**: `meta.seed` controls both the FFT noise RNG and the trial-order randomization, ensuring every run is exactly reproducible.

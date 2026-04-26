@@ -6,12 +6,23 @@ export interface SynthesisResult {
   right: Float32Array;
 }
 
-export function calculateEnvelope(t: number, durationSec: number, env: { attackMs: number; releaseMs: number }) {
+export function calculateEnvelope(t: number, durationSec: number, env: { attackMs: number; releaseMs: number; type?: "linear" | "cosine" }) {
   const attack = env.attackMs / 1000;
   const release = env.releaseMs / 1000;
-  if (t < attack) return t / attack;
-  if (t > durationSec - release) return (durationSec - t) / release;
-  if (t > durationSec) return 0;
+  const type = env.type || "cosine";
+
+  if (t < 0 || t > durationSec) return 0;
+
+  if (t < attack && attack > 0) {
+    const fraction = t / attack;
+    return type === "cosine" ? 0.5 * (1 - Math.cos(Math.PI * fraction)) : fraction;
+  }
+  
+  if (t > durationSec - release && release > 0) {
+    const fraction = (durationSec - t) / release;
+    return type === "cosine" ? 0.5 * (1 - Math.cos(Math.PI * fraction)) : fraction;
+  }
+  
   return 1;
 }
 

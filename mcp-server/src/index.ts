@@ -235,7 +235,7 @@ Each generator is one of:
 - bandLimit?: { lowFreq, highFreq } — brick-wall band limiting
 - levelDb: number
 - durationMs: number
-- envelope: { attackMs, releaseMs }
+- envelope: { attackMs, releaseMs, type?: "linear" | "cosine" } — Default is "cosine" (Raised Cosine) for laboratory-grade precision.
 - ear?: "left" | "right" | "both"
 - modulators?: Array<{ type: "AM", rateHz, depth }>
 

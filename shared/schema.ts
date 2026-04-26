@@ -27,6 +27,7 @@ export type EarRouting = z.infer<typeof EarRoutingSchema>;
 export const EnvelopeSchema = z.object({
   attackMs: z.number(),
   releaseMs: z.number(),
+  type: z.enum(["linear", "cosine"]).optional(),
 });
 
 export const ModulatorSchema = z.object({

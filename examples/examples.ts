@@ -1,4 +1,4 @@
-import type { ExperimentConfig } from "../shared/schema.js";
+import type { ExperimentConfig } from "../shared/schema";
 
 /**
  * 1. Basic Frequency Discrimination
@@ -19,7 +19,7 @@ export const freqDiscrimConfig: ExperimentConfig = {
       { frequency: 1000, levelDb: 65, phaseDegrees: 0, ear: "both" }
     ],
     durationMs: 250,
-    globalEnvelope: { attackMs: 10, releaseMs: 10 }
+    globalEnvelope: { attackMs: 10, releaseMs: 10, type: "linear" }
   }],
   perturbations: [
     {
