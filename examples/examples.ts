@@ -31,7 +31,7 @@ export const freqDiscrimConfig: ExperimentConfig = {
     type: "2AFC",
     intervals: [{ condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
-    timing: { isiMs: 400 }
+    timing: { isiMs: 400, itiMs: 1000 }
   },
   adaptive: {
     type: "staircase",

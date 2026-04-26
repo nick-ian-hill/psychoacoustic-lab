@@ -12,14 +12,17 @@ The project is split into three main components:
 
 ## Features
 
-- **Execution Loop UI**: A modern, dark-mode web interface to run experiments, supporting both built-in examples and custom `.json` configuration uploads.
+- **Synchronized UI Feedback**: Visual highlighting of interval buttons in perfect sync with audio stimuli, providing clear feedback during multi-interval paradigms.
+- **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
+- **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
+- **Execution Loop UI**: A refined, focused dark-mode web interface to run experiments, supporting both built-in examples and custom `.json` configuration uploads.
 - **Adaptive Staircase**: Integrated `Staircase` logic supporting N-down/1-up rules with dynamic step-size reductions on reversals.
 - **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Supports White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp "brick-wall" band-limiting.
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
 - **Web Worker Synthesis**: Offloads all heavy sample-by-sample calculations and FFT operations to a background thread, ensuring a stutter-free 60fps UI and utilizing zero-copy Transferable objects for maximum efficiency.
 - **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing complex buffer padding to prevent sample clipping.
 - **Multi-Layer Masking**: Supports stacking an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval for complex BMLD paradigms.
-- **Dynamic UX Instructions**: Supply experiment-specific UI instructions via `meta.instructions` (e.g., "Listen for the target in the noise") to guide participants perfectly through novel paradigms.
+- **Dynamic UX Instructions**: Supply experiment-specific UI instructions via `meta.instructions` (e.g., "Identify the higher pitch") to guide participants.
 - **Dichotic Routing**: Support for routing components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (e.g., Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.

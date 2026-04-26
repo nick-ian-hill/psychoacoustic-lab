@@ -83,10 +83,11 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
   // Perform Final Normalization (prevents clipping while preserving ILD)
   normalizeStereo(finalLeft, finalRight);
 
-  // Transfer the buffers to the main thread (zero-copy)
+  // Transfer the buffers and timing info to the main thread
   self.postMessage({
     id,
     left: finalLeft,
-    right: finalRight
+    right: finalRight,
+    intervalLengths: renderedIntervals.map(r => r.left.length)
   }, [finalLeft.buffer, finalRight.buffer] as any);
 };

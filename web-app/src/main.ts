@@ -128,7 +128,7 @@ playBtn.addEventListener('click', async () => {
       }
     });
 
-    const buffer = await engine.renderTrial(
+    const { buffer, intervalLengths } = await engine.renderTrial(
       trialData, 
       currentConfig.paradigm.timing.isiMs, 
       staircase.currentValue,
@@ -136,12 +136,22 @@ playBtn.addEventListener('click', async () => {
       currentConfig.globalLevelDb
     );
 
+    highlightIntervals(intervalLengths);
     const source = engine.playBuffer(buffer);
     
     source.onended = () => {
       playBtn.classList.remove('playing');
-      playBtn.textContent = "Listen Again";
-      playBtn.disabled = false;
+      const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
+      const canReplay = currentConfig.paradigm.timing.allowReplay ?? false;
+
+      if (hasITI || !canReplay) {
+        playBtn.textContent = "Waiting for Response...";
+        playBtn.disabled = true;
+      } else {
+        playBtn.textContent = "Listen Again";
+        playBtn.disabled = false;
+      }
+      
       resp1Btn.disabled = false;
       resp2Btn.disabled = false;
     };
@@ -174,9 +184,41 @@ function handleResponse(responseIndex: number) {
       updateStatus();
       resp1Btn.disabled = true;
       resp2Btn.disabled = true;
-      playBtn.textContent = "Play Next Trial";
+      
+      const itiMs = currentConfig.paradigm.timing.itiMs;
+      if (itiMs !== undefined) {
+        playBtn.textContent = `Next Trial in ${itiMs}ms...`;
+        playBtn.disabled = true;
+        setTimeout(() => {
+          if (experimentArea.classList.contains('hidden')) return; // Don't start if restarted
+          playBtn.disabled = false;
+          playBtn.click();
+        }, itiMs);
+      } else {
+        playBtn.textContent = "Play Next Trial";
+      }
     }
   }, 500);
+}
+
+function highlightIntervals(lengths: number[]) {
+  const isiMs = currentConfig.paradigm.timing.isiMs;
+  let offsetMs = 0;
+  
+  lengths.forEach((len, i) => {
+    const durationMs = (len / currentConfig.audio.sampleRate) * 1000;
+    const btn = i === 0 ? resp1Btn : resp2Btn;
+    
+    setTimeout(() => {
+      btn.classList.add('active');
+    }, offsetMs);
+    
+    setTimeout(() => {
+      btn.classList.remove('active');
+    }, offsetMs + durationMs);
+    
+    offsetMs += durationMs + isiMs;
+  });
 }
 
 resp1Btn.addEventListener('click', () => handleResponse(0));

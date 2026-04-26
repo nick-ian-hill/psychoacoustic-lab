@@ -125,6 +125,8 @@ export const ParadigmSchema = z.object({
   randomizeOrder: z.boolean(),
   timing: z.object({
     isiMs: z.number(),
+    itiMs: z.number().optional().describe("Inter-trial interval in milliseconds. If set, the next trial starts automatically."),
+    allowReplay: z.boolean().optional().describe("If true, the user can replay the stimulus before responding."),
   }),
 });
 
@@ -196,3 +198,4 @@ export type ExperimentConfig = z.infer<typeof ExperimentConfigSchema>;
 export type StimulusGenerator = z.infer<typeof StimulusGeneratorSchema>;
 export type Perturbation = z.infer<typeof PerturbationSchema>;
 export type AdaptiveParamRef = z.infer<typeof AdaptiveParamRefSchema>;
+export type AdaptiveConfig = z.infer<typeof AdaptiveConfigSchema>;
