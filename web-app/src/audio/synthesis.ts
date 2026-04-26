@@ -105,8 +105,12 @@ export function synthesizeMultiComponent(
             onsetMs += delta;
           }
           if (p.type === "phase_shift") {
-            const delta = typeof p.deltaDegrees === 'object' ? (adaptiveValue || 0) : p.deltaDegrees;
-            phase += delta * Math.PI / 180;
+            // Only apply if this perturbation targets this component's ear (or no ear specified = apply to all)
+            const earMatch = !p.ear || p.ear === ear || (p.ear === 'both' && ear === 'both');
+            if (earMatch) {
+              const delta = typeof p.deltaDegrees === 'object' ? (adaptiveValue || 0) : p.deltaDegrees;
+              phase += delta * Math.PI / 180;
+            }
           }
         }
       }
@@ -197,9 +201,11 @@ export function synthesizeNoise(
     if (perturbations) {
       for (const p of perturbations) {
         if (p.type === "spectral_profile") {
-          const targetFreq = 1000;
+          // Add a tone at the target frequency. Amplitude is expressed as SNR relative to
+          // the noise carrier: delta=0 → tone at noise level, delta=10 → 10 dB above noise.
+          const targetFreq = p.targetFrequency;
           const delta = typeof p.deltaDb === 'object' ? (adaptiveValue || 0) : p.deltaDb;
-          const toneAmp = Math.pow(10, delta / 20) * (amp / 10);
+          const toneAmp = amp * Math.pow(10, delta / 20);
           sample += toneAmp * envelope * Math.sin(2 * Math.PI * targetFreq * t);
         }
       }

@@ -23,6 +23,8 @@
             <option value="logSpaced">Log-Spaced Complex Detection</option>
             <option value="ipdDiscrim">IPD Discrimination (TFS)</option>
             <option value="srim">Spatial Release from Informational Masking</option>
+            <option value="tenTest">TEN Test (Cochlear Dead Regions)</option>
+            <option value="amDetection">AM Detection</option>
             <option value="custom">Upload Custom JSON Configuration</option>
           </select>
         </div>
@@ -52,7 +54,8 @@
           <h2 style="color: var(--success); margin-bottom: 0.5rem;">Experiment Complete!</h2>
           <p id="final-threshold" style="font-size: 1.2rem; font-weight: bold;"></p>
           <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button id="download-btn" class="btn" style="background: var(--border);">Download Results (.txt)</button>
+            <button id="download-txt-btn" class="btn" style="background: var(--border);">Download (.txt)</button>
+            <button id="download-csv-btn" class="btn" style="background: var(--border);">Download (.csv)</button>
             <button id="restart-btn" class="btn">New Experiment</button>
           </div>
         </div>

@@ -28,6 +28,10 @@ export class StaircaseController {
     return this.currentValue;
   }
 
+  getReversalCount(): number {
+    return this.reversalCount;
+  }
+
   processResponse(correct: boolean): TrialResult {
     let isReversal = false;
     const previousValue = this.currentValue;

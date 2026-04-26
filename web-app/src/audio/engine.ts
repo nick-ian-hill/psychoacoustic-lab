@@ -54,12 +54,20 @@ export class AudioEngine {
     });
   }
 
-  playBuffer(buffer: AudioBuffer): AudioBufferSourceNode {
+  playBuffer(buffer: AudioBuffer): { source: AudioBufferSourceNode; startTime: number } {
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination);
-    source.start();
-    return source;
+    // Capture AudioContext time before start() so highlight timers can align to it
+    const startTime = this.ctx.currentTime;
+    source.start(startTime);
+    return { source, startTime };
+  }
+
+  getOutputLatency(): number {
+    // outputLatency is the hardware round-trip; baseLatency is the API buffer.
+    // Both are available in modern browsers; fall back to 0 if not.
+    return (this.ctx.outputLatency || 0) + (this.ctx.baseLatency || 0);
   }
 
   getTime(): number {

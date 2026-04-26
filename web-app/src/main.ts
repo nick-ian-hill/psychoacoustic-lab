@@ -1,7 +1,8 @@
 import { AudioEngine } from './audio/engine';
-import { Staircase } from './staircase';
+import { StaircaseController } from './logic/staircase';
 import { ExperimentConfigSchema } from '../../shared/schema';
 import * as examples from '../../examples/examples';
+import seedrandom from 'seedrandom';
 
 const configSelect = document.getElementById('config-select') as HTMLSelectElement;
 const customJsonGroup = document.getElementById('custom-json-group') as HTMLDivElement;
@@ -18,13 +19,16 @@ const resp2Btn = document.getElementById('resp-2') as HTMLButtonElement;
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
-const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement;
+const downloadTxtBtn = document.getElementById('download-txt-btn') as HTMLButtonElement;
+const downloadCsvBtn = document.getElementById('download-csv-btn') as HTMLButtonElement;
 const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
 
 let engine: AudioEngine;
-let staircase: Staircase;
+let staircase: StaircaseController;
 let currentConfig: any;
 let targetIntervalIndex = -1;
+// Seeded RNG for reproducible interval order randomization
+let trialRng: () => number;
 
 configSelect.addEventListener('change', () => {
   if (configSelect.value === 'custom') {
@@ -56,33 +60,30 @@ startBtn.addEventListener('click', async () => {
     }
 
     currentConfig = parseResult.data;
-    
+
     // Initialize Audio Engine
     engine = new AudioEngine(currentConfig.audio.sampleRate, currentConfig.meta.seed);
-    
-    // Initialize Staircase
+
+    // Initialize StaircaseController (the full-featured implementation)
     if (currentConfig.adaptive && currentConfig.adaptive.type === 'staircase') {
-      staircase = new Staircase({
-        initialValue: currentConfig.adaptive.initialValue,
-        stepSizes: currentConfig.adaptive.stepSizes,
-        rule: currentConfig.adaptive.rule,
-        minValue: currentConfig.adaptive.minValue,
-        maxValue: currentConfig.adaptive.maxValue,
-      });
+      staircase = new StaircaseController(currentConfig.adaptive);
     }
+
+    // Initialize seeded RNG for reproducible interval-order randomization
+    trialRng = seedrandom(currentConfig.meta.seed.toString());
 
     setupArea.classList.add('hidden');
     experimentArea.classList.remove('hidden');
-    
-    // Set dynamic instructions
+
+    // Set dynamic instructions from config
     const instructionEl = document.getElementById('instruction-text');
     if (instructionEl) {
-      instructionEl.textContent = currentConfig.meta.instructions || "Listen to the intervals and select the target.";
+      instructionEl.textContent = currentConfig.meta.instructions || "Listen carefully to each interval and select the one that contains the target.";
     }
 
     updateStatus();
-    
-    // Ensure AudioContext starts cleanly (requires user gesture)
+
+    // Warm up AudioContext (requires user gesture to unlock)
     const buf = engine['ctx'].createBuffer(1, 1, 44100);
     const src = engine['ctx'].createBufferSource();
     src.buffer = buf;
@@ -96,7 +97,7 @@ startBtn.addEventListener('click', async () => {
 
 playBtn.addEventListener('click', async () => {
   if (!engine || !staircase) return;
-  
+
   playBtn.disabled = true;
   playBtn.classList.add('playing');
   playBtn.textContent = "Playing...";
@@ -105,15 +106,17 @@ playBtn.addEventListener('click', async () => {
 
   try {
     const intervalsConfig = [...currentConfig.paradigm.intervals];
+
+    // Use seeded RNG so trial order is reproducible from meta.seed
     if (currentConfig.paradigm.randomizeOrder) {
       for (let i = intervalsConfig.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(trialRng() * (i + 1));
         [intervalsConfig[i], intervalsConfig[j]] = [intervalsConfig[j], intervalsConfig[i]];
       }
     }
 
     targetIntervalIndex = intervalsConfig.findIndex(i => i.condition === 'target');
-    
+
     // Build trial data
     const trialData = intervalsConfig.map(interval => {
       if (interval.condition === 'target') {
@@ -129,16 +132,17 @@ playBtn.addEventListener('click', async () => {
     });
 
     const { buffer, intervalLengths } = await engine.renderTrial(
-      trialData, 
-      currentConfig.paradigm.timing.isiMs, 
-      staircase.currentValue,
+      trialData,
+      currentConfig.paradigm.timing.isiMs,
+      staircase.getCurrentValue(),
       currentConfig.calibration,
       currentConfig.globalLevelDb
     );
 
-    highlightIntervals(intervalLengths);
-    const source = engine.playBuffer(buffer);
-    
+    // Play and capture AudioContext startTime for synchronized highlighting
+    const { source, startTime } = engine.playBuffer(buffer);
+    highlightIntervals(intervalLengths, startTime);
+
     source.onended = () => {
       playBtn.classList.remove('playing');
       const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
@@ -151,7 +155,7 @@ playBtn.addEventListener('click', async () => {
         playBtn.textContent = "Listen Again";
         playBtn.disabled = false;
       }
-      
+
       resp1Btn.disabled = false;
       resp2Btn.disabled = false;
     };
@@ -165,59 +169,66 @@ playBtn.addEventListener('click', async () => {
 
 function handleResponse(responseIndex: number) {
   const isCorrect = responseIndex === targetIntervalIndex;
-  
-  // Flash correct/incorrect
+
+  // Flash correct/incorrect feedback on the chosen button
   const btn = responseIndex === 0 ? resp1Btn : resp2Btn;
-  const originalColor = btn.style.borderColor;
+  const originalBorderColor = btn.style.borderColor;
   btn.style.borderColor = isCorrect ? 'var(--success)' : 'var(--error)';
   btn.style.color = isCorrect ? 'var(--success)' : 'var(--error)';
-  
+
   setTimeout(() => {
-    btn.style.borderColor = originalColor;
+    btn.style.borderColor = originalBorderColor;
     btn.style.color = '';
-    
-    staircase.recordResponse(isCorrect);
-    
-    if (staircase.reversals >= currentConfig.termination.reversals) {
+
+    staircase.processResponse(isCorrect);
+
+    if (staircase.isFinished(currentConfig.termination)) {
       endExperiment();
     } else {
       updateStatus();
       resp1Btn.disabled = true;
       resp2Btn.disabled = true;
-      
+
       const itiMs = currentConfig.paradigm.timing.itiMs;
       if (itiMs !== undefined) {
         playBtn.textContent = `Next Trial in ${itiMs}ms...`;
         playBtn.disabled = true;
         setTimeout(() => {
-          if (experimentArea.classList.contains('hidden')) return; // Don't start if restarted
+          if (experimentArea.classList.contains('hidden')) return;
           playBtn.disabled = false;
           playBtn.click();
         }, itiMs);
       } else {
         playBtn.textContent = "Play Next Trial";
+        playBtn.disabled = false;
       }
     }
   }, 500);
 }
 
-function highlightIntervals(lengths: number[]) {
-  const isiMs = currentConfig.paradigm.timing.isiMs;
-  let offsetMs = 0;
-  
+/**
+ * Highlights each interval button in precise synchrony with the audio.
+ * Uses AudioContext.currentTime as the reference clock, accounting for
+ * hardware output latency, rather than unreliable wall-clock setTimeout drift.
+ */
+function highlightIntervals(lengths: number[], audioStartTime: number) {
+  const outputLatency = engine.getOutputLatency();
+  const now = engine.getTime();
+  let offsetSec = 0;
+
   lengths.forEach((len, i) => {
-    const durationMs = (len / currentConfig.audio.sampleRate) * 1000;
+    const durationSec = len / currentConfig.audio.sampleRate;
     const btn = i === 0 ? resp1Btn : resp2Btn;
-    
-    setTimeout(() => {
-      btn.classList.add('active');
-    }, offsetMs);
-    
-    setTimeout(() => {
-      btn.classList.remove('active');
-    }, offsetMs + durationMs);
-    
-    offsetMs += durationMs + isiMs;
+
+    // When will this interval actually be audible?
+    // audioStartTime is ctx.currentTime at scheduling; outputLatency is the DAC delay.
+    const audibleStartSec = audioStartTime + offsetSec + outputLatency;
+    const delayMs = Math.max(0, (audibleStartSec - now) * 1000);
+
+    setTimeout(() => btn.classList.add('active'), delayMs);
+    setTimeout(() => btn.classList.remove('active'), delayMs + durationSec * 1000);
+
+    offsetSec += durationSec + currentConfig.paradigm.timing.isiMs / 1000;
   });
 }
 
@@ -226,7 +237,9 @@ resp2Btn.addEventListener('click', () => handleResponse(1));
 
 function updateStatus() {
   const trialNum = staircase.getHistory().length + 1;
-  statusBadge.textContent = `Trial ${trialNum} | Reversals: ${staircase.reversals}/${currentConfig.termination.reversals}`;
+  const reversals = staircase.getReversalCount();
+  const maxReversals = currentConfig.termination.reversals ?? '?';
+  statusBadge.textContent = `Trial ${trialNum} | Reversals: ${reversals}/${maxReversals}`;
 }
 
 function endExperiment() {
@@ -235,44 +248,73 @@ function endExperiment() {
   resp2Btn.classList.add('hidden');
   statusBadge.classList.add('hidden');
   document.getElementById('instruction-text')?.classList.add('hidden');
-  
+
   resultsArea.classList.remove('hidden');
-  
-  // Simple averaging of last N even reversals for threshold
-  finalThreshold.textContent = `Estimated Threshold: ${staircase.currentValue.toFixed(2)}`;
+
+  // Use reversal-averaging (discard first 4 reversals) — the scientifically standard method
+  const threshold = staircase.calculateThreshold(4);
+  finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(4)}`;
 }
 
-downloadBtn.addEventListener('click', () => {
-  if (!staircase || !currentConfig) return;
+// ─── Download Handlers ────────────────────────────────────────────────────────
 
+function buildDownloadData(): { timestamp: string; history: ReturnType<StaircaseController['getHistory']>; threshold: number } {
   const history = staircase.getHistory();
+  const threshold = staircase.calculateThreshold(4);
   const timestamp = new Date().toISOString();
-  
+  return { timestamp, history, threshold };
+}
+
+downloadTxtBtn.addEventListener('click', () => {
+  if (!staircase || !currentConfig) return;
+  const { timestamp, history, threshold } = buildDownloadData();
+
   let content = `Psychoacoustic Lab - Experiment Results\n`;
   content += `======================================\n`;
   content += `Date: ${timestamp}\n`;
   content += `Experiment: ${currentConfig.meta.name}\n`;
   content += `Seed: ${currentConfig.meta.seed}\n`;
-  content += `Final Threshold: ${staircase.currentValue.toFixed(4)}\n\n`;
-  
+  content += `Estimated Threshold (reversal avg, discard 4): ${threshold.toFixed(4)}\n\n`;
   content += `Trial History:\n`;
-  content += `Trial # | Parameter Value | Correct\n`;
-  content += `------------------------------------\n`;
-  
+  content += `Trial # | Parameter Value | Correct | Reversal\n`;
+  content += `--------------------------------------------------\n`;
   history.forEach(h => {
-    content += `${h.trial.toString().padEnd(8)} | ${h.value.toFixed(4).padEnd(15)} | ${h.correct}\n`;
+    content += `${String(h.trialIndex + 1).padEnd(8)} | ${h.value.toFixed(4).padEnd(15)} | ${String(h.correct).padEnd(7)} | ${h.isReversal}\n`;
   });
 
-  const blob = new Blob([content], { type: 'text/plain' });
+  triggerDownload(content, 'text/plain', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.txt`);
+});
+
+downloadCsvBtn.addEventListener('click', () => {
+  if (!staircase || !currentConfig) return;
+  const { timestamp, history, threshold } = buildDownloadData();
+
+  const rows = [
+    ['# Psychoacoustic Lab Results'],
+    [`# Experiment: ${currentConfig.meta.name}`],
+    [`# Date: ${timestamp}`],
+    [`# Seed: ${currentConfig.meta.seed}`],
+    [`# Estimated Threshold: ${threshold.toFixed(4)}`],
+    [],
+    ['trial', 'parameter_value', 'correct', 'is_reversal'],
+    ...history.map(h => [h.trialIndex + 1, h.value.toFixed(6), h.correct, h.isReversal]),
+  ];
+
+  const csv = rows.map(r => r.join(',')).join('\r\n');
+  triggerDownload(csv, 'text/csv', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.csv`);
+});
+
+function triggerDownload(content: string, mimeType: string, filename: string) {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${new Date().getTime()}.txt`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-});
+}
 
 restartBtn.addEventListener('click', () => {
   window.location.reload();

@@ -181,3 +181,13 @@ textarea {
   border-color: var(--accent) !important;
   color: var(--accent) !important;
 }
+
+/* Active interval highlight — shown in sync with the audio */
+.response-btn.active {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1) !important;
+  transform: scale(1.03);
+}
+

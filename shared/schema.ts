@@ -97,6 +97,7 @@ export const MistuningPerturbationSchema = z.object({
 export const PhaseShiftPerturbationSchema = z.object({
   type: z.literal("phase_shift"),
   targetFrequency: z.number(),
+  ear: EarRoutingSchema.optional().describe("If set, only applies the phase shift to the component on this ear. Essential for creating a true IPD."),
   deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema]),
 });
 
@@ -146,7 +147,7 @@ export const AdaptiveConfigSchema = z.object({
   switchReversalCount: z.number().optional(),
   minValue: z.number(),
   maxValue: z.number(),
-  reversals: z.number(),
+  reversals: z.number().optional().describe("Deprecated: use termination.reversals instead. Kept for MCP validator compatibility."),
 });
 
 export const CalibrationPointSchema = z.object({

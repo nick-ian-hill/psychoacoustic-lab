@@ -9,7 +9,8 @@ export const freqDiscrimConfig: ExperimentConfig = {
     name: "Frequency Discrimination",
     version: "2.0.0",
     seed: 123,
-    rationale: "Threshold for detecting frequency difference."
+    rationale: "Threshold for detecting frequency difference.",
+    instructions: "Two tones will play in sequence. Which interval contained the HIGHER pitched tone? Press Interval 1 or Interval 2."
   },
   audio: { sampleRate: 44100 },
   stimuli: [{
@@ -55,7 +56,8 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     name: "Auditory Grouping: Lead Target",
     version: "2.0.0",
     seed: 999,
-    rationale: "Using explicit components to model onset asynchrony LEAD."
+    rationale: "Using explicit components to model onset asynchrony LEAD.",
+    instructions: "Two chord-like sounds will play. One interval contains a tone that is slightly louder than the others. Which interval was it? Press Interval 1 or Interval 2."
   },
   audio: { sampleRate: 44100 },
   stimuli: [{
@@ -110,7 +112,8 @@ export const logSpacedConfig: ExperimentConfig = {
     name: "Log-Spaced Detection",
     version: "2.0.0",
     seed: 777,
-    rationale: "Explicit components calculated via calc_frequencies toolkit."
+    rationale: "Explicit components calculated via calc_frequencies toolkit.",
+    instructions: "Two multi-tone sounds will play. One interval contains a tone that stands out in level. Which interval was it? Press Interval 1 or Interval 2."
   },
   audio: { sampleRate: 44100 },
   stimuli: [{
@@ -162,6 +165,7 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 888,
     rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using binaural phase shifts. Impaired in Hidden Hearing Loss.",
+    instructions: "Listen carefully on headphones. One interval sounds like the tone is coming from directly ahead; the other sounds like it has moved to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2.",
     literature_references: ["Moore (2014) Auditory processing of temporal fine structure", "Prendergast et al. (2017)"]
   },
   audio: { sampleRate: 44100 },
@@ -177,8 +181,9 @@ export const ipdDiscrimConfig: ExperimentConfig = {
   perturbations: [
     {
       type: "phase_shift",
-      targetFrequency: 500, 
-      deltaDegrees: { adaptive: true } // Shifts the phase of the right ear component to create IPD
+      targetFrequency: 500,
+      ear: "right", // Only shift the RIGHT ear component to create a genuine interaural phase difference
+      deltaDegrees: { adaptive: true }
     }
   ],
   paradigm: {
@@ -211,6 +216,7 @@ export const srimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 456,
     rationale: "Target is spatially separated from random informational maskers.",
+    instructions: "Use headphones. One interval contains a faint tone in your RIGHT ear amongst other sounds. Which interval contained the right-ear tone? Press Interval 1 or Interval 2.",
     literature_references: ["Kidd Jr et al. (2016)", "Gallun et al. (2013)"]
   },
   audio: { sampleRate: 44100 },
@@ -265,6 +271,7 @@ export const tenTestConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 321,
     rationale: "Detection of a pure tone in a broadband threshold-equalizing noise.",
+    instructions: "Two bursts of noise will play. One interval contains a faint tone hidden within the noise. Which interval contained the tone? Press Interval 1 or Interval 2.",
     literature_references: ["Moore et al. (2000)"]
   },
   audio: { sampleRate: 44100 },
@@ -313,6 +320,7 @@ export const amDetectionConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 654,
     rationale: "Detect the presence of Amplitude Modulation on a broadband noise carrier.",
+    instructions: "Two bursts of noise will play. One interval has a rhythmic 'wah-wah' fluctuation; the other is steady. Which interval was FLUCTUATING? Press Interval 1 or Interval 2.",
     literature_references: ["Viemeister (1979) Temporal modulation transfer function"]
   },
   audio: { sampleRate: 44100 },
