@@ -18,6 +18,7 @@ const responseButtonsContainer = document.getElementById('response-buttons-conta
 let responseButtons: HTMLButtonElement[] = [];
 let targetIntervalIndex = -1;
 let lastTrialData: any = null; // Store the exact resolved stimuli for logging
+let highlightTimeouts: any[] = [];
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
@@ -300,21 +301,22 @@ playBtn.addEventListener('click', async () => {
     const { source, startTime } = engine.playBuffer(buffer);
     highlightIntervals(intervalLengths, startTime);
 
-    source.onended = () => {
-      playBtn.classList.remove('playing');
-      const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
-      const canReplay = currentConfig.paradigm.timing.allowReplay ?? false;
+      source.onended = () => {
+        playBtn.classList.remove('playing');
+        const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
+        const canReplay = currentConfig.paradigm.timing.allowReplay ?? false;
 
-      if (hasITI || !canReplay) {
-        if (!hasITI) playBtn.textContent = "Next Trial";
-        playBtn.disabled = true;
-      } else {
-        playBtn.textContent = "Listen Again";
-        playBtn.disabled = false;
-      }
+        if (hasITI || !canReplay) {
+          if (!hasITI) playBtn.textContent = "Next Trial";
+          playBtn.disabled = true;
+        } else {
+          playBtn.textContent = "Listen Again";
+          playBtn.disabled = false;
+        }
 
-      responseButtons.forEach(btn => btn.disabled = false);
-    };
+        clearFeedback(); // Safety reset for interval highlights on mobile
+        responseButtons.forEach(btn => btn.disabled = false);
+      };
   } catch (e: any) {
     console.error(e);
     alert("Playback error: " + e.message);
@@ -388,14 +390,17 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     const audibleStartSec = audioStartTime + offsetSec + outputLatency;
     const delayMs = Math.max(0, (audibleStartSec - now) * 1000);
 
-    setTimeout(() => btn.classList.add('active'), delayMs);
-    setTimeout(() => btn.classList.remove('active'), delayMs + durationSec * 1000);
+    highlightTimeouts.push(setTimeout(() => btn.classList.add('active'), delayMs));
+    highlightTimeouts.push(setTimeout(() => btn.classList.remove('active'), delayMs + durationSec * 1000));
 
     offsetSec += durationSec + currentConfig.paradigm.timing.isiMs / 1000;
   });
 }
 
 function clearFeedback() {
+  highlightTimeouts.forEach(t => clearTimeout(t));
+  highlightTimeouts = [];
+  
   responseButtons.forEach(btn => {
     btn.classList.remove('active', 'correct', 'incorrect');
     btn.style.borderColor = '';
