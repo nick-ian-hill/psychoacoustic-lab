@@ -392,9 +392,13 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     offset += duration + isiSec;
   });
 
+  const wallStart = performance.now();
+  const totalDurationMs = offset * 1000 + 500; // Total sequence + safety buffer
+
   const timer = setInterval(() => {
     const now = engine.getTime();
-    let allFinished = true;
+    const wallNow = performance.now();
+    let allFinished = (wallNow - wallStart > totalDurationMs);
     let activeIdx = -1;
 
     intervals.forEach((interval, idx) => {
@@ -415,6 +419,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       clearInterval(timer);
       const idx = highlightTimeouts.indexOf(timer);
       if (idx > -1) highlightTimeouts.splice(idx, 1);
+      clearFeedback(); // Final safety reset for all buttons
     }
   }, 10);
   

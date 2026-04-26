@@ -58,6 +58,7 @@ button {
 button:focus, button:active, button:focus-visible {
   outline: none !important;
   box-shadow: none !important;
+  transform: none !important;
 }
 
 button:hover {
@@ -101,6 +102,8 @@ button:disabled {
 .interval.active, .response-btn.active {
   background: #38bdf8;
   border-color: #38bdf8;
+  transform: none !important;
+  box-shadow: none !important;
   transition: none !important; /* Instant feedback for psychoacoustic timing */
 }
 
