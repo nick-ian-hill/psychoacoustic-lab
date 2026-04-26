@@ -302,11 +302,8 @@ playBtn.addEventListener('click', async () => {
 
       source.onended = () => {
         playBtn.classList.remove('playing');
-        const canReplay = currentConfig.paradigm.timing.allowReplay ?? false;
-
-        // In automated mode, we only allow replay if explicitly enabled, 
-        // but itiMs always takes precedence for disabling the button if we want strict flow.
-        // Current logic: if itiMs is present (which it always is), disable play button to prevent manual overrides.
+        // In automated mode, we disable the play button immediately after playback ends
+        // to prevent manual replays while waiting for a participant response.
         playBtn.disabled = true;
 
         responseButtons.forEach(btn => btn.disabled = false);
