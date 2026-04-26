@@ -393,11 +393,10 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
   });
 
   const wallStart = performance.now();
-  const totalDurationMs = offset * 1000 + 500; // Total sequence + safety buffer
+  const totalDurationMs = offset * 1000 + 800; // Safety buffer for sync
+  let frameId: number;
 
-  console.log(`[v3.2] Highlight sequence starting, duration: ${totalDurationMs}ms`);
-
-  const timer = setInterval(() => {
+  const update = () => {
     const now = engine.getTime();
     const wallNow = performance.now();
     let allFinished = (wallNow - wallStart > totalDurationMs);
@@ -414,34 +413,39 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       const shouldBeActive = (idx === activeIdx);
       if (interval.btn.classList.contains('active') !== shouldBeActive) {
         interval.btn.classList.toggle('active', shouldBeActive);
-        // Direct style application for rock-solid border sync
-        interval.btn.style.borderColor = shouldBeActive ? '#38bdf8' : '';
       }
     });
 
-    if (allFinished) {
-      clearInterval(timer);
-      const idx = highlightTimeouts.indexOf(timer);
-      if (idx > -1) highlightTimeouts.splice(idx, 1);
-      clearFeedback(); // Final safety reset for all buttons
+    if (!allFinished) {
+      frameId = requestAnimationFrame(update);
+      highlightTimeouts.push(frameId);
+    } else {
+      clearFeedback();
     }
-  }, 10);
-  
-  highlightTimeouts.push(timer);
+  };
+
+  frameId = requestAnimationFrame(update);
+  highlightTimeouts.push(frameId);
 }
 
 function clearFeedback() {
-  // Force browser to lose focus on any active element (removes mobile focus rings)
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
-  }
-
+  // 1. Kill all pending frames and timers
   highlightTimeouts.forEach(t => {
+    cancelAnimationFrame(t);
     clearTimeout(t);
     clearInterval(t);
   });
   highlightTimeouts = [];
-  
+
+  // 2. Focus Trap Reset: Pull focus away from buttons to the background
+  const container = document.querySelector('.container') as HTMLElement;
+  if (container) {
+    container.tabIndex = -1;
+    container.focus();
+    container.blur();
+  }
+
+  // 3. Clear all visual classes and inline styles
   responseButtons.forEach(btn => {
     btn.classList.remove('active', 'correct', 'incorrect');
     btn.style.borderColor = '';
