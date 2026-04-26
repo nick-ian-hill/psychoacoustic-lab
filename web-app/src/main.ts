@@ -113,7 +113,7 @@ playBtn.addEventListener('click', async () => {
 
   playBtn.disabled = true;
   playBtn.classList.add('playing');
-  playBtn.textContent = "Playing...";
+  playBtn.textContent = "\u00A0";
   responseButtons.forEach(btn => btn.disabled = true);
 
   try {
@@ -179,6 +179,7 @@ playBtn.addEventListener('click', async () => {
 });
 
 function handleResponse(responseIndex: number) {
+  playBtn.textContent = "\u00A0";
   const isCorrect = responseIndex === targetIntervalIndex;
 
   // Flash correct/incorrect feedback on the chosen button
@@ -201,7 +202,7 @@ function handleResponse(responseIndex: number) {
 
       const itiMs = currentConfig.paradigm.timing.itiMs;
       if (itiMs !== undefined) {
-        playBtn.textContent = `Next Trial in ${itiMs}ms...`;
+        playBtn.textContent = "\u00A0"; // Clear text but maintain button height
         playBtn.disabled = true;
         setTimeout(() => {
           if (experimentArea.classList.contains('hidden')) return;
@@ -209,7 +210,7 @@ function handleResponse(responseIndex: number) {
           playBtn.click();
         }, itiMs);
       } else {
-        playBtn.textContent = "Play Next Trial";
+        playBtn.textContent = "Next Trial";
         playBtn.disabled = false;
       }
     }

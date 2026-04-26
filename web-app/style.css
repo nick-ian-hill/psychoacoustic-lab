@@ -177,9 +177,7 @@ textarea {
 }
 
 .playing {
-  animation: pulse 1s infinite;
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
+  opacity: 0.5;
 }
 
 /* Active interval highlight — shown in sync with the audio */
