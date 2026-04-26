@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Psychoacoustic Lab</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/psychoacoustic-lab/assets/index-Bh7uCOX4.js"></script>
+    <script type="module" crossorigin src="/psychoacoustic-lab/assets/index-msADAX7z.js"></script>
     <link rel="stylesheet" crossorigin href="/psychoacoustic-lab/assets/index-BMbfpVWR.css">
   </head>
   <body>
@@ -27,8 +27,8 @@
             </div>
             <div class="select-options hidden" id="dropdown-options">
               <div class="option selected" data-value="freqDiscrim">Frequency Discrimination</div>
-              <div class="option" data-value="grouping">Auditory Grouping</div>
-              <div class="option" data-value="logDetection">Log-Spaced Detection</div>
+              <div class="option" data-value="auditoryGrouping">Auditory Grouping</div>
+              <div class="option" data-value="logSpaced">Log-Spaced Detection</div>
               <div class="option" data-value="ipdDiscrim">IPD Discrimination (TFS)</div>
               <div class="option" data-value="srim">Spatial Release from Informational Masking</div>
               <div class="option" data-value="tenTest">TEN Test (Cochlear Dead Regions)</div>
@@ -40,8 +40,8 @@
           <!-- Keep hidden select for compatibility with existing JS -->
           <select id="config-select" class="hidden">
             <option value="freqDiscrim">Frequency Discrimination</option>
-            <option value="grouping">Auditory Grouping</option>
-            <option value="logDetection">Log-Spaced Detection</option>
+            <option value="auditoryGrouping">Auditory Grouping</option>
+            <option value="logSpaced">Log-Spaced Detection</option>
             <option value="ipdDiscrim">IPD Discrimination (TFS)</option>
             <option value="srim">Spatial Release from Informational Masking</option>
             <option value="tenTest">TEN Test (Cochlear Dead Regions)</option>
@@ -74,8 +74,7 @@
           <h2 style="color: var(--success); margin-bottom: 0.5rem;">Experiment Complete!</h2>
           <p id="final-threshold" style="font-size: 1.2rem; font-weight: bold;"></p>
           <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button id="download-txt-btn" class="btn" style="background: var(--border);">Download (.txt)</button>
-            <button id="download-csv-btn" class="btn" style="background: var(--border);">Download (.csv)</button>
+            <button id="download-results-btn" class="btn" style="background: var(--border);">Download Results (.json)</button>
             <button id="restart-btn" class="btn">New Experiment</button>
           </div>
         </div>
