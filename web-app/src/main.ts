@@ -395,6 +395,8 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
   const wallStart = performance.now();
   const totalDurationMs = offset * 1000 + 500; // Total sequence + safety buffer
 
+  console.log(`[v3.2] Highlight sequence starting, duration: ${totalDurationMs}ms`);
+
   const timer = setInterval(() => {
     const now = engine.getTime();
     const wallNow = performance.now();
@@ -412,6 +414,8 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       const shouldBeActive = (idx === activeIdx);
       if (interval.btn.classList.contains('active') !== shouldBeActive) {
         interval.btn.classList.toggle('active', shouldBeActive);
+        // Direct style application for rock-solid border sync
+        interval.btn.style.borderColor = shouldBeActive ? '#38bdf8' : '';
       }
     });
 
@@ -427,6 +431,11 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 }
 
 function clearFeedback() {
+  // Force browser to lose focus on any active element (removes mobile focus rings)
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+
   highlightTimeouts.forEach(t => {
     clearTimeout(t);
     clearInterval(t);

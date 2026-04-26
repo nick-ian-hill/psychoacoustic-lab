@@ -235,7 +235,14 @@ textarea {
   font-size: 1.25rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.response-btn:focus, .response-btn:active, .response-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 .response-btn:hover:not(:disabled) {
@@ -265,11 +272,10 @@ textarea {
 
 /* Active interval highlight — shown in sync with the audio */
 .response-btn.active {
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-  background: rgba(59, 130, 246, 0.12) !important;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1) !important;
-  transform: scale(1.03);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1);
 }
 
 .response-btn.correct {
