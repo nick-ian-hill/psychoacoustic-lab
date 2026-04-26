@@ -32,7 +32,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  scrollbar-gutter: stable; /* Prevent layout shift when scrollbars appear */
+  scrollbar-gutter: stable;
+  /* Prevent layout shift when scrollbars appear */
 }
 
 .container {
@@ -43,7 +44,8 @@ body {
   padding: 2rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
   border: 1px solid var(--border);
-  position: relative; /* Ensure dropdowns can anchor correctly */
+  position: relative;
+  /* Ensure dropdowns can anchor correctly */
 }
 
 header {
@@ -125,13 +127,21 @@ label {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
   z-index: 100;
   overflow-y: auto;
-  max-height: 35vh; /* Responsive height relative to the viewport */
+  max-height: 35vh;
+  /* Responsive height relative to the viewport */
   animation: slideDown 0.2s ease-out;
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .option {
@@ -141,7 +151,8 @@ label {
   font-size: 0.9375rem;
 }
 
-.option:hover, .option.highlighted {
+.option:hover,
+.option.highlighted {
   background: rgba(59, 130, 246, 0.1);
   color: var(--accent);
 }
@@ -192,7 +203,6 @@ textarea {
 
 .btn:hover:not(:disabled) {
   background: var(--accent-hover);
-  transform: translateY(-1px);
 }
 
 .btn:disabled {
@@ -239,7 +249,9 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-.response-btn:focus, .response-btn:active, .response-btn:focus-visible {
+.response-btn:focus,
+.response-btn:active,
+.response-btn:focus-visible {
   outline: none !important;
   box-shadow: none !important;
   transform: none !important;
@@ -261,9 +273,17 @@ textarea {
 
 /* Animations */
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .playing {
@@ -289,4 +309,3 @@ textarea {
   color: var(--error) !important;
   background: rgba(239, 68, 68, 0.1) !important;
 }
-
