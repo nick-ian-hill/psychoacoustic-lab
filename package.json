@@ -7,6 +7,10 @@
     "example": "examples"
   },
   "scripts": {
+    "dev": "npm run dev --prefix web-app",
+    "build:web": "npm run build --prefix web-app",
+    "build:mcp": "npm run build --prefix mcp-server",
+    "build": "npm run build:web && npm run build:mcp",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
