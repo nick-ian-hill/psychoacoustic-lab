@@ -29,7 +29,7 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
       if (gen.type === "multi_component") {
         result = synthesizeMultiComponent(gen, sampleRate, interval.perturbations, adaptiveValue, calibration);
       } else if (gen.type === "noise") {
-        result = synthesizeNoise(gen, sampleRate, rng, interval.perturbations, adaptiveValue);
+        result = synthesizeNoise(gen, sampleRate, rng, interval.perturbations, adaptiveValue, calibration);
       }
       
       if (result) {

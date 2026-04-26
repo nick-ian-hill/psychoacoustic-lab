@@ -159,7 +159,7 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
   * For True ITD (Interaural Time Difference): Use 'onsetDelayMs' to shift the entire gated stimulus. Use 'calc_itd' to convert microseconds to ms.
   * The engine handles 'maxAbsoluteDelay' automatically to ensure leading sounds start at 0 and no samples are clipped.
 - MULTI-LAYER MASKING: Use the 'stimuli' array in the ExperimentConfig to layer multiple generators (e.g., a noise masker and a multi-component target) within the same interval.
-- CALIBRATION NOTE: The calibration profile applies log-frequency interpolated offsets to multi_component generators only. Broadband noise calibration requires frequency-domain EQ; a simple level offset is insufficient.`
+- CALIBRATION NOTE: The calibration profile applies log-frequency interpolated offsets to both multi_component generators and broadband noise generators (via FFT magnitude shaping).`
             }]
           };
         case "list_examples":
@@ -208,8 +208,7 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
 ## calibration? (optional)
 - id: string
 - description?: string
-- points: Array<{ frequency: number; offsetDb: number }> — Log-interpolated offsets for multi_component only.
-  WARNING: Calibration does NOT apply to noise generators.
+- points: Array<{ frequency: number; offsetDb: number }> — Log-interpolated offsets.
 
 ## globalLevelDb? (optional, number)
 A linear gain applied to the entire rendered trial buffer (after synthesis, before normalization).
@@ -278,15 +277,16 @@ Applied only to the TARGET interval. Each type:
 - parameter: string — e.g., "perturbations[0].deltaDb" (informational only)
 - initialValue: number
 - stepSizes: number[] — step sizes; later entries used after each reversal
-- rule: { correctDown: number; incorrectUp: number } — e.g., { correctDown: 3, incorrectUp: 1 } for 3-down/1-up
+- rule: { correctDown: number } — e.g., { correctDown: 3 } for 3-down/1-up
 - initialN?: number — fast-start: use N-down/1-up until switchReversalCount reversals
 - switchReversalCount?: number — reversal count at which fast-start ends
 - minValue: number
 - maxValue: number
 
 ## termination (required)
-- reversals?: number — stop after N reversals (threshold averaged from reversal values, discarding first 4)
+- reversals?: number — stop after N reversals (threshold averaged from reversal values, discarding first 4 by default)
 - maxTrials?: number — stop after N trials regardless of reversals
+- discardReversals?: number — number of initial reversals to discard when calculating the final threshold. Defaults to 4.
 `;
     return { content: [{ type: "text", text: reference }] };
   }
@@ -449,11 +449,7 @@ Applied only to the TARGET interval. Each type:
       warnings.push(`STABILITY WARNING: Adaptive staircase reversals (${reversalCount}) are below 10. Threshold estimate may be unreliable. Recommend ≥12 reversals.`);
     }
 
-    // 3. Noise generator + calibration profile warning
-    const hasNoise = config.stimuli.some(g => g.type === "noise");
-    if (hasNoise && config.calibration) {
-      warnings.push("CALIBRATION WARNING: Calibration profiles apply interpolated dB offsets to multi_component generators only. Broadband noise generators are NOT calibrated by this profile. For accurate noise-level calibration, apply frequency-domain EQ externally.");
-    }
+    // Removed noise calibration warning since it is now supported via FFT magnitude shaping
 
     // 4. IPD paradigm check — phase_shift without ear targeting
     if (config.perturbations) {

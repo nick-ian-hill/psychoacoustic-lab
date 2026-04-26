@@ -14,8 +14,8 @@ const experimentArea = document.getElementById('experiment-area') as HTMLDivElem
 
 const statusBadge = document.getElementById('status-badge') as HTMLDivElement;
 const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
-const resp1Btn = document.getElementById('resp-1') as HTMLButtonElement;
-const resp2Btn = document.getElementById('resp-2') as HTMLButtonElement;
+const responseButtonsContainer = document.getElementById('response-buttons-container') as HTMLDivElement;
+let responseButtons: HTMLButtonElement[] = [];
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
@@ -81,6 +81,19 @@ startBtn.addEventListener('click', async () => {
       instructionEl.textContent = currentConfig.meta.instructions || "Listen carefully to each interval and select the one that contains the target.";
     }
 
+    // Generate dynamic response buttons based on the paradigm intervals
+    responseButtonsContainer.innerHTML = '';
+    responseButtons = [];
+    currentConfig.paradigm.intervals.forEach((_: any, index: number) => {
+      const btn = document.createElement('button');
+      btn.className = 'response-btn';
+      btn.textContent = `Interval ${index + 1}`;
+      btn.disabled = true;
+      btn.addEventListener('click', () => handleResponse(index));
+      responseButtonsContainer.appendChild(btn);
+      responseButtons.push(btn);
+    });
+
     updateStatus();
 
     // Warm up AudioContext (requires user gesture to unlock)
@@ -101,8 +114,7 @@ playBtn.addEventListener('click', async () => {
   playBtn.disabled = true;
   playBtn.classList.add('playing');
   playBtn.textContent = "Playing...";
-  resp1Btn.disabled = true;
-  resp2Btn.disabled = true;
+  responseButtons.forEach(btn => btn.disabled = true);
 
   try {
     const intervalsConfig = [...currentConfig.paradigm.intervals];
@@ -156,8 +168,7 @@ playBtn.addEventListener('click', async () => {
         playBtn.disabled = false;
       }
 
-      resp1Btn.disabled = false;
-      resp2Btn.disabled = false;
+      responseButtons.forEach(btn => btn.disabled = false);
     };
   } catch (e: any) {
     console.error(e);
@@ -171,7 +182,7 @@ function handleResponse(responseIndex: number) {
   const isCorrect = responseIndex === targetIntervalIndex;
 
   // Flash correct/incorrect feedback on the chosen button
-  const btn = responseIndex === 0 ? resp1Btn : resp2Btn;
+  const btn = responseButtons[responseIndex];
   const originalBorderColor = btn.style.borderColor;
   btn.style.borderColor = isCorrect ? 'var(--success)' : 'var(--error)';
   btn.style.color = isCorrect ? 'var(--success)' : 'var(--error)';
@@ -186,8 +197,7 @@ function handleResponse(responseIndex: number) {
       endExperiment();
     } else {
       updateStatus();
-      resp1Btn.disabled = true;
-      resp2Btn.disabled = true;
+      responseButtons.forEach(btn => btn.disabled = true);
 
       const itiMs = currentConfig.paradigm.timing.itiMs;
       if (itiMs !== undefined) {
@@ -218,7 +228,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 
   lengths.forEach((len, i) => {
     const durationSec = len / currentConfig.audio.sampleRate;
-    const btn = i === 0 ? resp1Btn : resp2Btn;
+    const btn = responseButtons[i];
 
     // When will this interval actually be audible?
     // audioStartTime is ctx.currentTime at scheduling; outputLatency is the DAC delay.
@@ -232,8 +242,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
   });
 }
 
-resp1Btn.addEventListener('click', () => handleResponse(0));
-resp2Btn.addEventListener('click', () => handleResponse(1));
+// Response event listeners are attached dynamically during initialization
 
 function updateStatus() {
   const trialNum = staircase.getHistory().length + 1;
@@ -244,15 +253,15 @@ function updateStatus() {
 
 function endExperiment() {
   playBtn.classList.add('hidden');
-  resp1Btn.classList.add('hidden');
-  resp2Btn.classList.add('hidden');
+  responseButtons.forEach(btn => btn.classList.add('hidden'));
   statusBadge.classList.add('hidden');
   document.getElementById('instruction-text')?.classList.add('hidden');
 
   resultsArea.classList.remove('hidden');
 
-  // Use reversal-averaging (discard first 4 reversals) — the scientifically standard method
-  const threshold = staircase.calculateThreshold(4);
+  // Use reversal-averaging
+  const defaultDiscard = currentConfig.termination.discardReversals ?? 4;
+  const threshold = staircase.calculateThreshold(defaultDiscard);
   finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(4)}`;
 }
 
@@ -260,7 +269,7 @@ function endExperiment() {
 
 function buildDownloadData(): { timestamp: string; history: ReturnType<StaircaseController['getHistory']>; threshold: number } {
   const history = staircase.getHistory();
-  const threshold = staircase.calculateThreshold(4);
+  const threshold = staircase.calculateThreshold(currentConfig.termination?.discardReversals ?? 4);
   const timestamp = new Date().toISOString();
   return { timestamp, history, threshold };
 }
@@ -274,7 +283,7 @@ downloadTxtBtn.addEventListener('click', () => {
   content += `Date: ${timestamp}\n`;
   content += `Experiment: ${currentConfig.meta.name}\n`;
   content += `Seed: ${currentConfig.meta.seed}\n`;
-  content += `Estimated Threshold (reversal avg, discard 4): ${threshold.toFixed(4)}\n\n`;
+  content += `Estimated Threshold (reversal avg, discard ${currentConfig.termination?.discardReversals ?? 4}): ${threshold.toFixed(4)}\n\n`;
   content += `Trial History:\n`;
   content += `Trial # | Parameter Value | Correct | Reversal\n`;
   content += `--------------------------------------------------\n`;

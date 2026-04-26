@@ -141,7 +141,6 @@ export const AdaptiveConfigSchema = z.object({
   stepSizes: z.array(z.number()),
   rule: z.object({
     correctDown: z.number(),
-    incorrectUp: z.number(),
   }),
   initialN: z.number().optional(),
   switchReversalCount: z.number().optional(),
@@ -192,6 +191,7 @@ export const ExperimentConfigSchema = z.object({
   termination: z.object({
     maxTrials: z.number().optional(),
     reversals: z.number().optional(),
+    discardReversals: z.number().optional().describe("Number of initial reversals to discard when calculating the final threshold. Defaults to 4."),
   }),
 });
 

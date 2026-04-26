@@ -159,7 +159,8 @@ export function synthesizeNoise(
   sampleRate: number,
   rng: () => number,
   perturbations?: Perturbation[],
-  adaptiveValue?: number
+  adaptiveValue?: number,
+  calibration?: CalibrationProfile
 ): SynthesisResult {
   const duration = gen.durationMs / 1000;
   const targetSamples = Math.ceil(duration * sampleRate);
@@ -168,7 +169,7 @@ export function synthesizeNoise(
   const amp = Math.pow(10, gen.levelDb / 20);
   const ear = gen.ear || "both";
 
-  const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng);
+  const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
 
   for (let i = 0; i < targetSamples; i++) {
     const t = i / sampleRate;

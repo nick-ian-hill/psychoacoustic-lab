@@ -76,7 +76,8 @@ export function generateFFTNoise(
   sampleRate: number,
   type: "white" | "pink" | "brown",
   bandLimit?: { lowFreq: number; highFreq: number },
-  rng?: () => number
+  rng?: () => number,
+  getCalibrationOffset?: (f: number) => number
 ): Float32Array {
   const random = rng || Math.random;
   
@@ -117,6 +118,11 @@ export function generateFFTNoise(
       mag = 1 / Math.sqrt(f);
     } else if (type === "brown") {
       mag = 1 / f;
+    }
+
+    if (getCalibrationOffset) {
+      const offsetDb = getCalibrationOffset(f);
+      mag *= Math.pow(10, offsetDb / 20);
     }
 
     // Random phase

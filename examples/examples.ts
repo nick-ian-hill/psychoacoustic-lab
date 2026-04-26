@@ -39,7 +39,7 @@ export const freqDiscrimConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaPercent",
     initialValue: 5,
     stepSizes: [2, 1, 0.5, 0.25],
-    rule: { correctDown: 3, incorrectUp: 1 },
+    rule: { correctDown: 3 },
     minValue: 0,
     maxValue: 50,
     reversals: 12
@@ -95,7 +95,7 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaDb",
     initialValue: 15,
     stepSizes: [4, 2, 1],
-    rule: { correctDown: 2, incorrectUp: 1 },
+    rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
     reversals: 12
@@ -145,7 +145,7 @@ export const logSpacedConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaDb",
     initialValue: 10,
     stepSizes: [4, 2, 1],
-    rule: { correctDown: 2, incorrectUp: 1 },
+    rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
     reversals: 12
@@ -197,7 +197,7 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaDegrees",
     initialValue: 90, // Start with a 90-degree phase shift
     stepSizes: [10, 5, 2],
-    rule: { correctDown: 2, incorrectUp: 1 },
+    rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 180,
     reversals: 12
@@ -252,7 +252,7 @@ export const srimConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaDb",
     initialValue: 20,
     stepSizes: [4, 2, 1],
-    rule: { correctDown: 2, incorrectUp: 1 },
+    rule: { correctDown: 2 },
     minValue: -10,
     maxValue: 40,
     reversals: 12
@@ -302,7 +302,7 @@ export const tenTestConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaDb",
     initialValue: 15,
     stepSizes: [4, 2],
-    rule: { correctDown: 2, incorrectUp: 1 },
+    rule: { correctDown: 2 },
     minValue: -10,
     maxValue: 30,
     reversals: 10
@@ -352,7 +352,7 @@ export const amDetectionConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaDepth",
     initialValue: 0.5, // Start with 50% modulation depth
     stepSizes: [0.2, 0.1, 0.05], // linear steps in depth
-    rule: { correctDown: 2, incorrectUp: 1 },
+    rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1,
     reversals: 8
