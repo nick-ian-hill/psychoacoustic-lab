@@ -31,10 +31,11 @@ export class AudioEngine {
   }
 
   async renderTrial(
-    intervals: { generator: StimulusGenerator; perturbations?: Perturbation[] }[],
+    intervals: { generators: StimulusGenerator[]; perturbations?: Perturbation[] }[],
     isiMs: number,
     adaptiveValue?: number,
-    calibration?: CalibrationProfile
+    calibration?: CalibrationProfile,
+    globalLevelDb?: number
   ): Promise<AudioBuffer> {
     const id = Math.random().toString(36).substring(7);
     
@@ -47,7 +48,8 @@ export class AudioEngine {
         sampleRate: this.ctx.sampleRate,
         seed: this.seed,
         adaptiveValue,
-        calibration
+        calibration,
+        globalLevelDb
       });
     });
   }

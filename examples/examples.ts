@@ -12,14 +12,14 @@ export const freqDiscrimConfig: ExperimentConfig = {
     rationale: "Threshold for detecting frequency difference."
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "multi_component",
     components: [
       { frequency: 1000, levelDb: 65, phaseDegrees: 0, ear: "both" }
     ],
     durationMs: 250,
     globalEnvelope: { attackMs: 10, releaseMs: 10 }
-  },
+  }],
   perturbations: [
     {
       type: "mistuning",
@@ -58,7 +58,7 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     rationale: "Using explicit components to model onset asynchrony LEAD."
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "multi_component",
     components: [
       { frequency: 200, levelDb: 60, phaseDegrees: 5.7, ear: "both" },
@@ -69,7 +69,7 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     ],
     durationMs: 500,
     globalEnvelope: { attackMs: 10, releaseMs: 10 }
-  },
+  }],
   perturbations: [
     {
       type: "spectral_profile",
@@ -113,7 +113,7 @@ export const logSpacedConfig: ExperimentConfig = {
     rationale: "Explicit components calculated via calc_frequencies toolkit."
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "multi_component",
     components: [
       { frequency: 200, levelDb: 50, phaseDegrees: 0, ear: "both" },
@@ -123,7 +123,7 @@ export const logSpacedConfig: ExperimentConfig = {
     ],
     durationMs: 400,
     globalEnvelope: { attackMs: 20, releaseMs: 20 }
-  },
+  }],
   perturbations: [
     {
       type: "spectral_profile",
@@ -165,7 +165,7 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     literature_references: ["Moore (2014) Auditory processing of temporal fine structure", "Prendergast et al. (2017)"]
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "multi_component",
     components: [
       { frequency: 500, levelDb: 70, phaseDegrees: 0, ear: "left" },
@@ -173,7 +173,7 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     ],
     durationMs: 400,
     globalEnvelope: { attackMs: 20, releaseMs: 20 }
-  },
+  }],
   perturbations: [
     {
       type: "phase_shift",
@@ -214,7 +214,7 @@ export const srimConfig: ExperimentConfig = {
     literature_references: ["Kidd Jr et al. (2016)", "Gallun et al. (2013)"]
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "multi_component",
     components: [
       // Informational Maskers (Left Ear)
@@ -227,7 +227,7 @@ export const srimConfig: ExperimentConfig = {
     ],
     durationMs: 300,
     globalEnvelope: { attackMs: 10, releaseMs: 10 }
-  },
+  }],
   perturbations: [
     {
       type: "spectral_profile",
@@ -268,7 +268,7 @@ export const tenTestConfig: ExperimentConfig = {
     literature_references: ["Moore et al. (2000)"]
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "noise",
     noiseType: "white", // Assuming flat ERB scale locally for demo
     levelDb: 70, // Background noise level
@@ -276,7 +276,7 @@ export const tenTestConfig: ExperimentConfig = {
     envelope: { attackMs: 20, releaseMs: 20 },
     ear: "both",
     bandLimit: { lowFreq: 100, highFreq: 8000 }
-  },
+  }],
   perturbations: [
     {
       type: "spectral_profile", // Using our engine 'hack' to insert a tone into the noise
@@ -316,7 +316,7 @@ export const amDetectionConfig: ExperimentConfig = {
     literature_references: ["Viemeister (1979) Temporal modulation transfer function"]
   },
   audio: { sampleRate: 44100 },
-  stimulus: {
+  stimuli: [{
     type: "noise",
     noiseType: "white",
     levelDb: 65,
@@ -326,7 +326,7 @@ export const amDetectionConfig: ExperimentConfig = {
     modulators: [
       { type: "AM", rateHz: 8, depth: 0 } // Carrier starts with 0 depth
     ]
-  },
+  }],
   perturbations: [
     {
       type: "am_depth",

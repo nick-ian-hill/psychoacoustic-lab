@@ -169,6 +169,7 @@ export const ExperimentConfigSchema = z.object({
     version: z.string(),
     seed: z.number(),
     rationale: z.string().optional(),
+    instructions: z.string().optional(),
     literature_references: z.array(z.string()).optional(),
     advisor_warnings: z.array(z.string()).optional(),
   }),
@@ -176,7 +177,8 @@ export const ExperimentConfigSchema = z.object({
     sampleRate: z.number().default(44100),
   }),
   calibration: CalibrationProfileSchema.optional(),
-  stimulus: StimulusGeneratorSchema,
+  globalLevelDb: z.number().optional(),
+  stimuli: z.array(StimulusGeneratorSchema),
   perturbations: z.array(PerturbationSchema).optional(),
   conditions: z.object({
     reference: z.any().optional(),

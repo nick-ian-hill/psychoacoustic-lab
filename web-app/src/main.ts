@@ -73,6 +73,13 @@ startBtn.addEventListener('click', async () => {
 
     setupArea.classList.add('hidden');
     experimentArea.classList.remove('hidden');
+    
+    // Set dynamic instructions
+    const instructionEl = document.getElementById('instruction-text');
+    if (instructionEl) {
+      instructionEl.textContent = currentConfig.meta.instructions || "Listen to the intervals and select the target.";
+    }
+
     updateStatus();
     
     // Ensure AudioContext starts cleanly (requires user gesture)
@@ -111,12 +118,12 @@ playBtn.addEventListener('click', async () => {
     const trialData = intervalsConfig.map(interval => {
       if (interval.condition === 'target') {
         return {
-          generator: currentConfig.stimulus,
+          generators: currentConfig.stimuli,
           perturbations: currentConfig.perturbations
         };
       } else {
         return {
-          generator: currentConfig.stimulus
+          generators: currentConfig.stimuli
         };
       }
     });
@@ -125,7 +132,8 @@ playBtn.addEventListener('click', async () => {
       trialData, 
       currentConfig.paradigm.timing.isiMs, 
       staircase.currentValue,
-      currentConfig.calibration
+      currentConfig.calibration,
+      currentConfig.globalLevelDb
     );
 
     const source = engine.playBuffer(buffer);

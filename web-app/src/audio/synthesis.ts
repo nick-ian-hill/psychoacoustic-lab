@@ -147,7 +147,6 @@ export function synthesizeMultiComponent(
     }
   }
 
-  normalizeStereo(left, right);
   return { left, right };
 }
 
@@ -210,6 +209,5 @@ export function synthesizeNoise(
     if (ear === "right" || ear === "both") right[i] = sample;
   }
 
-  normalizeStereo(left, right);
   return { left, right };
 }

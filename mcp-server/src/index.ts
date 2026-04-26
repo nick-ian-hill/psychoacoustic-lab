@@ -122,7 +122,8 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
 - BINAURAL PRECISION:
   * For IPD (Interaural Phase Difference): Set 'onsetDelayMs' to 0 and use 'phaseDegrees' to shift the fine structure.
   * For True ITD (Interaural Time Difference): Use 'onsetDelayMs' to shift the entire gated stimulus.
-  * The engine handles 'maxAbsoluteDelay' automatically to ensure leading sounds start at 0 and no samples are clipped.`
+  * The engine handles 'maxAbsoluteDelay' automatically to ensure leading sounds start at 0 and no samples are clipped.
+- MULTI-LAYER MASKING: Use the 'stimuli' array in the ExperimentConfig to layer multiple generators (e.g., a noise masker and a multi-component target) within the same interval.`
             }]
           };
         case "list_examples":
@@ -213,15 +214,35 @@ ARCHITECTURE: 'Smart Server / Dumb Engine'.
     const config = result.data;
     const warnings: string[] = [];
 
-    // Expert Logic
-    if (config.stimulus.type === "multi_component") {
-      const totalPower = config.stimulus.components.reduce((acc, c) => acc + Math.pow(10, c.levelDb / 10), 0);
+    // Expert Logic: Total Power Check across ALL layers
+    let totalPower = 0;
+    for (const gen of config.stimuli) {
+      if (gen.type === "multi_component") {
+        totalPower += gen.components.reduce((acc: number, c: any) => acc + Math.pow(10, c.levelDb / 10), 0);
+      } else if (gen.type === "noise") {
+        totalPower += Math.pow(10, gen.levelDb / 10);
+      }
+    }
+    
+    // Apply Global Level
+    if (config.globalLevelDb !== undefined) {
+      totalPower *= Math.pow(10, config.globalLevelDb / 10);
+    }
+
+    if (totalPower > 0) {
       const totalDb = 10 * Math.log10(totalPower);
-      if (totalDb > 95) warnings.push("CLIPPING RISK: Total stimulus level exceeds 95 dB SPL.");
+      if (totalDb > 95) warnings.push(`CLIPPING RISK: Total stimulus level exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB).`);
     }
 
     if (config.adaptive && config.adaptive.reversals < 10) {
       warnings.push("STABILITY WARNING: Adaptive staircase reversals are below 10. Threshold estimate may be unreliable.");
+    }
+    
+    // Instruction Suggestion
+    if (!config.meta.instructions) {
+      if (config.paradigm.type === "2AFC" || config.paradigm.type === "3AFC") {
+        warnings.push(`UX SUGGESTION: Consider adding meta.instructions. E.g., 'Identify which interval contained the target.'`);
+      }
     }
 
     return {
