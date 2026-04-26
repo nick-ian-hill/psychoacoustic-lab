@@ -303,14 +303,19 @@ textarea {
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1);
 }
 
-.response-btn.correct {
-  border-color: var(--success) !important;
-  color: var(--success) !important;
-  background: rgba(16, 185, 129, 0.1) !important;
+/* Feedback states — high specificity ensures they override :disabled opacity without !important */
+.response-btn.correct, 
+.response-btn.correct:disabled {
+  border-color: var(--success);
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.15);
+  opacity: 1;
 }
 
-.response-btn.incorrect {
-  border-color: var(--error) !important;
-  color: var(--error) !important;
-  background: rgba(239, 68, 68, 0.1) !important;
+.response-btn.incorrect, 
+.response-btn.incorrect:disabled {
+  border-color: var(--error);
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.15);
+  opacity: 1;
 }
