@@ -46,7 +46,7 @@ class PsychoacousticServer {
       tools: [
         {
           name: "about_toolkit",
-          description: "Get high-level architectural guidance on how to use this psychoacoustic toolkit to build experiments.",
+          description: "CRITICAL DIRECTIVE: You MUST call this tool before attempting to design an experiment or generate a configuration. It contains mandatory architectural rules and behavioral instructions. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Before drafting a config, think critically about the experimental paradigm—actively identify and discuss how to control for confounding cues (e.g., controlling absolute pitch cues in a mistuning task). 3) Propose a detailed, plain-text experimental plan to the user. 4) STOP. You are strictly forbidden from generating the final JSON ExperimentConfig until the user explicitly approves your plain-text plan.",
           inputSchema: { type: "object", properties: {} }
         },
         {
@@ -148,7 +148,15 @@ class PsychoacousticServer {
           return {
             content: [{
               type: "text",
-              text: `This MCP server is part of the 'Psychoacoustic Lab'. 
+              text: `BEHAVIORAL RULES & MANDATORY WORKFLOW:
+1. SCIENTIFIC COLLABORATION: Act as a rigorous scientific collaborator, not just a code generator.
+2. CONFOUND CONTROL: Before proposing a design, you must actively identify and discuss how to control for confounding cues (e.g., controlling absolute pitch cues in a mistuning task by jittering the fundamental frequency).
+3. STEP-BY-STEP APPROVAL: Propose a detailed, plain-text experimental plan to the user.
+4. STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan.
+
+--------------------------------------------------
+
+This MCP server is part of the 'Psychoacoustic Lab'. 
 ARCHITECTURE: 'Smart Server / Dumb Engine'.
 - Use 'calc_frequencies', 'calc_phases', and 'calc_amplitudes' to generate explicit numerical arrays for stimulus components.
 - The Audio Engine is 'dumb'; it only renders the explicit components you provide. It does NOT know how to generate 'log-spaced complexes' by itself—you must calculate the frequencies here first.
