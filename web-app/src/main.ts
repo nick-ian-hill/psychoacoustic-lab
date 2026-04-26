@@ -314,7 +314,6 @@ playBtn.addEventListener('click', async () => {
           playBtn.disabled = false;
         }
 
-        clearFeedback(); // Safety reset for interval highlights on mobile
         responseButtons.forEach(btn => btn.disabled = false);
       };
   } catch (e: any) {
@@ -406,7 +405,8 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       if (interval.btn.classList.contains('active') !== isActive) {
         interval.btn.classList.toggle('active', isActive);
       }
-      if (now < interval.end) allFinished = false;
+      // Safety: keep loop running until slightly after the last interval should have ended
+      if (now < interval.end + 0.1) allFinished = false;
     });
 
     if (allFinished) {

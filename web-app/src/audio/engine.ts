@@ -61,8 +61,8 @@ export class AudioEngine {
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination);
-    // Capture AudioContext time 100ms in the future so highlight timers can align to a fixed point
-    const startTime = this.ctx.currentTime + 0.1;
+    // Capture AudioContext time at scheduling
+    const startTime = this.ctx.currentTime;
     source.start(startTime);
     return { source, startTime };
   }
