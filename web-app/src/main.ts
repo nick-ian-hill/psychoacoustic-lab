@@ -418,20 +418,22 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 
     if (!allFinished) {
       frameId = requestAnimationFrame(update);
-      highlightTimeouts.push(frameId);
+      highlightTimeouts[0] = frameId;
     } else {
       clearFeedback();
     }
   };
 
   frameId = requestAnimationFrame(update);
-  highlightTimeouts.push(frameId);
+  highlightTimeouts[0] = frameId;
 }
 
 function clearFeedback() {
-  // 1. Kill all pending frames and timers
+  // 1. Kill the current frame and any timers
+  if (highlightTimeouts[0]) {
+    cancelAnimationFrame(highlightTimeouts[0]);
+  }
   highlightTimeouts.forEach(t => {
-    cancelAnimationFrame(t);
     clearTimeout(t);
     clearInterval(t);
   });
