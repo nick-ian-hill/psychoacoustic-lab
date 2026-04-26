@@ -100,8 +100,6 @@ button:disabled {
 
 .interval.active, .response-btn.active {
   background: #38bdf8;
-  box-shadow: 0 0 30px #38bdf8;
-  transform: scale(1.05);
   border-color: #38bdf8;
   transition: none !important; /* Instant feedback for psychoacoustic timing */
 }

@@ -221,6 +221,7 @@ startBtn.addEventListener('click', async () => {
 
 playBtn.addEventListener('click', async () => {
   if (!engine || !staircase) return;
+  await engine.resume();
 
   const hasITI = currentConfig.paradigm.timing.itiMs !== undefined;
   if (hasITI) {

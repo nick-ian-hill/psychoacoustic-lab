@@ -54,10 +54,14 @@ export class AudioEngine {
     });
   }
 
-  async playBuffer(buffer: AudioBuffer): Promise<{ source: AudioBufferSourceNode; startTime: number }> {
+  async resume() {
     if (this.ctx.state === 'suspended') {
       await this.ctx.resume();
     }
+  }
+
+  async playBuffer(buffer: AudioBuffer): Promise<{ source: AudioBufferSourceNode; startTime: number }> {
+    await this.resume();
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination);
