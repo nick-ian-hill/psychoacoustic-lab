@@ -326,6 +326,9 @@ playBtn.addEventListener('click', async () => {
 });
 
 function handleResponse(responseIndex: number) {
+  // 1. IMMEDIATELY disable all buttons to force focus release on mobile
+  responseButtons.forEach(b => b.disabled = true);
+  
   playBtn.textContent = "\u00A0";
   const isCorrect = responseIndex === targetIntervalIndex;
 

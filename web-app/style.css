@@ -21,6 +21,7 @@ option {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -248,6 +249,9 @@ textarea {
   cursor: pointer;
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .response-btn:focus,
