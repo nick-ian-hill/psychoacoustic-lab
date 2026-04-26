@@ -124,18 +124,21 @@ export function synthesizeMultiComponent(
     let pertAmpOffset = 0;
     if (perturbations) {
       for (const p of perturbations) {
-        if (p.type === "spectral_profile" && p.targetFrequency === comp.frequency) {
+        const pAny = p as any;
+        const matchesFrequency = !pAny.targetFrequency || pAny.targetFrequency === comp.frequency;
+        
+        if (p.type === "spectral_profile" && matchesFrequency) {
           pertAmpOffset += resolveValue(p.deltaDb, adaptiveValue, rng);
         }
-        if (p.type === "mistuning" && p.targetFrequency === comp.frequency) {
+        if (p.type === "mistuning" && matchesFrequency) {
           const delta = resolveValue(p.deltaPercent, adaptiveValue, rng);
           freq *= (1 + delta / 100);
         }
-        if (p.type === "onset_asynchrony" && p.targetFrequency === comp.frequency) {
+        if (p.type === "onset_asynchrony" && matchesFrequency) {
           const delta = resolveValue(p.delayMs, adaptiveValue, rng);
           onsetMs += delta;
         }
-        if (p.type === "phase_shift") {
+        if (p.type === "phase_shift" && matchesFrequency) {
           const earMatch = !p.ear || p.ear === ear || (p.ear === 'both' && ear === 'both');
           if (earMatch) {
             const delta = resolveValue(p.deltaDegrees, adaptiveValue, rng);

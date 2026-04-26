@@ -16,7 +16,13 @@ The project is split into three main components:
 - **Raised Cosine Ramps**: Support for both Linear and Raised Cosine (Hann) onset/offset ramps. Raised Cosine ramps provide the cleanest possible spectrum by ensuring a zero-slope transition at the start and end of the sound.
 - **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
-- **Fully Reproducible Experiments**: `meta.seed` controls both the FFT noise RNG and the trial-order randomization, ensuring every run is exactly reproducible.
+- **Fully Reproducible Experiments**: `meta.seed` controls the FFT noise RNG, trial-order randomization, and all dynamic perturbation randomizations (roving levels, phase), ensuring every run is exactly reproducible.
+- **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `targetFrequency` on any perturbation to apply it globally to all components in the stimulus:
+  - **Level**: via `gain` (global) or `spectral_profile` (per-component).
+  - **Frequency**: via `mistuning` (supports global pitch roving).
+  - **Timing**: via `onset_asynchrony` (supports global onset roving).
+  - **Phase**: via `phase_shift` (supports global phase roving).
+  - **Modulation**: via `am_depth` (supports global AM depth roving).
 - **Adaptive Staircase**: Full-featured `StaircaseController` supporting N-down/1-up rules, fast-start logic (`initialN`/`switchReversalCount`), dynamic step-size reduction on reversals, and standard reversal-point threshold averaging (with configurable `discardReversals`, defaulting to 4).
 - **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Supports White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp brick-wall band-limiting.
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
@@ -27,7 +33,7 @@ The project is split into three main components:
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to both `multi_component` and `noise` generators (via frequency-domain magnitude shaping) to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
-- **Data Export**: Download trial history as `.txt` (human-readable) or `.csv` (analysis-ready, with `trial`, `parameter_value`, `correct`, `is_reversal` columns).
+- **Data Export**: Download detailed trial history as `.txt` or `.csv`. CSV exports include the exact numerical state of all random and adaptive perturbations per trial (via `resolved_stimulus_state_json`) for perfect mathematical reconstructability.
 
 ## MCP Server Tools
 
@@ -62,6 +68,22 @@ The project is split into three main components:
    npm start
    ```
 
+## Python Analysis Application
+
+A dedicated Python Streamlit application is included in the `analysis/` directory for rigorous psychometric curve fitting (Logistic, Weibull) and signal detection theory analysis on the exported CSV data.
+
+1. Ensure Python 3 is installed on your system.
+2. Install the analysis dependencies:
+   ```bash
+   cd analysis
+   pip install -r requirements.txt
+   ```
+3. Run the interactive dashboard:
+   ```bash
+   streamlit run app.py
+   ```
+4. Upload your `.csv` results file to fit curves and calculate accurate thresholds.
+
 ## Included Examples (`examples/examples.ts`)
 
 All examples include participant-facing `meta.instructions` displayed in the UI during the experiment.
@@ -75,6 +97,7 @@ All examples include participant-facing `meta.instructions` displayed in the UI 
 | **Spatial Release from Informational Masking** | Dichotic target vs. co-located maskers | Kidd Jr et al. (2016); Gallun et al. (2013) |
 | **TEN Test** | Tone-in-noise detection for cochlear dead regions | Moore et al. (2000) |
 | **AM Detection** | 8 Hz amplitude modulation depth threshold | Viemeister (1979) |
+| **Profile Analysis** | Complex masking, global level roving, and individual component level randomization | Green (1988) |
 
 ## Limitations & Future Work
 

@@ -95,7 +95,7 @@ export const AsynchronyPerturbationSchema = BasePerturbationSchema.extend({
 
 export const MistuningPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("mistuning"),
-  targetFrequency: z.number(),
+  targetFrequency: z.number().optional().describe("If omitted, applies to all components in the stimulus (Global Pitch Roving)."),
   deltaPercent: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
 });
 

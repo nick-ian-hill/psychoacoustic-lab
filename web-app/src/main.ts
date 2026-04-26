@@ -348,7 +348,7 @@ downloadCsvBtn.addEventListener('click', () => {
       h.isReversal,
       h.metadata?.targetInterval || '',
       h.metadata?.response || '',
-      JSON.stringify(h.metadata?.trialState || []).replace(/"/g, '""') // Escape quotes for CSV
+      `"${JSON.stringify(h.metadata?.trialState || []).replace(/"/g, '""')}"` // Escape quotes for CSV
     ]),
   ];
 
