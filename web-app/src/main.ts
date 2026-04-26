@@ -378,27 +378,49 @@ function handleResponse(responseIndex: number) {
  */
 function highlightIntervals(lengths: number[], audioStartTime: number) {
   const outputLatency = engine.getOutputLatency();
-  const now = engine.getTime();
-  let offsetSec = 0;
-
+  const sampleRate = currentConfig.audio.sampleRate;
+  const isiSec = currentConfig.paradigm.timing.isiMs / 1000;
+  
+  const intervals: { start: number, end: number, btn: HTMLButtonElement }[] = [];
+  let offset = 0;
   lengths.forEach((len, i) => {
-    const durationSec = len / currentConfig.audio.sampleRate;
-    const btn = responseButtons[i];
-
-    // When will this interval actually be audible?
-    // audioStartTime is ctx.currentTime at scheduling; outputLatency is the DAC delay.
-    const audibleStartSec = audioStartTime + offsetSec + outputLatency;
-    const delayMs = Math.max(0, (audibleStartSec - now) * 1000);
-
-    highlightTimeouts.push(setTimeout(() => btn.classList.add('active'), delayMs));
-    highlightTimeouts.push(setTimeout(() => btn.classList.remove('active'), delayMs + durationSec * 1000));
-
-    offsetSec += durationSec + currentConfig.paradigm.timing.isiMs / 1000;
+    const duration = len / sampleRate;
+    intervals.push({
+      start: audioStartTime + offset + outputLatency,
+      end: audioStartTime + offset + duration + outputLatency,
+      btn: responseButtons[i]
+    });
+    offset += duration + isiSec;
   });
+
+  const timer = setInterval(() => {
+    const now = engine.getTime();
+    let allFinished = true;
+    
+    intervals.forEach(interval => {
+      const isActive = now >= interval.start && now <= interval.end;
+      // Only toggle if necessary to avoid unnecessary DOM thrashing
+      if (interval.btn.classList.contains('active') !== isActive) {
+        interval.btn.classList.toggle('active', isActive);
+      }
+      if (now < interval.end) allFinished = false;
+    });
+
+    if (allFinished) {
+      clearInterval(timer);
+      const idx = highlightTimeouts.indexOf(timer);
+      if (idx > -1) highlightTimeouts.splice(idx, 1);
+    }
+  }, 15); // Check every ~15ms (aligned with common refresh rates)
+  
+  highlightTimeouts.push(timer);
 }
 
 function clearFeedback() {
-  highlightTimeouts.forEach(t => clearTimeout(t));
+  highlightTimeouts.forEach(t => {
+    clearTimeout(t);
+    clearInterval(t);
+  });
   highlightTimeouts = [];
   
   responseButtons.forEach(btn => {
