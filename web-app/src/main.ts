@@ -233,9 +233,10 @@ playBtn.addEventListener('click', async () => {
   playBtn.textContent = "\u00A0";
   responseButtons.forEach(btn => btn.disabled = true);
 
-  // Add a 1000ms lead-in delay for the first trial ONLY to allow participant preparation
+  // Add a brief lead-in delay for the first trial to allow participant preparation.
+  // We keep this short (200ms) to prevent the mobile "User Gesture" from expiring.
   if (staircase.getHistory().length === 0) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
   
   try {

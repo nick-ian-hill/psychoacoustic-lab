@@ -148,25 +148,28 @@ export function synthesizeMultiComponent(
       }
     }
 
-    const onsetSamples = (onsetMs / 1000) * sampleRate;
+    const onsetSamples = Math.floor((onsetMs / 1000) * sampleRate);
+    const durationSamples = Math.floor((gen.durationMs / 1000) * sampleRate);
     const calibrationOffset = getCalibrationOffset(freq, calibration);
     const finalDigitalDb = comp.levelDb + pertAmpOffset + calibrationOffset;
-    const amp = Math.pow(10, finalDigitalDb / 20);
+    const baseAmp = Math.pow(10, finalDigitalDb / 20) * intervalGainAmp;
 
     // Use a phase accumulator for perfectly smooth frequency modulation
     let currentPhase = phase;
     const dt = 1 / sampleRate;
+    const durationSec = gen.durationMs / 1000;
 
-    for (let i = 0; i < globalDurationSamples; i++) {
-      // 't' is local time relative to the component onset
+    // OPTIMIZATION: Only iterate over the specific range where this component exists.
+    // We add a 1-sample safety margin to endI to ensure no clipping at the boundary.
+    const startI = Math.max(0, onsetSamples);
+    const endI = Math.min(globalDurationSamples, onsetSamples + durationSamples + 1);
+
+    for (let i = startI; i < endI; i++) {
       const t = (i - onsetSamples) / sampleRate;
+      const envelope = calculateEnvelope(t, durationSec, gen.globalEnvelope);
       
-      // Only synthesize within the component's gated duration
-      if (t < 0 || t > gen.durationMs / 1000) continue;
-
-      const envelope = calculateEnvelope(t, gen.durationMs / 1000, gen.globalEnvelope);
       let instFreq = freq;
-      let instAmp = amp;
+      let instAmp = baseAmp;
 
       if (comp.modulators) {
         for (const mod of comp.modulators) {
@@ -179,7 +182,7 @@ export function synthesizeMultiComponent(
         }
       }
 
-      const sample = instAmp * Math.sin(currentPhase) * envelope * intervalGainAmp;
+      const sample = instAmp * Math.sin(currentPhase) * envelope;
       if (ear === "left" || ear === "both") left[i] += sample;
       if (ear === "right" || ear === "both") right[i] += sample;
 
@@ -203,55 +206,56 @@ export function synthesizeNoise(
   const targetSamples = Math.ceil(duration * sampleRate);
   const left = new Float32Array(targetSamples);
   const right = new Float32Array(targetSamples);
-  const amp = Math.pow(10, gen.levelDb / 20);
+  const baseAmp = Math.pow(10, gen.levelDb / 20);
   const ear = gen.ear || "both";
 
   const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
 
+  // 1. Resolve all perturbations ONCE before the sample loop
+  let intervalGainDb = 0;
+  let dynamicAmDepth = 0;
+  const tones: { amp: number, freq: number }[] = [];
+
+  if (perturbations) {
+    for (const p of perturbations) {
+      if (p.type === "gain") {
+        intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+      } else if (p.type === "am_depth") {
+        dynamicAmDepth += resolveValue(p.deltaDepth, adaptiveValue, rng);
+      } else if (p.type === "spectral_profile") {
+        const delta = resolveValue(p.deltaDb, adaptiveValue, rng);
+        tones.push({
+          freq: p.targetFrequency,
+          amp: baseAmp * Math.pow(10, delta / 20)
+        });
+      }
+    }
+  }
+
+  const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
+  const durationSec = gen.durationMs / 1000;
+  const finalAmDepth = gen.modulators 
+    ? Math.max(0, Math.min(1, (gen.modulators.find((m: any) => m.type === "AM")?.depth || 0) + dynamicAmDepth))
+    : 0;
+  const amRate = gen.modulators?.find((m: any) => m.type === "AM")?.rateHz || 0;
+  const amPhase = (gen.modulators?.find((m: any) => m.type === "AM")?.phaseDegrees || 0) * Math.PI / 180;
+
+  // 2. Optimized Sample Loop
   for (let i = 0; i < targetSamples; i++) {
     const t = i / sampleRate;
-    const envelope = calculateEnvelope(t, gen.durationMs / 1000, gen.envelope);
-    let currentAmp = amp * envelope;
+    const envelope = calculateEnvelope(t, durationSec, gen.envelope);
+    let currentAmp = baseAmp * envelope * intervalGainAmp;
     
-    // Calculate Global Gain for this interval (e.g., for roving)
-    let intervalGainDb = 0;
-    let dynamicAmDepth = 0;
-    if (perturbations) {
-      for (const p of perturbations) {
-        if (p.type === "gain") {
-          intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
-        }
-        if (p.type === "am_depth") {
-          dynamicAmDepth += resolveValue(p.deltaDepth, adaptiveValue, rng);
-        }
-      }
-    }
-    const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
-
-    if (gen.modulators) {
-      for (const mod of gen.modulators) {
-        if (mod.type === "AM") {
-          const modPhase = (mod.phaseDegrees || 0) * Math.PI / 180;
-          const modVal = Math.sin(2 * Math.PI * mod.rateHz * t + modPhase);
-          const finalDepth = Math.max(0, Math.min(1, mod.depth + dynamicAmDepth));
-          currentAmp *= (1 + finalDepth * modVal);
-        }
-      }
+    if (finalAmDepth > 0) {
+      const modVal = Math.sin(2 * Math.PI * amRate * t + amPhase);
+      currentAmp *= (1 + finalAmDepth * modVal);
     }
 
-    let sample = baseNoise[i] * currentAmp * intervalGainAmp;
+    let sample = baseNoise[i] * currentAmp;
 
-    if (perturbations) {
-      for (const p of perturbations) {
-        if (p.type === "spectral_profile") {
-          // Add a tone at the target frequency. Amplitude is expressed as SNR relative to
-          // the noise carrier: delta=0 → tone at noise level, delta=10 → 10 dB above noise.
-          const targetFreq = p.targetFrequency;
-          const delta = typeof p.deltaDb === 'object' ? (adaptiveValue || 0) : p.deltaDb;
-          const toneAmp = amp * Math.pow(10, delta / 20);
-          sample += toneAmp * envelope * Math.sin(2 * Math.PI * targetFreq * t);
-        }
-      }
+    // Add pre-calculated tones
+    for (const tone of tones) {
+      sample += tone.amp * envelope * Math.sin(2 * Math.PI * tone.freq * t);
     }
     
     if (ear === "left" || ear === "both") left[i] = sample;
