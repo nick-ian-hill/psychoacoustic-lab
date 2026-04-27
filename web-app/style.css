@@ -240,7 +240,7 @@ textarea {
   padding: 1.5rem;
   background: var(--bg);
   border: 2px solid var(--border);
-  color: var(--text);
+  color: #ffffff;
   border-radius: var(--radius);
   font-size: 1.25rem;
   font-weight: 700;
@@ -272,6 +272,7 @@ textarea {
 }
 
 .response-btn:disabled {
+  color: var(--text-muted);
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -300,10 +301,9 @@ textarea {
 }
 
 /* Active interval highlight — shown in sync with the audio */
-.response-btn.active,
-.response-btn.active:disabled {
+.response-btn.active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: #ffffff;
   background: rgba(59, 130, 246, 0.12);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1);
   opacity: 1;
