@@ -96,8 +96,8 @@ export const auditoryGroupingConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDb",
-    initialValue: 15,
-    stepSizes: [4, 2, 1],
+    initialValue: 10,
+    stepSizes: [4, 2, 1, 0.5],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
@@ -433,8 +433,8 @@ export const profileAnalysisConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[6].deltaDb", // The 7th perturbation is the adaptive one
-    initialValue: 15,
-    stepSizes: [4, 2, 1],
+    initialValue: 10,
+    stepSizes: [4, 2, 1, 0.5],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 30,
