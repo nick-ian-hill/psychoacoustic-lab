@@ -294,6 +294,7 @@ Applied only to the TARGET interval. Each type:
 - maxValue: number
 
 ## ui? (optional)
+Partial object. All fields are optional and fall back to defaults if omitted.
 - showInstructions: boolean — Default true.
 - showTrialNumber: boolean — Default true.
 - showReversals: boolean — Default true.

@@ -189,7 +189,9 @@ startBtn.addEventListener('click', async () => {
     const instructionEl = document.getElementById('instruction-text');
     if (instructionEl) {
       instructionEl.textContent = currentConfig.meta.instructions || "Listen carefully to each interval and select the one that contains the target.";
-      instructionEl.classList.toggle('hidden', currentConfig.ui?.showInstructions === false);
+      // Default to true if property is missing
+      const showInstructions = currentConfig.ui?.showInstructions ?? true;
+      instructionEl.classList.toggle('hidden', !showInstructions);
     }
 
     // Generate dynamic response buttons based on the paradigm intervals
@@ -448,27 +450,32 @@ function clearFeedback() {
 // Response event listeners are attached dynamically during initialization
 
 function updateStatus() {
-  const ui = currentConfig.ui || { showTrialNumber: true, showReversals: true, showCurrentValue: false, showAverageThreshold: false };
+  const ui = currentConfig.ui;
+  const showTrialNumber = ui?.showTrialNumber ?? true;
+  const showReversals = ui?.showReversals ?? true;
+  const showCurrentValue = ui?.showCurrentValue ?? false;
+  const showAverageThreshold = ui?.showAverageThreshold ?? false;
+
   const parts: string[] = [];
 
-  if (ui.showTrialNumber) {
+  if (showTrialNumber) {
     const trialNum = staircase.getHistory().length + 1;
     parts.push(`Trial ${trialNum}`);
   }
 
-  if (ui.showReversals) {
+  if (showReversals) {
     const reversals = staircase.getReversalCount();
     const maxReversals = currentConfig.termination.reversals ?? '?';
     parts.push(`Reversals: ${reversals}/${maxReversals}`);
   }
 
-  if (ui.showCurrentValue) {
+  if (showCurrentValue) {
     const val = staircase.getCurrentValue();
     const unit = currentConfig.adaptive?.unit || "";
     parts.push(`Value: ${val.toFixed(2)}${unit}`);
   }
 
-  if (ui.showAverageThreshold) {
+  if (showAverageThreshold) {
     const discard = currentConfig.termination?.discardReversals ?? 4;
     const thresh = staircase.calculateThreshold(discard);
     const unit = currentConfig.adaptive?.unit || "";

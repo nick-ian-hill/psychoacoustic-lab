@@ -207,7 +207,7 @@ export const ExperimentConfigSchema = z.object({
     showReversals: z.boolean().default(true),
     showCurrentValue: z.boolean().default(false),
     showAverageThreshold: z.boolean().default(false),
-  }).default({
+  }).partial().default({
     showInstructions: true,
     showTrialNumber: true,
     showReversals: true,

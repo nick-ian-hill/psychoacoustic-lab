@@ -45,6 +45,7 @@ export const freqDiscrimConfig: ExperimentConfig = {
     reversals: 12,
     unit: "%"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
 
@@ -102,6 +103,7 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     reversals: 12,
     unit: "dB"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
 
@@ -153,6 +155,7 @@ export const logSpacedConfig: ExperimentConfig = {
     reversals: 12,
     unit: "dB"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
 
@@ -206,6 +209,7 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     reversals: 12,
     unit: "°"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
 
@@ -262,6 +266,7 @@ export const srimConfig: ExperimentConfig = {
     reversals: 12,
     unit: "dB"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
 
@@ -313,6 +318,7 @@ export const tenTestConfig: ExperimentConfig = {
     reversals: 10,
     unit: "dB"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 10 }
 };
 
@@ -364,6 +370,7 @@ export const amDetectionConfig: ExperimentConfig = {
     reversals: 8,
     unit: "depth"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 8 }
 };
 
@@ -431,5 +438,6 @@ export const profileAnalysisConfig: ExperimentConfig = {
     reversals: 12,
     unit: "dB"
   },
+  ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
