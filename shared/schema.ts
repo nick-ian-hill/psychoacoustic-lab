@@ -201,6 +201,19 @@ export const ExperimentConfigSchema = z.object({
   }).optional(),
   paradigm: ParadigmSchema,
   adaptive: AdaptiveConfigSchema.optional(),
+  ui: z.object({
+    showInstructions: z.boolean().default(true),
+    showTrialNumber: z.boolean().default(true),
+    showReversals: z.boolean().default(true),
+    showCurrentValue: z.boolean().default(false),
+    showAverageThreshold: z.boolean().default(false),
+  }).default({
+    showInstructions: true,
+    showTrialNumber: true,
+    showReversals: true,
+    showCurrentValue: false,
+    showAverageThreshold: false,
+  }).optional(),
   termination: z.object({
     maxTrials: z.number().optional(),
     reversals: z.number().optional(),

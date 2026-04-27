@@ -293,6 +293,13 @@ Applied only to the TARGET interval. Each type:
 - minValue: number
 - maxValue: number
 
+## ui? (optional)
+- showInstructions: boolean — Default true.
+- showTrialNumber: boolean — Default true.
+- showReversals: boolean — Default true.
+- showCurrentValue: boolean — Default false.
+- showAverageThreshold: boolean — Default false.
+
 ## termination (required)
 - reversals?: number — stop after N reversals (threshold averaged from reversal values, discarding first 4 by default)
 - maxTrials?: number — stop after N trials regardless of reversals

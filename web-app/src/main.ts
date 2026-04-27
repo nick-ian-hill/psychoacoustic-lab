@@ -189,6 +189,7 @@ startBtn.addEventListener('click', async () => {
     const instructionEl = document.getElementById('instruction-text');
     if (instructionEl) {
       instructionEl.textContent = currentConfig.meta.instructions || "Listen carefully to each interval and select the one that contains the target.";
+      instructionEl.classList.toggle('hidden', currentConfig.ui?.showInstructions === false);
     }
 
     // Generate dynamic response buttons based on the paradigm intervals
@@ -447,10 +448,39 @@ function clearFeedback() {
 // Response event listeners are attached dynamically during initialization
 
 function updateStatus() {
-  const trialNum = staircase.getHistory().length + 1;
-  const reversals = staircase.getReversalCount();
-  const maxReversals = currentConfig.termination.reversals ?? '?';
-  statusBadge.textContent = `Trial ${trialNum} | Reversals: ${reversals}/${maxReversals}`;
+  const ui = currentConfig.ui || { showTrialNumber: true, showReversals: true, showCurrentValue: false, showAverageThreshold: false };
+  const parts: string[] = [];
+
+  if (ui.showTrialNumber) {
+    const trialNum = staircase.getHistory().length + 1;
+    parts.push(`Trial ${trialNum}`);
+  }
+
+  if (ui.showReversals) {
+    const reversals = staircase.getReversalCount();
+    const maxReversals = currentConfig.termination.reversals ?? '?';
+    parts.push(`Reversals: ${reversals}/${maxReversals}`);
+  }
+
+  if (ui.showCurrentValue) {
+    const val = staircase.getCurrentValue();
+    const unit = currentConfig.adaptive?.unit || "";
+    parts.push(`Value: ${val.toFixed(2)}${unit}`);
+  }
+
+  if (ui.showAverageThreshold) {
+    const discard = currentConfig.termination?.discardReversals ?? 4;
+    const thresh = staircase.calculateThreshold(discard);
+    const unit = currentConfig.adaptive?.unit || "";
+    parts.push(`Threshold: ${thresh.toFixed(2)}${unit}`);
+  }
+
+  if (parts.length === 0) {
+    statusBadge.classList.add('hidden');
+  } else {
+    statusBadge.classList.remove('hidden');
+    statusBadge.textContent = parts.join(' | ');
+  }
 }
 
 function endExperiment() {
