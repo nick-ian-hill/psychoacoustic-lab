@@ -80,23 +80,24 @@ export function synthesizeMultiComponent(
   adaptiveValue?: number,
   calibration?: CalibrationProfile
 ): SynthesisResult {
-  // 1. Calculate Maximum Absolute Delay across all components (including perturbations)
-  // to ensure the buffer is large enough for true ITD shifts.
-  let maxDelayMs = 0;
+  // 1. Pre-resolve onsets to determine the required buffer range and normalization offset.
+  // This ensures that lead-asynchrony (negative onsetMs) doesn't cause clicks by starting at index 0 without a ramp.
+  let minOnsetMs = 0;
+  let maxOnsetMs = 0;
   
-  for (const comp of gen.components) {
-    let compDelay = comp.onsetDelayMs || 0;
-    
+  const resolvedOnsets = gen.components.map((comp: any) => {
+    let onset = comp.onsetDelayMs || 0;
     if (perturbations) {
       for (const p of perturbations) {
         if (p.type === "onset_asynchrony" && p.targetFrequency === comp.frequency) {
-          const delta = resolveValue(p.delayMs, adaptiveValue, rng);
-          compDelay += delta;
+          onset += resolveValue((p as any).delayMs, adaptiveValue, rng);
         }
       }
     }
-    maxDelayMs = Math.max(maxDelayMs, Math.abs(compDelay));
-  }
+    minOnsetMs = Math.min(minOnsetMs, onset);
+    maxOnsetMs = Math.max(maxOnsetMs, onset);
+    return onset;
+  });
 
   // Calculate Global Gain for this interval (e.g., for roving)
   let intervalGainDb = 0;
@@ -109,18 +110,24 @@ export function synthesizeMultiComponent(
   }
   const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
 
-  const globalDurationSamples = Math.ceil((gen.durationMs + maxDelayMs) / 1000 * sampleRate);
+  // Normalize all onsets relative to the earliest one starting at 0ms.
+  // The total span of the buffer must cover the stimulus duration PLUS the spread of the component onsets.
+  const globalOffsetMs = -minOnsetMs;
+  const globalDurationMs = gen.durationMs + (maxOnsetMs - minOnsetMs);
+  const globalDurationSamples = Math.ceil(globalDurationMs / 1000 * sampleRate);
+  
   const left = new Float32Array(globalDurationSamples);
   const right = new Float32Array(globalDurationSamples);
 
-  for (const comp of gen.components) {
+  for (let compIdx = 0; compIdx < gen.components.length; compIdx++) {
+    const comp = gen.components[compIdx];
     let freq = comp.frequency;
     let phase = (comp.phaseDegrees || 0) * Math.PI / 180;
-    // Base onset relative to the buffer start (0 is leading ear)
-    let onsetMs = comp.onsetDelayMs || 0;
+    // Apply normalization offset to the resolved onset
+    let onsetMs = resolvedOnsets[compIdx] + globalOffsetMs;
     const ear = comp.ear || "both";
 
-    // 2. Resolve Runtime Perturbations
+    // 2. Resolve remaining Runtime Perturbations (amplitude, phase, frequency)
     let pertAmpOffset = 0;
     if (perturbations) {
       for (const p of perturbations) {
@@ -133,10 +140,6 @@ export function synthesizeMultiComponent(
         if (p.type === "mistuning" && matchesFrequency) {
           const delta = resolveValue(p.deltaPercent, adaptiveValue, rng);
           freq *= (1 + delta / 100);
-        }
-        if (p.type === "onset_asynchrony" && matchesFrequency) {
-          const delta = resolveValue(p.delayMs, adaptiveValue, rng);
-          onsetMs += delta;
         }
         if (p.type === "phase_shift" && matchesFrequency) {
           const earMatch = !p.ear || p.ear === ear || (p.ear === 'both' && ear === 'both');
