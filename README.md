@@ -101,12 +101,13 @@ The project is split into three main components:
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
 - **Web Worker Synthesis**: Offloads all heavy sample-by-sample calculations and FFT operations to a background thread, ensuring a stutter-free 60 fps UI and utilizing zero-copy Transferable objects for maximum efficiency.
 - **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing buffer padding to prevent sample clipping. The `ear` field on `phase_shift` perturbations ensures only the target channel is shifted, creating a genuine interaural phase difference.
+- **Global Level Control**: Apply a master trim gain (`globalLevelDb`) to the entire trial stimulus. This occurs after per-generator synthesis but before final normalization, providing a clean way to adjust overall presentation levels while maintaining calibrated relative component ratios.
 - **Multi-Layer Masking**: Stack an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval for complex BMLD paradigms.
 - **Dynamic Participant Instructions**: Supply experiment-specific instructions via `meta.instructions` (e.g., "Which interval contained the higher-pitched tone?") — displayed in the UI during the experiment.
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to both `multi_component` and `noise` generators (via frequency-domain magnitude shaping) to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
-- **Data Export**: Download detailed trial history as `.txt` or `.csv`. CSV exports include the exact numerical state of all random and adaptive perturbations per trial (via `resolved_stimulus_state_json`) for perfect mathematical reconstructability.
+- **Data Export**: Download detailed trial history as a structured **JSON** file. The export includes the full experimental configuration and a trial-by-trial history with the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.
 
 ## MCP Server Tools
 
