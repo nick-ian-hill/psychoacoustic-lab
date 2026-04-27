@@ -315,8 +315,6 @@ playBtn.addEventListener('click', async () => {
         // In automated mode, we disable the play button immediately after playback ends
         // to prevent manual replays while waiting for a participant response.
         playBtn.disabled = true;
-
-        responseButtons.forEach(btn => btn.disabled = false);
       };
   } catch (e: any) {
     console.error(e);
@@ -378,6 +376,7 @@ function handleResponse(responseIndex: number) {
 function highlightIntervals(lengths: number[], audioStartTime: number) {
   const sampleRate = currentConfig.audio.sampleRate || 44100;
   const isiSec = (currentConfig.paradigm.timing.isiMs || 0) / 1000;
+  const responseDelaySec = (currentConfig.paradigm.timing.responseDelayMs ?? 250) / 1000;
   
   const intervals: { start: number, end: number, btn: HTMLButtonElement }[] = [];
   let offset = 0;
@@ -391,9 +390,14 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     offset += duration + isiSec;
   });
 
+  const lastStimulusEndTime = intervals[intervals.length - 1].end;
+  const enableButtonsAt = lastStimulusEndTime + responseDelaySec;
+
   const wallStart = performance.now();
-  const totalDurationMs = offset * 1000 + 800; // Safety buffer for sync
+  // Ensure the loop runs until at least after the buttons are enabled
+  const totalDurationMs = (enableButtonsAt - audioStartTime) * 1000 + 800; 
   let frameId: number;
+  let buttonsEnabled = false;
 
   const update = () => {
     const now = engine.getTime();
@@ -401,6 +405,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     let allFinished = (wallNow - wallStart > totalDurationMs);
     let activeIdx = -1;
 
+    // 1. Determine which interval is currently active
     intervals.forEach((interval, idx) => {
       if (now >= interval.start && now <= interval.end) {
         activeIdx = idx;
@@ -408,12 +413,23 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       if (now < interval.end + 0.1) allFinished = false;
     });
 
+    // 2. Update highlight classes
     intervals.forEach((interval, idx) => {
       const shouldBeActive = (idx === activeIdx);
       if (interval.btn.classList.contains('active') !== shouldBeActive) {
         interval.btn.classList.toggle('active', shouldBeActive);
       }
     });
+
+    // 3. Reliable response enablement: check AudioContext time against enableButtonsAt.
+    // This is much more precise than source.onended + setTimeout.
+    if (!buttonsEnabled && now >= enableButtonsAt) {
+      responseButtons.forEach(btn => btn.disabled = false);
+      buttonsEnabled = true;
+    }
+    
+    // Ensure we don't stop the loop until buttons are enabled
+    if (now < enableButtonsAt) allFinished = false;
 
     if (!allFinished) {
       frameId = requestAnimationFrame(update);

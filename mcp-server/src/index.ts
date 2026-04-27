@@ -151,7 +151,7 @@ class PsychoacousticServer {
               text: `BEHAVIORAL RULES & MANDATORY WORKFLOW:
 - SCIENTIFIC COLLABORATION: Act as a rigorous scientific collaborator, not just a code generator.
 - CONFOUND CONTROL: Before proposing a design, actively identify and discuss how to control for confounding cues (e.g., controlling absolute energy cues in a profile analysis task by roving the global level).
-- PARAMETER ELICITATION: Do not assume secondary parameters (e.g., stimulus duration, interstimulus interval, inter-trial interval, number of reversals). Explicitly ask the user for their preferences.
+- PARAMETER ELICITATION: Do not assume secondary parameters (e.g., stimulus duration, interstimulus interval, inter-trial interval, response delay interval, number of reversals). Explicitly ask the user for their preferences.
 - LITERATURE SEARCH: You MUST perform a web search to validate that your chosen parameters are scientifically appropriate.
 - STEP-BY-STEP APPROVAL: Propose a detailed, plain-text experimental plan to the user.
 - STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan. Conclude your current turn by presenting the plan and explicitly asking the user for their feedback or approval.
@@ -309,6 +309,7 @@ By default, perturbations apply only to the 'target' interval.
   - isiMs: number — inter-stimulus interval
   - itiMs: number — inter-trial interval (default 1000ms); next trial always starts automatically after this interval
   - feedbackDurationMs: number — duration for which correct/incorrect feedback is displayed (default 400ms)
+  - responseDelayMs: number — delay between end of stimulus and enabling response buttons (default 250ms)
   - allowReplay?: boolean — if true, participant can re-listen before responding
 
 ## adaptive? (optional)
