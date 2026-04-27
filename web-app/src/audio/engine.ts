@@ -71,14 +71,15 @@ export class AudioEngine {
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination);
-    const scheduledAt = this.ctx.currentTime;
-    source.start(scheduledAt);
-    // Return the *perceptual* start time: when audio actually reaches the listener's ears.
-    // outputLatency accounts for hardware buffering (typically 5–50 ms on desktop,
-    // up to 100 ms on mobile). The highlight loop compares ctx.currentTime against this
-    // value, so interval buttons illuminate in sync with perceived audio onset.
-    const startTime = scheduledAt + this.getOutputLatency();
-    return { source, startTime };
+    
+    // Calculate the precise start time by accounting for hardware/processing latency.
+    // Scheduling for (currentTime + latency) gives the browser a stable window to 
+    // prepare the audio buffer, ensuring playback starts exactly when the AudioContext
+    // clock reaches this timestamp.
+    const preciseStartTime = this.ctx.currentTime + this.getOutputLatency();
+    source.start(preciseStartTime);
+    
+    return { source, startTime: preciseStartTime };
   }
 
   getOutputLatency(): number {
