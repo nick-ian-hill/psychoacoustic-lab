@@ -288,6 +288,8 @@ Applied only to the TARGET interval. Each type:
 - parameter: string — e.g., "perturbations[0].deltaDb" (informational only)
 - initialValue: number
 - stepSizes: number[] — step sizes; later entries used after each reversal
+- stepType?: "linear" | "geometric" — Defaults to linear. Use 'geometric' for variables bounded by zero (multiplies/divides step sizes).
+- stepSizeInterval?: number — Number of reversals required before advancing to the next step size in the stepSizes array. Defaults to 1.
 - rule: { correctDown: number } — e.g., { correctDown: 3 } for 3-down/1-up
 - initialN?: number — fast-start: use N-down/1-up until switchReversalCount reversals
 - switchReversalCount?: number — reversal count at which fast-start ends

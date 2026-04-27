@@ -38,7 +38,8 @@ export const freqDiscrimConfig: ExperimentConfig = {
     type: "staircase",
     parameter: "perturbations[0].deltaPercent",
     initialValue: 5,
-    stepSizes: [2, 1, 0.5, 0.25],
+    stepType: "geometric",
+    stepSizes: [2, 1.414, 1.189],
     rule: { correctDown: 3 },
     minValue: 0,
     maxValue: 50,
@@ -202,7 +203,8 @@ export const ipdDiscrimConfig: ExperimentConfig = {
     type: "staircase",
     parameter: "perturbations[0].deltaDegrees",
     initialValue: 90, // Start with a 90-degree phase shift
-    stepSizes: [10, 5, 2],
+    stepType: "geometric",
+    stepSizes: [2, 1.414, 1.189],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 180,
@@ -363,7 +365,8 @@ export const amDetectionConfig: ExperimentConfig = {
     type: "staircase",
     parameter: "perturbations[0].deltaDepth",
     initialValue: 0.5, // Start with 50% modulation depth
-    stepSizes: [0.2, 0.1, 0.05], // linear steps in depth
+    stepType: "geometric",
+    stepSizes: [2, 1.414, 1.189], // Ratios
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1,

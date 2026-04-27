@@ -157,6 +157,8 @@ export const AdaptiveConfigSchema = z.object({
   }),
   initialN: z.number().optional(),
   switchReversalCount: z.number().optional(),
+  stepType: z.enum(["linear", "geometric"]).default("linear").optional(),
+  stepSizeInterval: z.number().default(1).optional(),
   minValue: z.number(),
   maxValue: z.number(),
   reversals: z.number().optional().describe("Deprecated: use termination.reversals instead. Kept for MCP validator compatibility."),

@@ -42,7 +42,11 @@ export class StaircaseController {
       const targetN = this.isFastStarting ? (this.config.initialN || 1) : this.config.rule.correctDown;
       
       if (this.consecutiveCorrect >= targetN) {
-        this.currentValue -= this.getStepSize();
+        if (this.config.stepType === "geometric") {
+          this.currentValue /= this.getStepSize();
+        } else {
+          this.currentValue -= this.getStepSize();
+        }
         this.consecutiveCorrect = 0;
         
         if (this.lastDirection === "up") {
@@ -53,7 +57,11 @@ export class StaircaseController {
         this.lastDirection = "down";
       }
     } else {
-      this.currentValue += this.getStepSize();
+      if (this.config.stepType === "geometric") {
+        this.currentValue *= this.getStepSize();
+      } else {
+        this.currentValue += this.getStepSize();
+      }
       this.consecutiveCorrect = 0;
       
       if (this.lastDirection === "down") {
@@ -90,9 +98,11 @@ export class StaircaseController {
     }
 
     // Advance step size if needed (e.g. every reversal or every N reversals)
-    // Simple heuristic: advance step size index on each reversal until last
-    if (this.currentStepIndex < this.config.stepSizes.length - 1) {
-      this.currentStepIndex++;
+    const interval = this.config.stepSizeInterval || 1;
+    if (this.reversalCount % interval === 0) {
+      if (this.currentStepIndex < this.config.stepSizes.length - 1) {
+        this.currentStepIndex++;
+      }
     }
   }
 
@@ -108,7 +118,18 @@ export class StaircaseController {
     if (validReversals.length === 0) return this.currentValue;
     
     const sum = validReversals.reduce((acc, r) => acc + r.value, 0);
-    return sum / validReversals.length;
+    const arithmeticMean = sum / validReversals.length;
+
+    if (this.config.stepType === "geometric") {
+      // Geometric mean: exp(mean(log(values)))
+      // Safety: filter out zero/negative values just in case, though they shouldn't exist in geometric mode
+      const positiveValues = validReversals.map(r => r.value).filter(v => v > 0);
+      if (positiveValues.length === 0) return arithmeticMean;
+      const logSum = positiveValues.reduce((acc, v) => acc + Math.log(v), 0);
+      return Math.exp(logSum / positiveValues.length);
+    }
+
+    return arithmeticMean;
   }
 
   getHistory() {
