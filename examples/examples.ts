@@ -1,4 +1,4 @@
-import type { ExperimentConfig } from "../shared/schema";
+import type { ExperimentConfig } from "../shared/schema.js";
 
 /**
  * 1. Basic Frequency Discrimination
