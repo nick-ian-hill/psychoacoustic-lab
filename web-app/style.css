@@ -258,9 +258,10 @@ textarea {
   outline: none !important;
   box-shadow: none !important;
   transform: none !important;
+  border-color: var(--border);
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .btn:hover:not(:disabled) {
     background: var(--accent-hover);
   }
@@ -310,7 +311,7 @@ textarea {
 }
 
 /* Feedback states — high specificity ensures they override :disabled opacity without !important */
-.response-btn.correct, 
+.response-btn.correct,
 .response-btn.correct:disabled {
   border-color: var(--success);
   color: var(--success);
@@ -318,7 +319,7 @@ textarea {
   opacity: 1;
 }
 
-.response-btn.incorrect, 
+.response-btn.incorrect,
 .response-btn.incorrect:disabled {
   border-color: var(--error);
   color: var(--error);

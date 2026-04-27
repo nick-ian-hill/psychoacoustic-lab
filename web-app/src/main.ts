@@ -34,7 +34,7 @@ let trialRng: () => number;
 // Global keydown handler handles both experiment responses and dropdown navigation
 window.addEventListener('keydown', (e) => {
   const isDropdownOpen = customDropdown.classList && customDropdown.classList.contains('open');
-  
+
   if (isDropdownOpen) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -60,9 +60,9 @@ window.addEventListener('keydown', (e) => {
   // Handle '1'-'9' and Numpad '1'-'9'
   const keyMatch = e.key.match(/^[1-9]$/);
   const numpadMatch = e.code.match(/^Numpad([1-9])$/);
-  
+
   const digit = keyMatch ? parseInt(keyMatch[0]) : (numpadMatch ? parseInt(numpadMatch[1]) : null);
-  
+
   if (digit && digit <= responseButtons.length) {
     handleResponse(digit - 1);
     return;
@@ -86,7 +86,7 @@ let highlightedIndex = -1;
 function toggleDropdown(show?: boolean) {
   const isCurrentlyOpen = customDropdown.classList.contains('open');
   const shouldOpen = show !== undefined ? show : !isCurrentlyOpen;
-  
+
   if (shouldOpen) {
     customDropdown.classList.add('open');
     dropdownOptions.classList.remove('hidden');
@@ -114,10 +114,10 @@ function selectOption(index: number) {
   const option = optionsList[index];
   const value = option.getAttribute('data-value')!;
   const text = option.textContent!;
-  
+
   configSelect.value = value;
   configSelect.dispatchEvent(new Event('change'));
-  
+
   selectedText.textContent = text;
   optionsList.forEach(opt => opt.classList.remove('selected'));
   option.classList.add('selected');
@@ -234,7 +234,7 @@ playBtn.addEventListener('click', async () => {
 
   // Always hide play button after first click as we are always in automated mode
   playBtn.classList.add('hidden');
-  
+
   playBtn.disabled = true;
   playBtn.classList.add('playing');
   playBtn.textContent = "\u00A0";
@@ -245,7 +245,7 @@ playBtn.addEventListener('click', async () => {
   if (staircase.getHistory().length === 0) {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
-  
+
   try {
     const intervalsConfig = [...currentConfig.paradigm.intervals];
 
@@ -271,7 +271,7 @@ playBtn.addEventListener('click', async () => {
     const trialData = intervalsConfig.map(interval => {
       // Create a fresh set of resolved perturbations for this specific interval
       const resolvedPerturbations: any[] = [];
-      
+
       if (currentConfig.perturbations) {
         currentConfig.perturbations.forEach((p: any) => {
           const applyTo = p.applyTo || "target";
@@ -294,7 +294,7 @@ playBtn.addEventListener('click', async () => {
         perturbations: resolvedPerturbations
       };
     });
-    
+
     lastTrialData = trialData;
 
     const { buffer, intervalLengths } = await engine.renderTrial(
@@ -310,12 +310,12 @@ playBtn.addEventListener('click', async () => {
     const { source, startTime } = await engine.playBuffer(buffer);
     highlightIntervals(intervalLengths, startTime);
 
-      source.onended = () => {
-        playBtn.classList.remove('playing');
-        // In automated mode, we disable the play button immediately after playback ends
-        // to prevent manual replays while waiting for a participant response.
-        playBtn.disabled = true;
-      };
+    source.onended = () => {
+      playBtn.classList.remove('playing');
+      // In automated mode, we disable the play button immediately after playback ends
+      // to prevent manual replays while waiting for a participant response.
+      playBtn.disabled = true;
+    };
   } catch (e: any) {
     console.error(e);
     alert("Playback error: " + e.message);
@@ -327,7 +327,7 @@ playBtn.addEventListener('click', async () => {
 function handleResponse(responseIndex: number) {
   // 1. IMMEDIATELY disable all buttons to force focus release on mobile
   responseButtons.forEach(b => b.disabled = true);
-  
+
   playBtn.textContent = "\u00A0";
   const isCorrect = responseIndex === targetIntervalIndex;
 
@@ -377,7 +377,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
   const sampleRate = currentConfig.audio.sampleRate || 44100;
   const isiSec = (currentConfig.paradigm.timing.isiMs || 0) / 1000;
   const responseDelaySec = (currentConfig.paradigm.timing.responseDelayMs ?? 250) / 1000;
-  
+
   const intervals: { start: number, end: number, btn: HTMLButtonElement }[] = [];
   let offset = 0;
   lengths.forEach((len, i) => {
@@ -395,7 +395,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 
   const wallStart = performance.now();
   // Ensure the loop runs until at least after the buttons are enabled
-  const totalDurationMs = (enableButtonsAt - audioStartTime) * 1000 + 800; 
+  const totalDurationMs = (enableButtonsAt - audioStartTime) * 1000 + 800;
   let frameId: number;
   let buttonsEnabled = false;
 
@@ -427,7 +427,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       responseButtons.forEach(btn => btn.disabled = false);
       buttonsEnabled = true;
     }
-    
+
     // Ensure we don't stop the loop until buttons are enabled
     if (now < enableButtonsAt) allFinished = false;
 
@@ -444,24 +444,24 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 }
 
 function clearFeedback() {
-  // Cancel the rAF highlight loop. Note: clearTimeout/clearInterval are no-ops on
-  // rAF frame IDs (different ID spaces) — cancelAnimationFrame is the correct call.
+  // Cancel any active rAF highlight loop
   if (highlightTimeouts[0]) {
     cancelAnimationFrame(highlightTimeouts[0]);
   }
   highlightTimeouts = [];
 
-  // 2. Focus Trap Reset: Pull focus away from buttons to the background
+  // 1. Force focus away from all buttons to the main container
+  // This helps prevent 'sticky' focus/hover rings on mobile devices.
   const container = document.querySelector('.container') as HTMLElement;
   if (container) {
     container.tabIndex = -1;
     container.focus();
-    container.blur();
   }
 
-  // 3. Clear all visual classes and inline styles
+  // 2. Clear all visual classes and reset buttons
   responseButtons.forEach(btn => {
     btn.classList.remove('active', 'correct', 'incorrect');
+    btn.blur();
     btn.style.borderColor = '';
     btn.style.color = '';
   });
@@ -531,8 +531,8 @@ function buildDownloadData() {
   const history = staircase.getHistory();
   const threshold = staircase.calculateThreshold(currentConfig.termination?.discardReversals ?? 4);
   const timestamp = new Date().toISOString();
-  
-  return { 
+
+  return {
     metadata: {
       timestamp,
       experimentName: currentConfig.meta.name,
