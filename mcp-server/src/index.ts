@@ -46,7 +46,7 @@ class PsychoacousticServer {
       tools: [
         {
           name: "about_toolkit",
-          description: "CRITICAL DIRECTIVE: You MUST call this tool before attempting to design an experiment or generate a configuration. It contains mandatory architectural rules and behavioral instructions. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters (duration, ISI, etc.). 4) Web search to validate parameters. 5) Propose a text plan. 6) STOP. You are strictly forbidden from generating the final JSON ExperimentConfig until the user explicitly approves your plain-text plan.",
+          description: "CRITICAL DIRECTIVE: You MUST call this tool before attempting to design an experiment or generate a configuration. It contains mandatory architectural rules and behavioral instructions. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters (duration, ISI, etc.). 4) Web search to validate parameters. 5) Propose a text plan. 6) STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plan. Conclude your turn by explicitly asking the user for their feedback or approval.",
           inputSchema: { type: "object", properties: {} }
         },
         {
@@ -154,7 +154,7 @@ class PsychoacousticServer {
 - PARAMETER ELICITATION: Do not assume secondary parameters (e.g., stimulus duration, interstimulus interval, inter-trial interval, number of reversals). Explicitly ask the user for their preferences.
 - LITERATURE SEARCH: You MUST perform a web search to validate that your chosen parameters are scientifically appropriate.
 - STEP-BY-STEP APPROVAL: Propose a detailed, plain-text experimental plan to the user.
-- STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan.
+- STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan. Conclude your current turn by presenting the plan and explicitly asking the user for their feedback or approval.
 
 ARCHITECTURE & BINAURAL PRECISION:
 - Smart Server / Dumb Engine: The Audio Engine only renders explicit components. It does not auto-generate complex stimulus relationships. You must use tools like calc_frequencies, calc_phases, and calc_amplitudes to supply explicit numerical arrays.
@@ -265,28 +265,40 @@ Each generator is one of:
 - modulators?: Array<{ type: "AM", rateHz, depth }>
 
 ## perturbations? (optional, array)
-Applied only to the TARGET interval. Each type:
+By default, perturbations apply only to the 'target' interval.
+- applyTo: "target" | "all" — Set to "all" for ROVING (randomization across all intervals).
 
-### spectral_profile
-- targetFrequency: number — must match a component frequency
-- deltaDb: number | { adaptive: true } — added to component levelDb
+### Value Types (used for deltaDb, deltaPercent, etc.)
+- number — Static value.
+- { adaptive: true } — Links to the adaptive staircase.
+- { type: "uniform", min: number, max: number } — ROVING: Randomized per interval/trial using meta.seed.
 
-### onset_asynchrony
+### Types:
+#### gain
+- deltaDb: number | { adaptive: true } | RandomUniform
+- applyTo: "all" — Use this for GLOBAL LEVEL ROVING (e.g., +/- 5 dB).
+
+#### spectral_profile
 - targetFrequency: number
-- delayMs: number | { adaptive: true }
+- deltaDb: value
+- applyTo: "all" — Use for INDIVIDUAL COMPONENT ROVING.
 
-### mistuning
+#### mistuning
+- targetFrequency?: number — If omitted, shifts all frequencies (GLOBAL PITCH ROVING).
+- deltaPercent: value
+
+#### onset_asynchrony
 - targetFrequency: number
-- deltaPercent: number | { adaptive: true }
+- delayMs: value
 
-### phase_shift
+#### phase_shift
 - targetFrequency: number
-- ear?: "left" | "right" | "both" — IMPORTANT: set this to target a single ear for true IPD
-- deltaDegrees: number | { adaptive: true }
+- ear?: "left" | "right" | "both"
+- deltaDegrees: value
 
-### am_depth
-- targetFrequency?: number — optional; omit to apply to broadband noise
-- deltaDepth: number | { adaptive: true } — added to modulator depth (0–1)
+#### am_depth
+- targetFrequency?: number
+- deltaDepth: value
 
 ## paradigm (required)
 - type: "2AFC" | "3AFC" | "Probe-Signal"
@@ -445,26 +457,47 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     const config = result.data;
     const warnings: string[] = [];
 
-    // 1. Total power / clipping check across all layers, per channel
+    // 1. Worst-case Total power / clipping check
+    // We must account for base levels + adaptive maxima + roving maxima
     let totalPowerL = 0;
     let totalPowerR = 0;
+
+    const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
+      let maxDb = 0;
+      if (!config.perturbations) return 0;
+      for (const p of config.perturbations) {
+        if (p.type === type && (!targetFreq || (p as any).targetFrequency === targetFreq)) {
+          const val = (p as any).deltaDb;
+          if (typeof val === 'number') maxDb += val;
+          else if (val?.adaptive) maxDb += config.adaptive?.maxValue || 0;
+          else if (val?.type === 'uniform') maxDb += val.max;
+        }
+      }
+      return maxDb;
+    };
+
+    // Global gain perturbation (roving or adaptive)
+    const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
+
     for (const gen of config.stimuli) {
       if (gen.type === "multi_component") {
         for (const c of gen.components as any[]) {
-          const p = Math.pow(10, c.levelDb / 10);
+          const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+          const p = Math.pow(10, pDb / 10);
           if (c.ear === "left") { totalPowerL += p; }
           else if (c.ear === "right") { totalPowerR += p; }
           else { totalPowerL += p; totalPowerR += p; }
         }
       } else if (gen.type === "noise") {
-        const p = Math.pow(10, gen.levelDb / 10);
+        const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
+        const p = Math.pow(10, pDb / 10);
         if (gen.ear === "left") { totalPowerL += p; }
         else if (gen.ear === "right") { totalPowerR += p; }
         else { totalPowerL += p; totalPowerR += p; }
       }
     }
 
-    // Apply Global Level
+    // Apply Global Level field
     if (config.globalLevelDb !== undefined) {
       const globalLinear = Math.pow(10, config.globalLevelDb / 10);
       totalPowerL *= globalLinear;
@@ -475,7 +508,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     if (peakChannelPower > 0) {
       const totalDb = 10 * Math.log10(peakChannelPower);
       if (totalDb > 95) {
-        warnings.push(`CLIPPING RISK: Peak channel level exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB). The engine normalizes automatically, but this may indicate incorrect level settings.`);
+        warnings.push(`CLIPPING RISK: Worst-case peak level (base + roving + adaptive max) exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB). While the engine normalizes, this may cause unwanted compression of background components.`);
       }
     }
 
