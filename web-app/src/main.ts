@@ -360,7 +360,7 @@ function handleResponse(responseIndex: number) {
         playBtn.click();
       }, itiMs);
     }
-  }, 500);
+  }, currentConfig.paradigm.timing.feedbackDurationMs);
 }
 
 /**
