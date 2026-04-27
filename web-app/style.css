@@ -300,11 +300,13 @@ textarea {
 }
 
 /* Active interval highlight — shown in sync with the audio */
-.response-btn.active {
+.response-btn.active,
+.response-btn.active:disabled {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(59, 130, 246, 0.12);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1);
+  opacity: 1;
 }
 
 /* Feedback states — high specificity ensures they override :disabled opacity without !important */
