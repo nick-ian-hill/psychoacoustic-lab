@@ -171,6 +171,13 @@ startBtn.addEventListener('click', async () => {
 
     currentConfig = parseResult.data;
 
+    // This runner requires an adaptive staircase. Block non-adaptive configs early
+    // rather than crashing silently when a response button is clicked.
+    if (!currentConfig.adaptive || currentConfig.adaptive.type !== 'staircase') {
+      alert("Configuration Error: This runner requires an 'adaptive' staircase block. Non-adaptive (method of constant stimuli) paradigms are not yet supported.");
+      return;
+    }
+
     // Initialize Audio Engine
     engine = new AudioEngine(currentConfig.audio.sampleRate, currentConfig.meta.seed);
 
@@ -421,14 +428,11 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 }
 
 function clearFeedback() {
-  // 1. Kill the current frame and any timers
+  // Cancel the rAF highlight loop. Note: clearTimeout/clearInterval are no-ops on
+  // rAF frame IDs (different ID spaces) — cancelAnimationFrame is the correct call.
   if (highlightTimeouts[0]) {
     cancelAnimationFrame(highlightTimeouts[0]);
   }
-  highlightTimeouts.forEach(t => {
-    clearTimeout(t);
-    clearInterval(t);
-  });
   highlightTimeouts = [];
 
   // 2. Focus Trap Reset: Pull focus away from buttons to the background

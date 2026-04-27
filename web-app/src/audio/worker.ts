@@ -15,11 +15,18 @@ interface RenderTrialMessage {
 
 self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
   const { id, intervals, isiMs, sampleRate, seed, adaptiveValue, calibration, globalLevelDb } = event.data;
-  const rng = seedrandom(seed.toString());
+  // No shared top-level RNG. Each interval gets its own independently-seeded RNG
+  // (see per-interval loop below) so that roving draws (applyTo:"all") are statistically
+  // uncorrelated across intervals, regardless of internal synthesis complexity.
 
   const renderedIntervals: { left: Float32Array; right: Float32Array }[] = [];
   
-  for (const interval of intervals) {
+  for (let intervalIdx = 0; intervalIdx < intervals.length; intervalIdx++) {
+    const interval = intervals[intervalIdx];
+    // Per-interval RNG: seeded from the trial-unique seed combined with the interval index.
+    // This guarantees independent random streams per interval within a trial.
+    const intervalRng = seedrandom(`${seed}-${intervalIdx}`);
+
     const layers: { left: Float32Array; right: Float32Array }[] = [];
     let maxLength = 0;
 
@@ -27,9 +34,9 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     for (const gen of interval.generators) {
       let result;
       if (gen.type === "multi_component") {
-        result = synthesizeMultiComponent(gen, sampleRate, rng, interval.perturbations, adaptiveValue, calibration);
+        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration);
       } else if (gen.type === "noise") {
-        result = synthesizeNoise(gen, sampleRate, rng, interval.perturbations, adaptiveValue, calibration);
+        result = synthesizeNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration);
       }
       
       if (result) {
@@ -71,7 +78,14 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     }
   }
 
-  // Apply Global Level Offset (if any)
+  // Step 1: Normalize first — removes any synthesis-level clipping risk while preserving
+  // all relative levels (ILD, spectral shape). This is purely a safety net.
+  normalizeStereo(finalLeft, finalRight);
+
+  // Step 2: Apply globalLevelDb as a post-normalization presentation-level trim.
+  // Because normalization has already run, this cleanly scales the final output level
+  // without interfering with calibrated component ratios. A large positive value here
+  // may cause clipping at the DAC; that should be caught by evaluate_and_finalize_experiment.
   if (globalLevelDb !== undefined && globalLevelDb !== 0) {
     const gain = Math.pow(10, globalLevelDb / 20);
     for (let i = 0; i < finalLeft.length; i++) {
@@ -79,9 +93,6 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
       finalRight[i] *= gain;
     }
   }
-
-  // Perform Final Normalization (prevents clipping while preserving ILD)
-  normalizeStereo(finalLeft, finalRight);
 
   // Transfer the buffers and timing info to the main thread
   self.postMessage({
@@ -91,3 +102,4 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     intervalLengths: renderedIntervals.map(r => r.left.length)
   }, [finalLeft.buffer, finalRight.buffer] as any);
 };
+

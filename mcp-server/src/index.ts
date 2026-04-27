@@ -191,7 +191,8 @@ Use these exact citations as search keys if you need to retrieve deeper methodol
           return {
             content: [{
               type: "text",
-              text: "Available Examples: freqDiscrim, auditoryGrouping, logSpaced, ipdDiscrim, srim, tenTest, amDetection"
+              // MAINTENANCE NOTE: Update this list whenever a new export is added to examples/examples.ts
+              text: "Available Examples: freqDiscrim, auditoryGrouping, logSpaced, ipdDiscrim, srim, tenTest, amDetection, profileAnalysis"
             }]
           };
         case "get_example_config":
@@ -316,12 +317,18 @@ By default, perturbations apply only to the 'target' interval.
 - initialValue: number
 - stepSizes: number[] — step sizes; later entries used after each reversal
 - stepType?: "linear" | "geometric" — Defaults to linear. Use 'geometric' for variables bounded by zero (multiplies/divides step sizes).
-- stepSizeInterval?: number — Number of reversals required before advancing to the next step size in the stepSizes array. Defaults to 1.
+- stepSizeInterval?: number — Number of reversals required before advancing to the next step size in the stepSizes array. Defaults to 1. WARNING: Setting this to N means the step size only advances every N reversals. If stepSizes has fewer entries than (totalReversals / N), the final step size will be held for the remainder — which may be intentional but is a common misconfiguration.
 - rule: { correctDown: number } — e.g., { correctDown: 3 } for 3-down/1-up
 - initialN?: number — fast-start: use N-down/1-up until switchReversalCount reversals
 - switchReversalCount?: number — reversal count at which fast-start ends
 - minValue: number
 - maxValue: number
+- unit?: string — The display unit of the adaptive parameter (e.g., 'Hz', 'dB', '%', '°'). Shown in the UI status badge and included in the downloaded results JSON. Always set this for labelled threshold output.
+
+## conditions? (optional)
+A free-form object with 'reference' and/or 'target' keys. Currently used as a metadata carrier for documenting per-condition parameter overrides in the config file. The engine itself does not read this field — all condition differences must be expressed via perturbations.
+- reference?: any — Optional descriptor for what the reference interval represents.
+- target?: any — Optional descriptor for what the target interval represents.
 
 ## ui? (optional)
 Partial object. All fields are optional and fall back to defaults if omitted.
@@ -457,8 +464,12 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     const config = result.data;
     const warnings: string[] = [];
 
-    // 1. Worst-case Total power / clipping check
-    // We must account for base levels + adaptive maxima + roving maxima
+    // 1. Worst-case Total power / clipping check.
+    // Levels are accumulated in the power domain (dB10) and compared to 95 dB.
+    // CALIBRATION ASSUMPTION: This check assumes 0 dBFS ≡ 94 dB SPL (the standard
+    // sound-level meter reference). If your system is calibrated differently, the
+    // 95 dB warning threshold may not correspond to the actual SPL at the listener's ear.
+    // Use this as a relative sanity check, not an absolute safety guarantee.
     let totalPowerL = 0;
     let totalPowerR = 0;
 

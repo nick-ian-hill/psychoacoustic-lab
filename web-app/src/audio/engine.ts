@@ -5,6 +5,9 @@ export class AudioEngine {
   private worker: Worker;
   private pendingRequests: Map<string, (res: { buffer: AudioBuffer; intervalLengths: number[] }) => void> = new Map();
   private seed: number;
+  // Incremented each renderTrial call so every trial gets a unique seed.
+  // This prevents noise realizations and roving values from being identical across trials.
+  private renderCount: number = 0;
 
   constructor(sampleRate: number, seed: number) {
     this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)({
@@ -38,6 +41,9 @@ export class AudioEngine {
     globalLevelDb?: number
   ): Promise<{ buffer: AudioBuffer; intervalLengths: number[] }> {
     const id = Math.random().toString(36).substring(7);
+    // Derive a per-trial seed: master seed + monotonically increasing render count.
+    // This ensures each trial's noise realization and roving draws are unique.
+    const trialSeed = this.seed + this.renderCount++;
     
     return new Promise((resolve) => {
       this.pendingRequests.set(id, resolve);
@@ -46,7 +52,7 @@ export class AudioEngine {
         intervals,
         isiMs,
         sampleRate: this.ctx.sampleRate,
-        seed: this.seed,
+        seed: trialSeed,
         adaptiveValue,
         calibration,
         globalLevelDb
@@ -65,9 +71,13 @@ export class AudioEngine {
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination);
-    // Capture AudioContext time at scheduling
-    const startTime = this.ctx.currentTime;
-    source.start(startTime);
+    const scheduledAt = this.ctx.currentTime;
+    source.start(scheduledAt);
+    // Return the *perceptual* start time: when audio actually reaches the listener's ears.
+    // outputLatency accounts for hardware buffering (typically 5–50 ms on desktop,
+    // up to 100 ms on mobile). The highlight loop compares ctx.currentTime against this
+    // value, so interval buttons illuminate in sync with perceived audio onset.
+    const startTime = scheduledAt + this.getOutputLatency();
     return { source, startTime };
   }
 

@@ -146,19 +146,19 @@ export function generateFFTNoise(
   // We need to return exactly `targetSamples` length.
   const result = new Float32Array(targetSamples);
   
-  // Also, normalize the result so its RMS or peak is somewhat predictable.
-  // We'll normalize to a peak of ~1.0 for the generated segment, 
-  // and the engine will apply the actual desired dB level.
-  let peak = 0;
+  // Normalize to RMS = 1 so that each noise realization has consistent statistical energy
+  // regardless of the random seed or FFT length. Peak normalization would cause per-realization
+  // level jitter because the ratio of RMS to peak varies with the phase draws. The synthesis
+  // engine then applies the desired dB level via baseAmp, giving predictable output.
+  let sumSq = 0;
   for (let i = 0; i < targetSamples; i++) {
-    const val = real[i];
-    if (Math.abs(val) > peak) peak = Math.abs(val);
-    result[i] = val;
+    result[i] = real[i];
+    sumSq += result[i] * result[i];
   }
-
-  if (peak > 0) {
+  const rms = Math.sqrt(sumSq / targetSamples);
+  if (rms > 0) {
     for (let i = 0; i < targetSamples; i++) {
-      result[i] /= peak;
+      result[i] /= rms;
     }
   }
 
