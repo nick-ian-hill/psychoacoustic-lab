@@ -18,9 +18,9 @@ export const freqDiscrimConfig: ExperimentConfig = {
   stimuli: [{
     type: "multi_component",
     components: [
-      { frequency: 1000, levelDb: 65, phaseDegrees: 0, ear: "both" }
+      { frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" }
     ],
-    durationMs: 250,
+    durationMs: 300,
     globalEnvelope: { attackMs: 10, releaseMs: 10, type: "linear" }
   }],
   perturbations: [
