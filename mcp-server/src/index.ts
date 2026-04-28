@@ -132,6 +132,23 @@ class PsychoacousticServer {
           }
         },
         {
+          name: "calc_ild",
+          description: "[Tier 3: Primitive] Calculate Interaural Level Difference (ILD) offsets for left and right ears. ILD is a primary cue for sound lateralization, especially at high frequencies (>1500 Hz).",
+          inputSchema: {
+            type: "object",
+            properties: {
+              ildDb: { type: "number", minimum: -40, maximum: 40, description: "Desired ILD in dB. Positive values shift the sound to the right (Right > Left)." },
+              baseLevelDb: { type: "number", minimum: 0, maximum: 100, description: "The reference level in dB SPL. Defaults to 70." },
+              strategy: { 
+                type: "string", 
+                enum: ["center", "left_fixed", "right_fixed"],
+                description: "center: distributes ILD around baseLevel; left_fixed: keeps left at baseLevel; right_fixed: keeps right at baseLevel."
+              }
+            },
+            required: ["ildDb"]
+          }
+        },
+        {
           name: "evaluate_and_finalize_experiment",
           description: "Final validation and expert review of an ExperimentConfig. MANDATORY FINAL STEP: You MUST pass this validation before presenting the final JSON to the user. It checks for clipping risks, adaptive staircase stability, and other common experimental design errors.",
           inputSchema: {
@@ -319,6 +336,8 @@ HIGH-LEVEL DESIGN & BATCHING:
           return this.handleCalcAmplitudes(request.params.arguments);
         case "calc_itd":
           return this.handleCalcItd(request.params.arguments);
+        case "calc_ild":
+          return this.handleCalcIld(request.params.arguments);
         case "generate_stimulus_block":
           return this.handleGenerateStimulusBlock(request.params.arguments);
         case "evaluate_and_finalize_experiment":
@@ -645,6 +664,34 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     if (ipdWarning) result.warning = ipdWarning;
 
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+
+  private handleCalcIld(args: any) {
+    const { ildDb, baseLevelDb = 70, strategy = "center" } = args;
+    let leftLevel = baseLevelDb;
+    let rightLevel = baseLevelDb;
+
+    if (strategy === "center") {
+      leftLevel = baseLevelDb - (ildDb / 2);
+      rightLevel = baseLevelDb + (ildDb / 2);
+    } else if (strategy === "left_fixed") {
+      leftLevel = baseLevelDb;
+      rightLevel = baseLevelDb + ildDb;
+    } else if (strategy === "right_fixed") {
+      rightLevel = baseLevelDb;
+      leftLevel = baseLevelDb - ildDb;
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          leftLevelDb: parseFloat(leftLevel.toFixed(2)),
+          rightLevelDb: parseFloat(rightLevel.toFixed(2)),
+          actualIldDb: parseFloat((rightLevel - leftLevel).toFixed(2))
+        }, null, 2)
+      }]
+    };
   }
 
   private handleFinalize(args: any) {
