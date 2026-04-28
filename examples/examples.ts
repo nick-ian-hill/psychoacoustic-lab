@@ -39,8 +39,8 @@ export const freqDiscrimConfig: ExperimentConfig = {
     parameter: "perturbations[0].deltaPercent",
     initialValue: 5,
     stepType: "geometric",
-    stepSizes: [2, 1.414, 1.189],
-    rule: { correctDown: 3 },
+    stepSizes: [1.5, 1.25, 1.125],
+    rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 50,
     reversals: 12,
@@ -96,8 +96,8 @@ export const auditoryGroupingConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDb",
-    initialValue: 10,
-    stepSizes: [4, 2, 1, 0.5],
+    initialValue: 15, // Increased from 10 for gentler start
+    stepSizes: [2, 1, 0.5],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
@@ -149,9 +149,9 @@ export const itdDiscrimConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaMicroseconds",
-    initialValue: 100, // Start with 100 microseconds
+    initialValue: 100,
     stepType: "geometric",
-    stepSizes: [2, 1.414, 1.189],
+    stepSizes: [1.5, 1.25, 1.125],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1000,
@@ -259,8 +259,8 @@ export const tenTestConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDb",
-    initialValue: 15,
-    stepSizes: [4, 2],
+    initialValue: 20,
+    stepSizes: [2, 1],
     rule: { correctDown: 2 },
     minValue: -10,
     maxValue: 30,
@@ -311,9 +311,9 @@ export const amDetectionConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDepth",
-    initialValue: 0.5, // Start with 50% modulation depth
+    initialValue: 1.0,
     stepType: "geometric",
-    stepSizes: [2, 1.414, 1.189], // Ratios
+    stepSizes: [1.5, 1.25, 1.125],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1,
@@ -381,7 +381,7 @@ export const profileAnalysisConfig: ExperimentConfig = {
     type: "staircase",
     parameter: "perturbations[6].deltaDb", // The 7th perturbation is the adaptive one
     initialValue: 10,
-    stepSizes: [4, 2, 1, 0.5],
+    stepSizes: [2, 1, 0.5],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 30,

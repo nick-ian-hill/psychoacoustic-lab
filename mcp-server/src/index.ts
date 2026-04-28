@@ -55,7 +55,7 @@ class PsychoacousticServer {
         },
         {
           name: "get_example_config",
-          description: "Retrieve the full JSON configuration for a specific example. This is the best way to understand how the ExperimentConfig schema is applied in practice.",
+          description: "Retrieve and view the full JSON configuration for a specific example. Use this to understand how the ExperimentConfig schema is applied in practice or to review existing paradigms.",
           inputSchema: {
             type: "object",
             properties: {
