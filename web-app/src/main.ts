@@ -296,6 +296,39 @@ startBtn.addEventListener('click', async () => {
   }
 });
 
+/**
+ * Renders and plays the next pre-rendered trial, optionally scheduling
+ * the audio onset at a precise AudioContext timestamp.
+ *
+ * When scheduledTime is provided (auto-advance mode), the ITI is enforced
+ * entirely by the sample-accurate AudioContext clock, eliminating the
+ * accumulated error from wall-clock setTimeout drift and output latency.
+ */
+async function playNextTrial(scheduledTime?: number) {
+  if (!preRenderedTrial) {
+    preRenderedTrial = prepareTrial();
+  }
+
+  try {
+    const { buffer, intervalLengths } = await preRenderedTrial;
+    preRenderedTrial = null;
+
+    clearFeedback();
+    const { source, startTime } = await engine.playBuffer(buffer, scheduledTime);
+    highlightIntervals(intervalLengths, startTime);
+
+    source.onended = () => {
+      playBtn.classList.remove('playing');
+      playBtn.disabled = true;
+    };
+  } catch (e: any) {
+    console.error(e);
+    alert("Playback error: " + e.message);
+    playBtn.classList.remove('playing');
+    playBtn.textContent = "Error";
+  }
+}
+
 playBtn.addEventListener('click', async () => {
   if (!engine || !staircase) return;
   await engine.resume();
@@ -303,41 +336,18 @@ playBtn.addEventListener('click', async () => {
   // Always hide play button after first click as we are always in automated mode
   playBtn.classList.add('hidden');
 
-    playBtn.disabled = true;
-    playBtn.classList.add('playing');
-    playBtn.textContent = "\u00A0";
-    responseButtons.forEach(btn => btn.disabled = true);
+  playBtn.disabled = true;
+  playBtn.classList.add('playing');
+  playBtn.textContent = "\u00A0";
+  responseButtons.forEach(btn => btn.disabled = true);
 
-    // Add a brief lead-in delay for the first trial to allow participant preparation.
-    if (staircase.getHistory().length === 0) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
+  // Add a brief lead-in delay for the first trial to allow participant preparation.
+  if (staircase.getHistory().length === 0) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
 
-    try {
-      // Use the pre-rendered buffer if available; otherwise (first trial), render now.
-      if (!preRenderedTrial) {
-        preRenderedTrial = prepareTrial();
-      }
-      
-      const { buffer, intervalLengths } = await preRenderedTrial;
-      preRenderedTrial = null; // Clear after use
-
-      // Play and capture AudioContext startTime for synchronized highlighting
-      clearFeedback();
-      const { source, startTime } = await engine.playBuffer(buffer);
-      highlightIntervals(intervalLengths, startTime);
-
-      source.onended = () => {
-        playBtn.classList.remove('playing');
-        playBtn.disabled = true;
-      };
-    } catch (e: any) {
-      console.error(e);
-      alert("Playback error: " + e.message);
-      playBtn.classList.remove('playing');
-      playBtn.textContent = "Error";
-    }
-  });
+  await playNextTrial(); // No scheduled time — play as soon as possible
+});
 
 function handleResponse(responseIndex: number) {
   if (isProcessingResponse) return;
@@ -366,8 +376,8 @@ function handleResponse(responseIndex: number) {
       trialState: lastTrialData
     });
 
-    // 2. IMMEDIATELY start pre-rendering the next trial in the background
-    // This allows the math to happen during the feedback/ITI period.
+    // 2. IMMEDIATELY start pre-rendering the next trial in the background.
+    // Synthesis runs during the feedback window so the buffer is ready by ITI end.
     if (!staircase.isFinished(currentConfig.termination)) {
       preRenderedTrial = prepareTrial();
     }
@@ -379,23 +389,31 @@ function handleResponse(responseIndex: number) {
     return;
   }
 
-  // 3. Sequential Timing: Next trial starts only AFTER feedback is cleared.
+  // 3. Wait for feedback duration, then schedule the next trial via the AudioContext clock.
+  // Capturing the AudioContext time here (inside setTimeout) rather than before it means
+  // any setTimeout jitter is absorbed into the clock reading, not added on top of the ITI.
   setTimeout(() => {
     btn.classList.remove('correct', 'incorrect');
-    
+
     if (staircase.isFinished(currentConfig.termination)) {
       endExperiment();
       isProcessingResponse = false;
     } else {
       updateStatus();
-      
-      // The ITI timer starts here, after feedback is removed.
-      setTimeout(() => {
-        isProcessingResponse = false;
-        if (experimentArea.classList.contains('hidden')) return;
-        playBtn.disabled = false;
-        playBtn.click();
-      }, itiMs);
+
+      if (experimentArea.classList.contains('hidden')) return;
+
+      // Compute the exact AudioContext timestamp at which the next stimulus should begin.
+      // outputLatency is NOT added here — it's only needed when scheduling at near-zero
+      // lookahead to prevent buffer underrun. With itiMs >> latency, the WebAudio scheduler
+      // fills the buffer automatically; adding latency would just extend perceived silence.
+      const scheduledStartTime = engine.getTime() + itiMs / 1000;
+
+      // isProcessingResponse is cleared here — the ITI period has begun and the
+      // buttons remain disabled until highlightIntervals re-enables them.
+      isProcessingResponse = false;
+
+      playNextTrial(scheduledStartTime);
     }
   }, feedbackMs);
 
@@ -450,6 +468,7 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     // 2. Update highlight classes
     intervals.forEach((interval, idx) => {
       const shouldBeActive = (idx === activeIdx);
+
       if (interval.btn.classList.contains('active') !== shouldBeActive) {
         interval.btn.classList.toggle('active', shouldBeActive);
       }

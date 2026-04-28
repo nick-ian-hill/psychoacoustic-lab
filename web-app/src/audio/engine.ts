@@ -92,19 +92,21 @@ export class AudioEngine {
     }
   }
 
-  async playBuffer(buffer: AudioBuffer): Promise<{ source: AudioBufferSourceNode; startTime: number }> {
+  async playBuffer(
+    buffer: AudioBuffer,
+    scheduledTime?: number
+  ): Promise<{ source: AudioBufferSourceNode; startTime: number }> {
     await this.resume();
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination);
-    
-    // Calculate the precise start time by accounting for hardware/processing latency.
-    // Scheduling for (currentTime + latency) gives the browser a stable window to 
-    // prepare the audio buffer, ensuring playback starts exactly when the AudioContext
-    // clock reaches this timestamp.
-    const preciseStartTime = this.ctx.currentTime + this.getOutputLatency();
+
+    // If a precise start time is provided by the caller (AudioContext clock), use it directly.
+    // Otherwise, schedule as soon as possible by adding output latency to the current time.
+    // The scheduled time already incorporates any required latency offset when provided.
+    const preciseStartTime = scheduledTime ?? (this.ctx.currentTime + this.getOutputLatency());
     source.start(preciseStartTime);
-    
+
     return { source, startTime: preciseStartTime };
   }
 
