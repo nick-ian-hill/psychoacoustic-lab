@@ -380,8 +380,9 @@ export const profileAnalysisConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[6].deltaDb", // The 7th perturbation is the adaptive one
-    initialValue: 10,
-    stepSizes: [2, 1, 0.5],
+    initialValue: 15,
+    stepType: "geometric",
+    stepSizes: [2, 1.25, 1.125],
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 30,
