@@ -138,6 +138,61 @@ class PsychoacousticServer {
             },
             required: ["config"]
           }
+        },
+        {
+          name: "generate_config_from_template",
+          description: "Create a valid ExperimentConfig by providing high-level parameters to a known paradigm template. Use this to quickly bootstrap an experiment without manual JSON construction.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              templateName: { type: "string", enum: ["freqDiscrim", "itdDiscrim", "amDetection", "profileAnalysis", "tenTest", "srim"], description: "The base paradigm to use." },
+              parameters: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Custom name for the experiment." },
+                  frequencyHz: { type: "number", description: "Override the primary frequency (Hz)." },
+                  levelDb: { type: "number", description: "Override the base presentation level (dB SPL)." },
+                  durationMs: { type: "number", description: "Override stimulus duration (ms)." },
+                  adaptiveInitialValue: { type: "number", description: "Initial value for the adaptive staircase." },
+                  adaptiveStepSizes: { type: "array", items: { type: "number" }, description: "Array of step sizes for the staircase." }
+                }
+              }
+            },
+            required: ["templateName"]
+          }
+        },
+        {
+          name: "generate_batch_configs",
+          description: "Generate a set of ExperimentConfigs by applying a list of variations to a base configuration. Essential for multi-condition studies (e.g. comparing thresholds across frequencies).",
+          inputSchema: {
+            type: "object",
+            properties: {
+              baseConfig: { type: "object", description: "The template ExperimentConfig JSON." },
+              variations: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    conditionName: { type: "string", description: "Suffix for the experiment name (e.g. '500Hz')." },
+                    overrides: { type: "object", description: "Partial ExperimentConfig to merge (e.g. { stimuli: [...], meta: { ... } })." }
+                  },
+                  required: ["conditionName", "overrides"]
+                }
+              }
+            },
+            required: ["baseConfig", "variations"]
+          }
+        },
+        {
+          name: "summarize_experiment",
+          description: "Provide a scientific and technical summary of an ExperimentConfig. Use this to explain the methodology to a user or verify a design.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              config: { type: "object" }
+            },
+            required: ["config"]
+          }
         }
       ],
     }));
@@ -185,7 +240,12 @@ Use these exact citations as search keys if you need to retrieve deeper methodol
 - Klumpp, R. G., & Eady, H. R. (1956). Some Measurements of Interaural Time Difference Thresholds. The Journal of the Acoustical Society of America. (Establishes the ~10 µs ITD acuity limit).
 - Watson, C. S., & Fitzhugh, R. J. (1990). The method of constant stimuli is inefficient. The Journal of the Acoustical Society of America. (Rationale for adaptive procedures).
 - Moore, B. C. J. (2012). An Introduction to the Psychology of Hearing. (The definitive textbook for general threshold yardsticks, ERB scales, and masking).
-- Viemeister, N. F. (1979). Temporal modulation transfer function based upon modulation thresholds. The Journal of the Acoustical Society of America. (Baseline for AM detection and temporal resolution).`
+- Viemeister, N. F. (1979). Temporal modulation transfer function based upon modulation thresholds. The Journal of the Acoustical Society of America. (Baseline for AM detection and temporal resolution).
+
+HIGH-LEVEL DESIGN & BATCHING:
+- Bootstrapping: Use 'generate_config_from_template' to quickly create a standard experiment (e.g. Freq Discrimination) by providing just F0 and Level.
+- Multi-Condition Studies: Use 'generate_batch_configs' to create multiple ExperimentConfigs at once (e.g., measuring ITD thresholds at 500, 1000, and 2000 Hz). This ensures consistency across conditions.
+- Verification: Use 'summarize_experiment' to get a human-readable scientific summary of any config to verify it matches your experimental intent.`
             }]
           };
         case "list_examples":
@@ -210,6 +270,12 @@ Use these exact citations as search keys if you need to retrieve deeper methodol
           return this.handleCalcItd(request.params.arguments);
         case "evaluate_and_finalize_experiment":
           return this.handleFinalize(request.params.arguments);
+        case "generate_config_from_template":
+          return this.handleGenerateFromTemplate(request.params.arguments);
+        case "generate_batch_configs":
+          return this.handleGenerateBatch(request.params.arguments);
+        case "summarize_experiment":
+          return this.handleSummarize(request.params.arguments);
         default:
           throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
       }
@@ -579,6 +645,121 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     } catch (e: any) {
       return { content: [{ type: "text", text: `Error loading example: ${e.message}` }], isError: true };
     }
+  }
+
+  private deepMerge(target: any, source: any): any {
+    const result = { ...target };
+    for (const key of Object.keys(source)) {
+      const val = source[key];
+      if (val !== null && typeof val === "object" && !Array.isArray(val) && key in target && typeof target[key] === "object") {
+        result[key] = this.deepMerge(target[key], val);
+      } else {
+        result[key] = val;
+      }
+    }
+    return result;
+  }
+
+  private async handleGenerateFromTemplate(args: any) {
+    const { templateName, parameters = {} } = args;
+    try {
+      const examples = await import("../../examples/examples.js");
+      const baseConfig = (examples as any)[`${templateName}Config`];
+      if (!baseConfig) throw new Error(`Template '${templateName}' not found.`);
+
+      let config = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
+
+      if (parameters.name) config.meta.name = parameters.name;
+      
+      // High-level mapping logic
+      if (parameters.frequencyHz !== undefined) {
+        config.stimuli.forEach((s: any) => {
+          if (s.type === 'multi_component') {
+            s.components.forEach((c: any) => {
+              // Heuristic: update components that were at the 'nominal' frequency (usually 1000)
+              // or if it's a single-component stimulus.
+              if (c.frequency === 1000 || s.components.length === 1) c.frequency = parameters.frequencyHz;
+            });
+          }
+        });
+        config.perturbations?.forEach((p: any) => {
+          if ('targetFrequency' in p && (p.targetFrequency === 1000 || p.targetFrequency === undefined)) {
+            p.targetFrequency = parameters.frequencyHz;
+          }
+        });
+      }
+
+      if (parameters.levelDb !== undefined) {
+        config.stimuli.forEach((s: any) => { s.levelDb = parameters.levelDb; if (s.components) s.components.forEach((c: any) => c.levelDb = parameters.levelDb); });
+      }
+
+      if (parameters.durationMs !== undefined) {
+        config.stimuli.forEach((s: any) => s.durationMs = parameters.durationMs);
+      }
+
+      if (parameters.adaptiveInitialValue !== undefined && config.adaptive) {
+        config.adaptive.initialValue = parameters.adaptiveInitialValue;
+      }
+
+      if (parameters.adaptiveStepSizes !== undefined && config.adaptive) {
+        config.adaptive.stepSizes = parameters.adaptiveStepSizes;
+      }
+
+      return this.handleFinalize({ config });
+    } catch (e: any) {
+      return { content: [{ type: "text", text: `Error generating from template: ${e.message}` }], isError: true };
+    }
+  }
+
+  private handleGenerateBatch(args: any) {
+    const { baseConfig, variations } = args;
+    const configs = variations.map((v: any) => {
+      let config = JSON.parse(JSON.stringify(baseConfig));
+      config = this.deepMerge(config, v.overrides);
+      config.meta.name = `${config.meta.name} (${v.conditionName})`;
+      return config;
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          batchSize: configs.length,
+          configs
+        }, null, 2)
+      }]
+    };
+  }
+
+  private handleSummarize(args: any) {
+    const result = ExperimentConfigSchema.safeParse(args.config);
+    if (!result.success) return { isError: true, content: [{ type: "text", text: "Invalid Config" }] };
+    const config = result.data;
+
+    const summary = `
+# Experiment Summary: ${config.meta.name}
+**Paradigm**: ${config.paradigm.type} (${config.paradigm.randomizeOrder ? "Randomized" : "Fixed Order"})
+**Rationale**: ${config.meta.rationale || "N/A"}
+
+## Stimuli
+${config.stimuli.map((s, i) => {
+  if (s.type === 'multi_component') {
+    return `- Generator ${i+1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms`;
+  } else {
+    return `- Generator ${i+1}: ${s.noiseType} noise, ${s.durationMs}ms`;
+  }
+}).join('\n')}
+
+## Logic
+**Adaptive Tracking**: ${config.adaptive ? `Yes (${config.adaptive.rule.correctDown}-down/1-up on ${config.adaptive.parameter})` : "No (Fixed)"}
+**Step Sizes**: ${config.adaptive?.stepSizes.join(', ') || "N/A"} ${config.adaptive?.unit || ""}
+**Termination**: ${config.termination.reversals ? `${config.termination.reversals} reversals` : `${config.termination.maxTrials} trials`}
+
+## Perturbations
+${config.perturbations?.map(p => `- ${p.type} on ${'targetFrequency' in p ? p.targetFrequency + "Hz" : "all"}: ${JSON.stringify((p as any).deltaDb || (p as any).deltaPercent || (p as any).deltaMicroseconds)}`).join('\n') || "None"}
+`;
+
+    return { content: [{ type: "text", text: summary }] };
   }
 
   async run() {
