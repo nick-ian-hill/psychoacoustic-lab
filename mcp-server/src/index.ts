@@ -73,43 +73,45 @@ class PsychoacousticServer {
         },
         {
           name: "calc_frequencies",
-          description: "Calculate frequency components. GUARDRAIL: Use 'erb' spacing for experiments involving human auditory filter models. Use 'log' for musical pitch or general spectral spacing. Use 'linear' for harmonic complexes.",
+          description: "[Tier 3: Primitive] Calculate frequency components. GUARDRAIL: Use 'erb' spacing for experiments involving human auditory filter models. Use 'log' for musical pitch or general spectral spacing. Use 'linear' for harmonic complexes.",
           inputSchema: {
             type: "object",
             properties: {
               type: { type: "string", enum: ["linear", "log", "erb"] },
-              minFreq: { type: "number" },
-              maxFreq: { type: "number" },
-              numComponents: { type: "number" }
+              minFreq: { type: "number", minimum: 20, maximum: 20000 },
+              maxFreq: { type: "number", minimum: 20, maximum: 20000 },
+              numComponents: { type: "integer", minimum: 1, maximum: 100 }
             },
             required: ["type", "minFreq", "maxFreq", "numComponents"]
           }
         },
         {
           name: "calc_phases",
-          description: "Calculate starting phases for components in DEGREES. GUARDRAIL: Use 'random' phases (with a seed) to prevent unintended phase-coherence cues or high peak-to-average power ratios, unless specifically testing phase effects. Use 'schroeder' for specific masker temporal properties.",
+          description: "[Tier 3: Primitive] Calculate starting phases for components in DEGREES. GUARDRAIL: Use 'random' phases (with a seed) to prevent unintended phase-coherence cues or high peak-to-average power ratios, unless specifically testing phase effects. Use 'schroeder' for specific masker temporal properties.",
           inputSchema: {
             type: "object",
             properties: {
               type: { type: "string", enum: ["sine", "random", "schroeder_positive", "schroeder_negative"] },
-              numComponents: { type: "number" },
-              seed: { type: "number", description: "Required for 'random' type — ensures reproducibility. Use meta.seed from your ExperimentConfig." }
+              numComponents: { type: "integer", minimum: 1, maximum: 100 },
+              seed: { type: "integer", description: "Required for 'random' type — ensures reproducibility. Use meta.seed from your ExperimentConfig." }
             },
-            required: ["type", "numComponents"]
+            required: ["type", "numComponents"],
+            if: { properties: { type: { const: "random" } } },
+            then: { required: ["seed"] }
           }
         },
         {
           name: "calc_amplitudes",
-          description: "Calculate component levels in dB SPL. GUARDRAIL: Use 'pink_noise_tilt' to achieve equal energy per auditory band, often required for uniform masking across frequencies.",
+          description: "[Tier 3: Primitive] Calculate component levels in dB SPL. GUARDRAIL: Use 'pink_noise_tilt' to achieve equal energy per auditory band, often required for uniform masking across frequencies.",
           inputSchema: {
             type: "object",
             properties: {
               type: { type: "string", enum: ["flat", "pink_noise_tilt"] },
-              baseLevelDb: { type: "number", description: "Overall level or starting level" },
-              numComponents: { type: "number" },
+              baseLevelDb: { type: "number", minimum: 0, maximum: 100, description: "Overall level or starting level" },
+              numComponents: { type: "integer", minimum: 1, maximum: 100 },
               frequencies: {
                 type: "array",
-                items: { type: "number" },
+                items: { type: "number", minimum: 20, maximum: 20000 },
                 description: "Required for 'pink_noise_tilt' — provide the frequency array from calc_frequencies for an accurate 3dB/octave roll-off."
               }
             },
@@ -118,13 +120,13 @@ class PsychoacousticServer {
         },
         {
           name: "calc_itd",
-          description: "Convert an Interaural Time Difference (ITD) in microseconds to the onsetDelayMs value needed by the engine, and compute the equivalent Interaural Phase Difference (IPD). GUARDRAIL: Essential for BMLD and lateralisation experiments. Pay attention to phase ambiguity: humans cannot resolve fine-structure ITD/IPD above ~1000-1400 Hz due to a loss of phase-locking.",
+          description: "[Tier 3: Primitive] Convert an Interaural Time Difference (ITD) in microseconds to the onsetDelayMs value needed by the engine, and compute the equivalent Interaural Phase Difference (IPD). GUARDRAIL: Essential for BMLD and lateralisation experiments. Pay attention to phase ambiguity: humans cannot resolve fine-structure ITD/IPD above ~1000-1400 Hz due to a loss of phase-locking.",
           inputSchema: {
             type: "object",
             properties: {
-              itdMicroseconds: { type: "number", description: "The desired ITD in microseconds (e.g. 700 for a natural lateralised source)" },
-              frequencyHz: { type: "number", description: "Optional: the stimulus frequency in Hz. If provided, computes the equivalent IPD in degrees." },
-              sampleRate: { type: "number", description: "Optional: sample rate (default 44100). Used to compute exact sample count." }
+              itdMicroseconds: { type: "number", minimum: -5000, maximum: 5000, description: "The desired ITD in microseconds (e.g. 700 for a natural lateralised source)" },
+              frequencyHz: { type: "number", minimum: 20, maximum: 20000, description: "Optional: the stimulus frequency in Hz. If provided, computes the equivalent IPD in degrees." },
+              sampleRate: { type: "integer", minimum: 8000, maximum: 192000, description: "Optional: sample rate (default 44100). Used to compute exact sample count." }
             },
             required: ["itdMicroseconds"]
           }
@@ -142,7 +144,7 @@ class PsychoacousticServer {
         },
         {
           name: "generate_config_from_template",
-          description: "Create a valid ExperimentConfig by providing high-level parameters to a known paradigm template. Use this to quickly bootstrap an experiment without manual JSON construction.",
+          description: "[Tier 1: Orchestrator] Create a valid ExperimentConfig by providing high-level parameters to a known paradigm template. Use this to quickly bootstrap an experiment without manual JSON construction.",
           inputSchema: {
             type: "object",
             properties: {
@@ -151,9 +153,9 @@ class PsychoacousticServer {
                 type: "object",
                 properties: {
                   name: { type: "string", description: "Custom name for the experiment." },
-                  frequencyHz: { type: "number", description: "Override the primary frequency (Hz)." },
-                  levelDb: { type: "number", description: "Override the base presentation level (dB SPL)." },
-                  durationMs: { type: "number", description: "Override stimulus duration (ms)." },
+                  frequencyHz: { type: "number", minimum: 20, maximum: 20000, description: "Override the primary frequency (Hz)." },
+                  levelDb: { type: "number", minimum: 0, maximum: 100, description: "Override the base presentation level (dB SPL)." },
+                  durationMs: { type: "number", minimum: 10, maximum: 5000, description: "Override stimulus duration (ms)." },
                   adaptiveInitialValue: { type: "number", description: "Initial value for the adaptive staircase." },
                   adaptiveStepSizes: { type: "array", items: { type: "number" }, description: "Array of step sizes for the staircase." }
                 }
@@ -164,7 +166,7 @@ class PsychoacousticServer {
         },
         {
           name: "generate_batch_configs",
-          description: "Generate a set of ExperimentConfigs by applying a list of variations to a base configuration. Essential for multi-condition studies (e.g. comparing thresholds across frequencies).",
+          description: "[Tier 1: Orchestrator] Generate a set of ExperimentConfigs by applying a list of variations to a base configuration. Essential for multi-condition studies (e.g. comparing thresholds across frequencies).",
           inputSchema: {
             type: "object",
             properties: {
@@ -182,6 +184,47 @@ class PsychoacousticServer {
               }
             },
             required: ["baseConfig", "variations"]
+          }
+        },
+        {
+          name: "generate_stimulus_block",
+          description: "[Tier 2: Component Generator] Takes high-level parameters and returns a fully formed multi_component or noise generator object. Benefit: Prevents array length mismatches and ensures schema compliance.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              type: { type: "string", enum: ["multi_component", "noise"] },
+              durationMs: { type: "integer", minimum: 10, maximum: 5000 },
+              ear: { type: "string", enum: ["left", "right", "both"] },
+              applyTo: { type: "string", enum: ["target", "all", "reference"] },
+              envelope: {
+                type: "object",
+                properties: {
+                  attackMs: { type: "integer", minimum: 0 },
+                  releaseMs: { type: "integer", minimum: 0 },
+                  type: { type: "string", enum: ["linear", "cosine"] }
+                },
+                required: ["attackMs", "releaseMs"]
+              },
+              numComponents: { type: "integer", minimum: 1, maximum: 100 },
+              minFreq: { type: "number", minimum: 20, maximum: 20000 },
+              maxFreq: { type: "number", minimum: 20, maximum: 20000 },
+              freqSpacing: { type: "string", enum: ["linear", "log", "erb"] },
+              phaseType: { type: "string", enum: ["sine", "random", "schroeder_positive", "schroeder_negative"] },
+              levelType: { type: "string", enum: ["flat", "pink_noise_tilt"] },
+              baseLevelDb: { type: "number", minimum: 0, maximum: 100 },
+              seed: { type: "integer" },
+              noiseType: { type: "string", enum: ["white", "pink", "brown"] },
+              bandLimit: {
+                type: "object",
+                properties: {
+                  lowFreq: { type: "number", minimum: 20, maximum: 20000 },
+                  highFreq: { type: "number", minimum: 20, maximum: 20000 }
+                }
+              }
+            },
+            required: ["type", "durationMs"],
+            if: { properties: { phaseType: { const: "random" } } },
+            then: { required: ["seed"] }
           }
         },
         {
@@ -214,9 +257,15 @@ class PsychoacousticServer {
 - WORKFLOW SCOPE: If the user's request is research-oriented (e.g., 'Review the examples'), proceed with your analysis autonomously without being blocked by 'STOP' directives meant for configuration generation.
 
 ARCHITECTURE & BINAURAL PRECISION:
-- Smart Server / Dumb Engine: The Audio Engine only renders explicit components. It does not auto-generate complex stimulus relationships. You must use tools like calc_frequencies, calc_phases, and calc_amplitudes to supply explicit numerical arrays.
+- Smart Server / Dumb Engine: The Audio Engine only renders explicit components. It does not auto-generate complex stimulus relationships.
+- TIERED TOOLING & ABSTRACTION:
+  * TIER 1: Orchestrators (e.g., generate_config_from_template, generate_batch_configs) — Use these to build entire experiments or condition batches in one shot.
+  * TIER 2: Component Generators (e.g., generate_stimulus_block) — The RECOMMENDED way to build custom stimuli safely. It handles internal math and ensures schema compliance.
+  * TIER 3: Primitives (e.g., calc_frequencies, calc_phases, calc_itd) — Low-level math utilities for manual overrides and precise component-level targeting.
+- Stimulus Construction: Prefer Tier 2 tools over Tier 3 primitives unless you need granular control over individual frequency/phase/level arrays.
 - IPD (Interaural Phase Difference): Use the high-level 'itd' perturbation with mode: 'fine_structure'. This handles frequency-to-phase conversion automatically.
 - True ITD (Interaural Time Difference): Use the high-level 'itd' perturbation with mode: 'both' or 'envelope'.
+- Adaptive Linking (MANDATORY): If you use { "adaptive": true } in any perturbation, you MUST also define an 'adaptive' configuration block. Conversely, if you define an 'adaptive' block, at least one perturbation MUST be set to { "adaptive": true }.
 - Finalization: Use evaluate_and_finalize_experiment as your final step to check for clipping risks and adaptive stability.
 
 HUMAN AUDITORY THRESHOLDS (EMPIRICAL YARDSTICKS):
@@ -254,7 +303,7 @@ HIGH-LEVEL DESIGN & BATCHING:
             content: [{
               type: "text",
               // MAINTENANCE NOTE: Update this list whenever a new export is added to examples/examples.ts
-              text: "Available Examples: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis"
+              text: "Available Examples: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis, gapDetection"
             }]
           };
 
@@ -270,6 +319,8 @@ HIGH-LEVEL DESIGN & BATCHING:
           return this.handleCalcAmplitudes(request.params.arguments);
         case "calc_itd":
           return this.handleCalcItd(request.params.arguments);
+        case "generate_stimulus_block":
+          return this.handleGenerateStimulusBlock(request.params.arguments);
         case "evaluate_and_finalize_experiment":
           return this.handleFinalize(request.params.arguments);
         case "generate_config_from_template":
@@ -344,7 +395,7 @@ By default, perturbations apply only to the 'target' interval.
 
 ### Value Types (used for deltaDb, deltaPercent, etc.)
 - number — Static value.
-- { adaptive: true } — Links to the adaptive staircase.
+- { adaptive: true } — Links to the mandatory 'adaptive' staircase block.
 - { type: "uniform", min: number, max: number } — ROVING: Randomized per interval/trial using meta.seed.
 
 ### Types:
@@ -393,7 +444,7 @@ By default, perturbations apply only to the 'target' interval.
 
 ## adaptive? (optional)
 - type: "staircase"
-- parameter: string — e.g., "perturbations[0].deltaDb" (informational only)
+- parameter: string — e.g., "perturbations[0].deltaDb" (Required; serves as a human-readable link to the field using { "adaptive": true })
 - initialValue: number
 - stepSizes: number[] — step sizes; later entries used after each reversal
 - stepType?: "linear" | "geometric" — Defaults to linear. Use 'geometric' for variables bounded by zero (multiplies/divides step sizes).
@@ -426,10 +477,9 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     return { content: [{ type: "text", text: reference }] };
   }
 
-  private handleCalcFrequencies(args: any) {
-    const { type, minFreq, maxFreq, numComponents } = args;
+  private internalCalcFrequencies(type: "linear" | "log" | "erb", minFreq: number, maxFreq: number, numComponents: number): number[] {
     const freqs: number[] = [];
-    if (numComponents === 1) return { content: [{ type: "text", text: JSON.stringify([minFreq]) }] };
+    if (numComponents === 1) return [minFreq];
 
     if (type === "linear") {
       const step = (maxFreq - minFreq) / (numComponents - 1);
@@ -440,7 +490,6 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       const step = (logEnd - logStart) / (numComponents - 1);
       for (let i = 0; i < numComponents; i++) freqs.push(Math.pow(10, logStart + i * step));
     } else if (type === "erb") {
-      // Moore & Glasberg (1983) formula
       const hzToErb = (hz: number) => 21.4 * Math.log10(4.37 * (hz / 1000) + 1);
       const erbToHz = (erb: number) => ((Math.pow(10, erb / 21.4) - 1) / 4.37) * 1000;
       const startErb = hzToErb(minFreq);
@@ -448,62 +497,124 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       const step = (endErb - startErb) / (numComponents - 1);
       for (let i = 0; i < numComponents; i++) freqs.push(erbToHz(startErb + i * step));
     }
-    return { content: [{ type: "text", text: JSON.stringify(freqs.map(f => parseFloat(f.toFixed(3)))) }] };
+    return freqs.map(f => parseFloat(f.toFixed(3)));
   }
 
-  private handleCalcPhases(args: any) {
-    const { type, numComponents, seed } = args;
+  private internalCalcPhases(type: "sine" | "random" | "schroeder_positive" | "schroeder_negative", numComponents: number, seed?: number): number[] {
     const phases: number[] = [];
     if (type === "sine") {
       for (let i = 0; i < numComponents; i++) phases.push(0);
     } else if (type === "random") {
-      // Use seeded PRNG for reproducibility; warn if no seed provided
-      if (seed === undefined) {
-        return {
-          isError: true,
-          content: [{ type: "text", text: "ERROR: A 'seed' is required for random phases to ensure experiment reproducibility. Use your ExperimentConfig's meta.seed value." }]
-        };
-      }
+      if (seed === undefined) throw new Error("A 'seed' is required for random phases.");
       const rng = mulberry32(seed);
       for (let i = 0; i < numComponents; i++) phases.push(rng() * 360);
     } else if (type.startsWith("schroeder")) {
       const sign = type === "schroeder_positive" ? 1 : -1;
       for (let k = 1; k <= numComponents; k++) {
-        // Schroeder (1970) formula
         const rad = sign * Math.PI * k * (k - 1) / numComponents;
         phases.push((rad * 180 / Math.PI) % 360);
       }
     }
-    return { content: [{ type: "text", text: JSON.stringify(phases.map(p => parseFloat(p.toFixed(2)))) }] };
+    return phases.map(p => parseFloat(p.toFixed(2)));
   }
 
-  private handleCalcAmplitudes(args: any) {
-    const { type, baseLevelDb, numComponents, frequencies } = args;
+  private internalCalcAmplitudes(type: "flat" | "pink_noise_tilt", baseLevelDb: number, numComponents: number, frequencies?: number[]): number[] {
     const levels: number[] = [];
     if (type === "flat") {
       for (let i = 0; i < numComponents; i++) levels.push(baseLevelDb);
     } else if (type === "pink_noise_tilt") {
       if (frequencies && frequencies.length === numComponents) {
-        // Accurate 3dB/octave tilt using actual frequency ratios relative to the first component
         const f0 = frequencies[0];
         for (let i = 0; i < numComponents; i++) {
           const octaves = Math.log2(frequencies[i] / f0);
           levels.push(baseLevelDb - 3 * octaves);
         }
       } else {
-        // Approximate index-based tilt (less accurate — prefer providing frequencies)
         for (let i = 0; i < numComponents; i++) {
           levels.push(baseLevelDb - 10 * Math.log10(i + 1));
         }
-        return {
-          content: [{
-            type: "text",
-            text: JSON.stringify(levels) + "\n\nNOTE: For accurate 3dB/octave pink tilt, provide a 'frequencies' array (from calc_frequencies). The result above uses an index-based approximation."
-          }]
-        };
       }
     }
-    return { content: [{ type: "text", text: JSON.stringify(levels.map(l => parseFloat(l.toFixed(2)))) }] };
+    return levels.map(l => parseFloat(l.toFixed(2)));
+  }
+
+  private handleCalcFrequencies(args: any) {
+    const { type, minFreq, maxFreq, numComponents } = args;
+    try {
+      const freqs = this.internalCalcFrequencies(type, minFreq, maxFreq, numComponents);
+      return { content: [{ type: "text", text: JSON.stringify(freqs) }] };
+    } catch (e: any) {
+      return { isError: true, content: [{ type: "text", text: e.message }] };
+    }
+  }
+
+  private handleCalcPhases(args: any) {
+    const { type, numComponents, seed } = args;
+    try {
+      const phases = this.internalCalcPhases(type, numComponents, seed);
+      return { content: [{ type: "text", text: JSON.stringify(phases) }] };
+    } catch (e: any) {
+      return { isError: true, content: [{ type: "text", text: e.message }] };
+    }
+  }
+
+  private handleCalcAmplitudes(args: any) {
+    const { type, baseLevelDb, numComponents, frequencies } = args;
+    const levels = this.internalCalcAmplitudes(type, baseLevelDb, numComponents, frequencies);
+    let warning = "";
+    if (type === "pink_noise_tilt" && (!frequencies || frequencies.length !== numComponents)) {
+      warning = "\n\nNOTE: For accurate 3dB/octave pink tilt, provide a 'frequencies' array. The result uses an index-based approximation.";
+    }
+    return { content: [{ type: "text", text: JSON.stringify(levels) + warning }] };
+  }
+
+  private handleGenerateStimulusBlock(args: any) {
+    const {
+      type, durationMs, ear, applyTo, envelope,
+      numComponents, minFreq, maxFreq, freqSpacing,
+      phaseType, levelType, baseLevelDb, seed,
+      noiseType, bandLimit
+    } = args;
+
+    if (type === "multi_component") {
+      try {
+        const freqs = this.internalCalcFrequencies(freqSpacing || "linear", minFreq || 1000, maxFreq || 1000, numComponents || 1);
+        const phases = this.internalCalcPhases(phaseType || "sine", numComponents || 1, seed);
+        const levels = this.internalCalcAmplitudes(levelType || "flat", baseLevelDb || 70, numComponents || 1, freqs);
+
+        const components = freqs.map((f, i) => ({
+          frequency: f,
+          phaseDegrees: phases[i],
+          levelDb: levels[i],
+          ear: ear || "both"
+        }));
+
+        const generator: any = {
+          type: "multi_component",
+          durationMs,
+          components,
+          globalEnvelope: envelope || { attackMs: 10, releaseMs: 10, type: "cosine" }
+        };
+        if (applyTo) generator.applyTo = applyTo;
+
+        return { content: [{ type: "text", text: JSON.stringify(generator, null, 2) }] };
+      } catch (e: any) {
+        return { isError: true, content: [{ type: "text", text: `Error generating multi_component: ${e.message}` }] };
+      }
+    } else {
+      const generator: any = {
+        type: "noise",
+        noiseType: noiseType || "white",
+        levelDb: baseLevelDb || 70,
+        durationMs,
+        envelope: envelope || { attackMs: 10, releaseMs: 10, type: "cosine" }
+      };
+      if (ear) generator.ear = ear;
+      if (applyTo) generator.applyTo = applyTo;
+      if (bandLimit) generator.bandLimit = bandLimit;
+
+      return { content: [{ type: "text", text: JSON.stringify(generator, null, 2) }] };
+    }
   }
 
   private handleCalcItd(args: any) {
@@ -620,10 +731,50 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       }
     }
 
+
     // 5. Instruction UX suggestion
     if (!config.meta.summary) {
       if (config.paradigm.type === "2AFC" || config.paradigm.type === "3AFC") {
         warnings.push(`UX SUGGESTION: Consider adding meta.summary. E.g., 'Select the higher pitched tone.'`);
+      }
+    }
+
+
+    // 6. Human Auditory Threshold Guardrails
+    const allFrequencies: number[] = [];
+    config.stimuli.forEach(s => {
+      if (s.type === 'multi_component') (s.components as any[]).forEach(c => allFrequencies.push(c.frequency));
+      else if (s.type === 'noise' && (s as any).bandLimit) {
+        allFrequencies.push((s as any).bandLimit.lowFreq);
+        allFrequencies.push((s as any).bandLimit.highFreq);
+      }
+      (s as any).modulators?.forEach((m: any) => {
+        if (m.type === 'AM' && m.rateHz > 50) {
+          warnings.push(`AUDITORY GUARDRAIL: AM rate of ${m.rateHz} Hz exceeds typical temporal envelope resolution (~50-60 Hz). At higher rates, listeners may perceive spectral sidebands or 'pitch' cues rather than fluctuations.`);
+        }
+      });
+    });
+
+    if (allFrequencies.some(f => f > 15000)) {
+      warnings.push("AUDITORY GUARDRAIL: Stimulus contains frequencies > 15,000 Hz. Sensitivity at these frequencies decreases significantly with age and noise exposure.");
+    }
+
+    if (config.perturbations) {
+      for (const p of config.perturbations) {
+        if (p.type === 'itd' && p.mode !== 'envelope') {
+          const targetFreq = (p as any).targetFrequency;
+          if (targetFreq && targetFreq > 1400) {
+            warnings.push(`AUDITORY GUARDRAIL: Fine-structure ITD/IPD sensitivity is poor above ~1400 Hz. Your perturbation targets ${targetFreq} Hz. Consider using 'envelope' mode or a lower frequency.`);
+          } else if (!targetFreq && allFrequencies.some(f => f > 1400)) {
+            warnings.push("AUDITORY GUARDRAIL: Broadband fine-structure ITD/IPD sensitivity is limited above ~1400 Hz. High-frequency components will not contribute to fine-structure cues.");
+          }
+        }
+        if (p.type === 'phase_shift') {
+          const targetFreq = (p as any).targetFrequency;
+          if (targetFreq && targetFreq > 4000) {
+            warnings.push(`AUDITORY GUARDRAIL: Phase-locking (required for fine-structure phase discrimination) ceases entirely above ~4000-5000 Hz. Your 'phase_shift' targets ${targetFreq} Hz and may be inaudible.`);
+          }
+        }
       }
     }
 
@@ -647,7 +798,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     try {
       const examples = await import("../../examples/examples.js");
       const config = (examples as any)[`${name}Config`];
-      if (!config) throw new Error(`Example '${name}Config' not found. Available: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis`);
+      if (!config) throw new Error(`Example '${name}Config' not found. Available: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis, gapDetection`);
       return { content: [{ type: "text", text: JSON.stringify(config, null, 2) }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `Error loading example: ${e.message}` }], isError: true };

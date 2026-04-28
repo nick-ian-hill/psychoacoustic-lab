@@ -418,3 +418,68 @@ export const profileAnalysisConfig: ExperimentConfig = {
   ui: { showCurrentValue: true },
   termination: { reversals: 12 }
 };
+
+/**
+ * 8. Gap Detection in Noise
+ * Tests temporal resolution.
+ */
+export const gapDetectionConfig: ExperimentConfig = {
+  meta: {
+    name: "Gap Detection",
+    version: "2.0.0",
+    seed: 777,
+    rationale: "Threshold for detecting a temporal gap in a broadband noise.",
+    summary: "Select the interval with the GAP.",
+    description: "Two bursts of noise will play. In one interval, there is a very brief silence (a gap) in the middle of the noise. Which interval had the GAP? Press Interval 1 or Interval 2.",
+    literature_references: ["Plomp (1964)"]
+  },
+  audio: { sampleRate: 44100 },
+  stimuli: [
+    {
+      type: "noise",
+      noiseType: "white",
+      levelDb: 65,
+      durationMs: 250,
+      envelope: { attackMs: 10, releaseMs: 1 }, // Sharp release for the first burst
+      ear: "both"
+    },
+    {
+      type: "noise",
+      noiseType: "white",
+      levelDb: 65,
+      durationMs: 250,
+      envelope: { attackMs: 1, releaseMs: 10 }, // Sharp attack for the second burst
+      ear: "both",
+      onsetDelayMs: 250 // Starts immediately after the first burst (250ms) in reference
+    }
+  ],
+  perturbations: [
+    {
+      type: "onset_asynchrony",
+      targetGeneratorIndex: 1, // Target the second noise generator
+      delayMs: { adaptive: true } // This delay added to onsetDelayMs creates the gap
+    }
+  ],
+  paradigm: {
+    type: "2AFC",
+    intervals: [{ condition: "reference" }, { condition: "target" }],
+    randomizeOrder: true,
+    timing: { isiMs: 500, itiMs: 1000 }
+  },
+  adaptive: {
+    type: "staircase",
+    parameter: "perturbations[0].delayMs",
+    initialValue: 20,
+    stepType: "geometric",
+    stepSizes: [2, 1.414, 1.189],
+    stepSizeInterval: 2,
+    rule: { correctDown: 2 },
+    minValue: 0,
+    maxValue: 100,
+    reversals: 12,
+    unit: "ms"
+  },
+  ui: { showCurrentValue: true },
+  termination: { reversals: 12 }
+};
+

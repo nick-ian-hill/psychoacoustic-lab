@@ -68,6 +68,7 @@ export const NoiseGeneratorSchema = z.object({
   envelope: EnvelopeSchema,
   ear: EarRoutingSchema.optional(),
   modulators: z.array(ModulatorSchema).optional(),
+  onsetDelayMs: z.number().optional().describe("Temporal offset in milliseconds."),
   applyTo: z.enum(["target", "all", "reference"]).optional().describe("Whether this generator applies to only the target interval, reference intervals, or all intervals."),
 });
 
@@ -81,6 +82,7 @@ export const StimulusGeneratorSchema = z.union([
  */
 export const BasePerturbationSchema = z.object({
   applyTo: z.enum(["target", "all"]).optional().describe("Whether this perturbation applies only to the target interval (default) or all intervals (useful for roving)."),
+  targetGeneratorIndex: z.number().int().optional().describe("Optional: Target a specific generator by its index in the stimuli array. If omitted, applies to all matching generators."),
 });
 
 export const SpectralProfilePerturbationSchema = BasePerturbationSchema.extend({
@@ -91,7 +93,7 @@ export const SpectralProfilePerturbationSchema = BasePerturbationSchema.extend({
 
 export const AsynchronyPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("onset_asynchrony"),
-  targetFrequency: z.number(),
+  targetFrequency: z.number().optional(),
   delayMs: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
 });
 
@@ -166,12 +168,12 @@ export const AdaptiveConfigSchema = z.object({
   initialValue: z.number(),
   stepSizes: z.array(z.number()),
   rule: z.object({
-    correctDown: z.number(),
+    correctDown: z.number().int(),
   }),
-  initialN: z.number().optional(),
-  switchReversalCount: z.number().optional(),
+  initialN: z.number().int().optional(),
+  switchReversalCount: z.number().int().optional(),
   stepType: z.enum(["linear", "geometric"]).default("linear").optional(),
-  stepSizeInterval: z.number().default(1).optional(),
+  stepSizeInterval: z.number().int().default(1).optional(),
   minValue: z.number(),
   maxValue: z.number(),
   reversals: z.number().optional().describe("Deprecated: use termination.reversals instead. Kept for MCP validator compatibility."),
@@ -198,7 +200,7 @@ export const ExperimentConfigSchema = z.object({
   meta: z.object({
     name: z.string(),
     version: z.string(),
-    seed: z.number(),
+    seed: z.number().int(),
     rationale: z.string().optional(),
     summary: z.string().optional().describe("A short summary (max 150 chars) shown during the experiment.").refine(s => !s || s.length <= 150, "Summary must be 150 characters or less."),
     description: z.string().optional().describe("A detailed description shown on the selection screen and in the help popup."),
@@ -208,7 +210,7 @@ export const ExperimentConfigSchema = z.object({
   }),
 
   audio: z.object({
-    sampleRate: z.number().default(44100),
+    sampleRate: z.number().int().default(44100),
   }),
   calibration: CalibrationProfileSchema.optional(),
   globalLevelDb: z.number().optional(),
@@ -234,10 +236,33 @@ export const ExperimentConfigSchema = z.object({
     showAverageThreshold: false,
   }).optional(),
   termination: z.object({
-    maxTrials: z.number().optional(),
-    reversals: z.number().optional(),
-    discardReversals: z.number().optional().describe("Number of initial reversals to discard when calculating the final threshold. Defaults to 4."),
+    maxTrials: z.number().int().optional(),
+    reversals: z.number().int().optional(),
+    discardReversals: z.number().int().optional().describe("Number of initial reversals to discard when calculating the final threshold. Defaults to 4."),
   }),
+}).superRefine((data, ctx) => {
+  const hasAdaptivePerturbation = data.perturbations?.some(p => {
+    // Check all possible adaptive fields in perturbations
+    const pAny = p as any;
+    const val = pAny.deltaDb || pAny.deltaPercent || pAny.deltaMicroseconds || pAny.delayMs || pAny.deltaDegrees || pAny.deltaDepth;
+    return val && typeof val === 'object' && val.adaptive === true;
+  });
+
+  if (hasAdaptivePerturbation && !data.adaptive) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "One or more perturbations are set to { adaptive: true }, but no 'adaptive' block is defined.",
+      path: ["adaptive"],
+    });
+  }
+
+  if (!hasAdaptivePerturbation && data.adaptive) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "An 'adaptive' block is defined, but no perturbation is hooked up to it (none have { adaptive: true }).",
+      path: ["adaptive"],
+    });
+  }
 });
 
 export type ExperimentConfig = z.infer<typeof ExperimentConfigSchema>;
