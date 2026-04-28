@@ -32,6 +32,70 @@ let currentConfig: any;
 // Seeded RNG for reproducible interval order randomization
 let trialRng: () => number;
 
+// Pre-render the next trial buffer to ensure precise ITI timing
+let preRenderedTrial: Promise<{ buffer: AudioBuffer; intervalLengths: number[] }> | null = null;
+
+/**
+ * Pre-calculates the next trial's audio buffer and roving parameters.
+ * This is called in the background while the participant is viewing feedback or
+ * during the ITI to eliminate synthesis latency at playback time.
+ */
+async function prepareTrial() {
+  const intervalsConfig = [...currentConfig.paradigm.intervals];
+
+  // Use seeded RNG so trial order is reproducible from meta.seed
+  if (currentConfig.paradigm.randomizeOrder) {
+    for (let i = intervalsConfig.length - 1; i > 0; i--) {
+      const j = Math.floor(trialRng() * (i + 1));
+      [intervalsConfig[i], intervalsConfig[j]] = [intervalsConfig[j], intervalsConfig[i]];
+    }
+  }
+
+  targetIntervalIndex = intervalsConfig.findIndex(i => i.condition === 'target');
+
+  // Helper to resolve a perturbation parameter to a strict number
+  const resolveParam = (val: any) => {
+    if (typeof val === 'number') return val;
+    if (val?.adaptive) return staircase.getCurrentValue();
+    if (val?.type === 'uniform') return val.min + trialRng() * (val.max - val.min);
+    return 0;
+  };
+
+  // Build trial data with fully resolved perturbations for perfect logging
+  const trialData = intervalsConfig.map(interval => {
+    const resolvedPerturbations: any[] = [];
+    if (currentConfig.perturbations) {
+      currentConfig.perturbations.forEach((p: any) => {
+        const applyTo = p.applyTo || "target";
+        if (applyTo === "all" || interval.condition === "target") {
+          const rp = { ...p };
+          if (rp.deltaDb !== undefined) rp.deltaDb = resolveParam(rp.deltaDb);
+          if (rp.deltaPercent !== undefined) rp.deltaPercent = resolveParam(rp.deltaPercent);
+          if (rp.delayMs !== undefined) rp.delayMs = resolveParam(rp.delayMs);
+          if (rp.deltaDegrees !== undefined) rp.deltaDegrees = resolveParam(rp.deltaDegrees);
+          if (rp.deltaDepth !== undefined) rp.deltaDepth = resolveParam(rp.deltaDepth);
+          if (rp.deltaMicroseconds !== undefined) rp.deltaMicroseconds = resolveParam(rp.deltaMicroseconds);
+          resolvedPerturbations.push(rp);
+        }
+      });
+    }
+    return {
+      generators: currentConfig.stimuli,
+      perturbations: resolvedPerturbations
+    };
+  });
+
+  lastTrialData = trialData;
+
+  return engine.renderTrial(
+    trialData,
+    currentConfig.paradigm.timing.isiMs,
+    staircase.getCurrentValue(),
+    currentConfig.calibration,
+    currentConfig.globalLevelDb
+  );
+}
+
 // Global keydown handler handles both experiment responses and dropdown navigation
 window.addEventListener('keydown', (e) => {
   const isDropdownOpen = customDropdown.classList && customDropdown.classList.contains('open');
@@ -239,95 +303,41 @@ playBtn.addEventListener('click', async () => {
   // Always hide play button after first click as we are always in automated mode
   playBtn.classList.add('hidden');
 
-  playBtn.disabled = true;
-  playBtn.classList.add('playing');
-  playBtn.textContent = "\u00A0";
-  responseButtons.forEach(btn => btn.disabled = true);
+    playBtn.disabled = true;
+    playBtn.classList.add('playing');
+    playBtn.textContent = "\u00A0";
+    responseButtons.forEach(btn => btn.disabled = true);
 
-  // Add a brief lead-in delay for the first trial to allow participant preparation.
-  // We keep this short (200ms) to prevent the mobile "User Gesture" from expiring.
-  if (staircase.getHistory().length === 0) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-  }
-
-  try {
-    const intervalsConfig = [...currentConfig.paradigm.intervals];
-
-    // Use seeded RNG so trial order is reproducible from meta.seed
-    if (currentConfig.paradigm.randomizeOrder) {
-      for (let i = intervalsConfig.length - 1; i > 0; i--) {
-        const j = Math.floor(trialRng() * (i + 1));
-        [intervalsConfig[i], intervalsConfig[j]] = [intervalsConfig[j], intervalsConfig[i]];
-      }
+    // Add a brief lead-in delay for the first trial to allow participant preparation.
+    if (staircase.getHistory().length === 0) {
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    targetIntervalIndex = intervalsConfig.findIndex(i => i.condition === 'target');
-
-    // Helper to resolve a perturbation parameter to a strict number
-    const resolveParam = (val: any) => {
-      if (typeof val === 'number') return val;
-      if (val?.adaptive) return staircase.getCurrentValue();
-      if (val?.type === 'uniform') return val.min + trialRng() * (val.max - val.min);
-      return 0;
-    };
-
-    // Build trial data with fully resolved perturbations for perfect logging
-    const trialData = intervalsConfig.map(interval => {
-      // Create a fresh set of resolved perturbations for this specific interval
-      const resolvedPerturbations: any[] = [];
-
-      if (currentConfig.perturbations) {
-        currentConfig.perturbations.forEach((p: any) => {
-          const applyTo = p.applyTo || "target";
-          if (applyTo === "all" || interval.condition === "target") {
-            const rp = { ...p }; // Shallow copy
-            if (rp.deltaDb !== undefined) rp.deltaDb = resolveParam(rp.deltaDb);
-            if (rp.deltaPercent !== undefined) rp.deltaPercent = resolveParam(rp.deltaPercent);
-            if (rp.delayMs !== undefined) rp.delayMs = resolveParam(rp.delayMs);
-            if (rp.deltaDegrees !== undefined) rp.deltaDegrees = resolveParam(rp.deltaDegrees);
-            if (rp.deltaDepth !== undefined) rp.deltaDepth = resolveParam(rp.deltaDepth);
-            if (rp.deltaMicroseconds !== undefined) rp.deltaMicroseconds = resolveParam(rp.deltaMicroseconds);
-            resolvedPerturbations.push(rp);
-          }
-        });
+    try {
+      // Use the pre-rendered buffer if available; otherwise (first trial), render now.
+      if (!preRenderedTrial) {
+        preRenderedTrial = prepareTrial();
       }
+      
+      const { buffer, intervalLengths } = await preRenderedTrial;
+      preRenderedTrial = null; // Clear after use
 
-      // We attach the resolved perturbations directly to the generator definition
-      // so the worker doesn't have to guess, and so we can log exactly what was played.
-      return {
-        generators: currentConfig.stimuli,
-        perturbations: resolvedPerturbations
+      // Play and capture AudioContext startTime for synchronized highlighting
+      clearFeedback();
+      const { source, startTime } = await engine.playBuffer(buffer);
+      highlightIntervals(intervalLengths, startTime);
+
+      source.onended = () => {
+        playBtn.classList.remove('playing');
+        playBtn.disabled = true;
       };
-    });
-
-    lastTrialData = trialData;
-
-    const { buffer, intervalLengths } = await engine.renderTrial(
-      trialData,
-      currentConfig.paradigm.timing.isiMs,
-      staircase.getCurrentValue(),
-      currentConfig.calibration,
-      currentConfig.globalLevelDb
-    );
-
-    // Play and capture AudioContext startTime for synchronized highlighting
-    clearFeedback();
-    const { source, startTime } = await engine.playBuffer(buffer);
-    highlightIntervals(intervalLengths, startTime);
-
-    source.onended = () => {
+    } catch (e: any) {
+      console.error(e);
+      alert("Playback error: " + e.message);
       playBtn.classList.remove('playing');
-      // In automated mode, we disable the play button immediately after playback ends
-      // to prevent manual replays while waiting for a participant response.
-      playBtn.disabled = true;
-    };
-  } catch (e: any) {
-    console.error(e);
-    alert("Playback error: " + e.message);
-    playBtn.classList.remove('playing');
-    playBtn.textContent = "Error";
-  }
-});
+      playBtn.textContent = "Error";
+    }
+  });
 
 function handleResponse(responseIndex: number) {
   if (isProcessingResponse) return;
@@ -344,48 +354,51 @@ function handleResponse(responseIndex: number) {
   btn.blur();
 
   const feedbackMs = currentConfig.paradigm.timing.feedbackDurationMs ?? 400;
+  const itiMs = currentConfig.paradigm.timing.itiMs ?? 1000;
 
+  // 1. Process staircase logic immediately upon response
+  try {
+    staircase.processResponse(isCorrect, {
+      targetInterval: targetIntervalIndex + 1,
+      response: responseIndex + 1,
+      parameterValue: staircase.getCurrentValue(),
+      unit: currentConfig.adaptive.unit || "",
+      trialState: lastTrialData
+    });
+
+    // 2. IMMEDIATELY start pre-rendering the next trial in the background
+    // This allows the math to happen during the feedback/ITI period.
+    if (!staircase.isFinished(currentConfig.termination)) {
+      preRenderedTrial = prepareTrial();
+    }
+  } catch (e) {
+    console.error("Staircase update failed:", e);
+    isProcessingResponse = false;
+    playBtn.disabled = false;
+    playBtn.textContent = "Error \u2014 check config";
+    return;
+  }
+
+  // 3. Sequential Timing: Next trial starts only AFTER feedback is cleared.
   setTimeout(() => {
     btn.classList.remove('correct', 'incorrect');
-
-    try {
-      staircase.processResponse(isCorrect, {
-        targetInterval: targetIntervalIndex + 1,
-        response: responseIndex + 1,
-        parameterValue: staircase.getCurrentValue(),
-        unit: currentConfig.adaptive.unit || "",
-        trialState: lastTrialData
-      });
-    } catch (e) {
-      // staircase.processResponse can throw if the config is malformed.
-      console.error("Staircase update failed:", e);
-      isProcessingResponse = false;
-      playBtn.disabled = false;
-      playBtn.textContent = "Error \u2014 check config";
-      return;
-    }
-
+    
     if (staircase.isFinished(currentConfig.termination)) {
       endExperiment();
       isProcessingResponse = false;
     } else {
       updateStatus();
-      responseButtons.forEach(btn => {
-        btn.disabled = true;
-        btn.classList.remove('active', 'correct', 'incorrect');
-      });
-
-      playBtn.textContent = "\u00A0";
-      playBtn.disabled = true;
-
+      
+      // The ITI timer starts here, after feedback is removed.
       setTimeout(() => {
         isProcessingResponse = false;
         if (experimentArea.classList.contains('hidden')) return;
         playBtn.disabled = false;
         playBtn.click();
-      }, currentConfig.paradigm.timing.itiMs);
+      }, itiMs);
     }
   }, feedbackMs);
+
 }
 
 
