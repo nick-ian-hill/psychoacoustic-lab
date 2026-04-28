@@ -53,6 +53,7 @@ export const MultiComponentGeneratorSchema = z.object({
   components: z.array(StimulusComponentSchema),
   durationMs: z.number(),
   globalEnvelope: EnvelopeSchema,
+  applyTo: z.enum(["target", "all", "reference"]).optional().describe("Whether this generator applies to only the target interval, reference intervals, or all intervals."),
 });
 
 export const NoiseGeneratorSchema = z.object({
@@ -67,6 +68,7 @@ export const NoiseGeneratorSchema = z.object({
   envelope: EnvelopeSchema,
   ear: EarRoutingSchema.optional(),
   modulators: z.array(ModulatorSchema).optional(),
+  applyTo: z.enum(["target", "all", "reference"]).optional().describe("Whether this generator applies to only the target interval, reference intervals, or all intervals."),
 });
 
 export const StimulusGeneratorSchema = z.union([

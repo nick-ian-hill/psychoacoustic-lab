@@ -273,10 +273,9 @@ export function synthesizeNoise(
   const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
 
   // 1. Resolve perturbations for each ear separately
-  const resolveEarState = (targetEar: "left" | "right") => {
-    let gainDb = 0;
-    let amDepthOffset = 0;
-    const earTones: { amp: number, freq: number }[] = [];
+    const resolveEarState = (targetEar: "left" | "right") => {
+      let gainDb = 0;
+      let amDepthOffset = 0;
 
     if (perturbations) {
       for (const p of perturbations) {
@@ -289,12 +288,6 @@ export function synthesizeNoise(
           gainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
         } else if (p.type === "am_depth") {
           amDepthOffset += resolveValue(p.deltaDepth, adaptiveValue, rng);
-        } else if (p.type === "spectral_profile") {
-          const delta = resolveValue(p.deltaDb, adaptiveValue, rng);
-          earTones.push({
-            freq: p.targetFrequency,
-            amp: baseAmp * Math.pow(10, delta / 20)
-          });
         }
       }
     }
@@ -309,8 +302,7 @@ export function synthesizeNoise(
       gain: totalGainAmp, 
       amDepth: finalAmDepth, 
       amRate: amMod?.rateHz || 8, // Default rate if just applying depth
-      amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180,
-      tones: earTones 
+      amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180
     };
   };
 
@@ -331,9 +323,6 @@ export function synthesizeNoise(
         currentAmp *= (1 + leftState.amDepth * Math.sin(2 * Math.PI * leftState.amRate * t + leftState.amPhase));
       }
       let sample = noiseBase * currentAmp;
-      for (const tone of leftState.tones) {
-        sample += tone.amp * envelope * Math.sin(2 * Math.PI * tone.freq * t);
-      }
       left[i] = sample;
     }
 
@@ -344,9 +333,6 @@ export function synthesizeNoise(
         currentAmp *= (1 + rightState.amDepth * Math.sin(2 * Math.PI * rightState.amRate * t + rightState.amPhase));
       }
       let sample = noiseBase * currentAmp;
-      for (const tone of rightState.tones) {
-        sample += tone.amp * envelope * Math.sin(2 * Math.PI * tone.freq * t);
-      }
       right[i] = sample;
     }
   }

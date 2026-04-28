@@ -325,6 +325,7 @@ Each generator is one of:
   - onsetDelayMs?: number — whole-stimulus temporal shift (use for ITD)
   - ear?: "left" | "right" | "both" (default "both")
   - modulators?: Array<{ type: "AM"|"FM", rateHz, depth, phaseDegrees? }>
+  - applyTo?: "target" | "all" | "reference" (default "all") — Whether this generator plays in the target, reference, or all intervals.
 
 ### noise generator
 - type: "noise"
@@ -335,6 +336,7 @@ Each generator is one of:
 - envelope: { attackMs, releaseMs, type?: "linear" | "cosine" } — Default is "cosine" (Raised Cosine) for laboratory-grade precision.
 - ear?: "left" | "right" | "both"
 - modulators?: Array<{ type: "AM", rateHz, depth }>
+- applyTo?: "target" | "all" | "reference" (default "all")
 
 ## perturbations? (optional, array)
 By default, perturbations apply only to the 'target' interval.
@@ -543,14 +545,6 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     const warnings: string[] = [];
 
     // 1. Worst-case Total power / clipping check.
-    // Levels are accumulated in the power domain (dB10) and compared to 95 dB.
-    // CALIBRATION ASSUMPTION: This check assumes 0 dBFS ≡ 94 dB SPL (the standard
-    // sound-level meter reference). If your system is calibrated differently, the
-    // 95 dB warning threshold may not correspond to the actual SPL at the listener's ear.
-    // Use this as a relative sanity check, not an absolute safety guarantee.
-    let totalPowerL = 0;
-    let totalPowerR = 0;
-
     const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
       let maxDb = 0;
       if (!config.perturbations) return 0;
@@ -565,35 +559,43 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       return maxDb;
     };
 
-    // Global gain perturbation (roving or adaptive)
-    const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
+    // Calculates peak power per interval (Target vs Reference) to account for applyTo filtering.
+    const calculatePeakPower = (condition: "target" | "reference") => {
+      let totalPowerL = 0;
+      let totalPowerR = 0;
+      
+      const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
 
-    for (const gen of config.stimuli) {
-      if (gen.type === "multi_component") {
-        for (const c of gen.components as any[]) {
-          const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+      for (const gen of config.stimuli) {
+        const genApplyTo = (gen as any).applyTo || "all";
+        if (genApplyTo !== "all" && genApplyTo !== condition) continue;
+
+        if (gen.type === "multi_component") {
+          for (const c of gen.components as any[]) {
+            const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+            const p = Math.pow(10, pDb / 10);
+            if (c.ear === "left") { totalPowerL += p; }
+            else if (c.ear === "right") { totalPowerR += p; }
+            else { totalPowerL += p; totalPowerR += p; }
+          }
+        } else if (gen.type === "noise") {
+          const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
           const p = Math.pow(10, pDb / 10);
-          if (c.ear === "left") { totalPowerL += p; }
-          else if (c.ear === "right") { totalPowerR += p; }
+          if (gen.ear === "left") { totalPowerL += p; }
+          else if (gen.ear === "right") { totalPowerR += p; }
           else { totalPowerL += p; totalPowerR += p; }
         }
-      } else if (gen.type === "noise") {
-        const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
-        const p = Math.pow(10, pDb / 10);
-        if (gen.ear === "left") { totalPowerL += p; }
-        else if (gen.ear === "right") { totalPowerR += p; }
-        else { totalPowerL += p; totalPowerR += p; }
       }
-    }
 
-    // Apply Global Level field
-    if (config.globalLevelDb !== undefined) {
-      const globalLinear = Math.pow(10, config.globalLevelDb / 10);
-      totalPowerL *= globalLinear;
-      totalPowerR *= globalLinear;
-    }
+      if (config.globalLevelDb !== undefined) {
+        const globalLinear = Math.pow(10, config.globalLevelDb / 10);
+        totalPowerL *= globalLinear;
+        totalPowerR *= globalLinear;
+      }
+      return Math.max(totalPowerL, totalPowerR);
+    };
 
-    const peakChannelPower = Math.max(totalPowerL, totalPowerR);
+    const peakChannelPower = Math.max(calculatePeakPower("target"), calculatePeakPower("reference"));
     if (peakChannelPower > 0) {
       const totalDb = 10 * Math.log10(peakChannelPower);
       if (totalDb > 95) {
@@ -748,10 +750,11 @@ Partial object. All fields are optional and fall back to defaults if omitted.
 
 ## Stimuli
 ${config.stimuli.map((s, i) => {
+      const applyToStr = (s as any).applyTo && (s as any).applyTo !== "all" ? ` [${(s as any).applyTo}]` : "";
       if (s.type === 'multi_component') {
-        return `- Generator ${i + 1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms`;
+        return `- Generator ${i + 1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms${applyToStr}`;
       } else {
-        return `- Generator ${i + 1}: ${s.noiseType} noise, ${s.durationMs}ms`;
+        return `- Generator ${i + 1}: ${s.noiseType} noise, ${s.durationMs}ms${applyToStr}`;
       }
     }).join('\n')}
 

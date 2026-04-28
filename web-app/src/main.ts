@@ -93,7 +93,11 @@ async function prepareTrial() {
       });
     }
     return {
-      generators: currentConfig.stimuli,
+      generators: currentConfig.stimuli.filter((g: any) => {
+        const applyTo = g.applyTo || "all";
+        if (applyTo === "all") return true;
+        return applyTo === interval.condition;
+      }),
       perturbations: resolvedPerturbations
     };
   });

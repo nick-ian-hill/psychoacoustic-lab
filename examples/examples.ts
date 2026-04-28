@@ -244,20 +244,32 @@ export const tenTestConfig: ExperimentConfig = {
     literature_references: ["Moore et al. (2000)"]
   },
   audio: { sampleRate: 44100 },
-  stimuli: [{
-    type: "noise",
-    noiseType: "white", // Assuming flat ERB scale locally for demo
-    levelDb: 70, // Background noise level
-    durationMs: 500,
-    envelope: { attackMs: 20, releaseMs: 20 },
-    ear: "both",
-    bandLimit: { lowFreq: 100, highFreq: 8000 }
-  }],
+  stimuli: [
+    {
+      type: "noise",
+      noiseType: "white", // Assuming flat ERB scale locally for demo
+      levelDb: 70, // Background noise level
+      durationMs: 500,
+      envelope: { attackMs: 20, releaseMs: 20 },
+      ear: "both",
+      bandLimit: { lowFreq: 100, highFreq: 8000 },
+      applyTo: "all"
+    },
+    {
+      type: "multi_component",
+      components: [
+        { frequency: 1500, levelDb: 70, phaseDegrees: 0, ear: "both" }
+      ],
+      durationMs: 500,
+      globalEnvelope: { attackMs: 20, releaseMs: 20 },
+      applyTo: "target" // This tone only appears in the target interval
+    }
+  ],
   perturbations: [
     {
-      type: "spectral_profile", // Using our engine 'hack' to insert a tone into the noise
-      targetFrequency: 1500, // Target tone frequency
-      deltaDb: { adaptive: true }
+      type: "spectral_profile",
+      targetFrequency: 1500,
+      deltaDb: { adaptive: true } // Adjust level relative to the base 70 dB
     }
   ],
   paradigm: {
