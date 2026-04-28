@@ -35,6 +35,7 @@ const infoBtn = document.getElementById('info-btn') as HTMLButtonElement;
 
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
 const downloadResultsBtn = document.getElementById('download-results-btn') as HTMLButtonElement;
+const downloadCsvBtn = document.getElementById('download-csv-btn') as HTMLButtonElement;
 const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
 
 
@@ -666,6 +667,26 @@ downloadResultsBtn.addEventListener('click', () => {
   const data = buildDownloadData();
   const content = JSON.stringify(data, null, 2);
   triggerDownload(content, 'application/json', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.json`);
+});
+
+downloadCsvBtn.addEventListener('click', () => {
+  if (!staircase || !currentConfig) return;
+  const history = staircase.getHistory();
+  
+  // Create CSV header with metadata comments (compatible with analysis parser)
+  let csv = `# Experiment: ${currentConfig.meta.name}\n`;
+  csv += `# Date: ${new Date().toISOString()}\n`;
+  csv += `# Seed: ${currentConfig.meta.seed}\n`;
+  csv += `trial,parameter_value,correct,is_reversal,target_interval,response_interval,resolved_stimulus_state_json\n`;
+  
+  history.forEach(trial => {
+    const meta = trial.metadata || {};
+    // Escape quotes in JSON for CSV safety
+    const jsonState = JSON.stringify(meta.trialState || {}).replace(/"/g, '""');
+    csv += `${trial.trialIndex + 1},${trial.value},${trial.correct},${trial.isReversal},${meta.targetInterval || ""},${meta.response || ""},"${jsonState}"\n`;
+  });
+  
+  triggerDownload(csv, 'text/csv', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.csv`);
 });
 
 function triggerDownload(content: string, mimeType: string, filename: string) {

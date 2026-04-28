@@ -92,8 +92,9 @@
         <div id="results-area" class="hidden" style="width: 100%; text-align: center; margin-top: 1rem;">
           <h2 style="color: var(--success); margin-bottom: 0.5rem;">Experiment Complete!</h2>
           <p id="final-threshold" style="font-size: 1.2rem; font-weight: bold;"></p>
-          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
-            <button id="download-results-btn" class="btn btn-secondary">Download Results (.json)</button>
+          <div class="results-actions">
+            <button id="download-results-btn" class="btn btn-secondary">Export as JSON</button>
+            <button id="download-csv-btn" class="btn btn-secondary">Export as CSV</button>
             <button id="restart-btn" class="btn">New Experiment</button>
           </div>
         </div>

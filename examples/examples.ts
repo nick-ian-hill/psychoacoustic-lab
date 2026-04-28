@@ -126,8 +126,7 @@ export const itdDiscrimConfig: ExperimentConfig = {
     seed: 888,
     rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using the high-level 'itd' perturbation.",
     summary: "Select the OFF-CENTRE interval.",
-    description: "Listen on headphones. One interval sounds centered; the other sounds shifted to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2."
-,
+    description: "Listen on headphones. One interval sounds centered; the other sounds shifted to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2.",
     literature_references: ["Klumpp & Eady (1956)", "Moore (2014)"]
   },
   audio: { sampleRate: 44100 },
@@ -171,7 +170,7 @@ export const itdDiscrimConfig: ExperimentConfig = {
 };
 
 /**
- * 5. Spatial Release from Informational Masking (MODERN)
+ * 4. Spatial Release from Informational Masking (MODERN)
  * Reference: Kidd Jr. et al. (2016); Gallun et al. (2013).
  * Demonstrates how spatial separation (dichotic routing) helps overcome target uncertainty.
  */
@@ -182,8 +181,7 @@ export const srimConfig: ExperimentConfig = {
     seed: 456,
     rationale: "Target is spatially separated from random informational maskers.",
     summary: "Select the interval with the right-ear tone.",
-    description: "Use headphones. One interval contains a faint tone in your RIGHT ear amongst other sounds. Which interval contained the right-ear tone? Press Interval 1 or Interval 2."
-,
+    description: "Use headphones. One interval contains a faint tone in your RIGHT ear amongst other sounds. Which interval contained the right-ear tone? Press Interval 1 or Interval 2.",
     literature_references: ["Kidd Jr et al. (2016)", "Gallun et al. (2013)"]
   },
   audio: { sampleRate: 44100 },
@@ -231,7 +229,7 @@ export const srimConfig: ExperimentConfig = {
 };
 
 /**
- * 6. Threshold Equalizing Noise (TEN) Test
+ * 5. Threshold Equalizing Noise (TEN) Test
  * Assesses dead regions in the cochlea. Uses a broadband noise masker (simulated flat)
  * and a target tone within the noise.
  */
@@ -242,8 +240,7 @@ export const tenTestConfig: ExperimentConfig = {
     seed: 321,
     rationale: "Detection of a pure tone in a broadband threshold-equalizing noise.",
     summary: "Select the interval containing the faint tone.",
-    description: "Two bursts of noise will play. One interval contains a faint tone hidden within the noise. Which interval contained the tone? Press Interval 1 or Interval 2."
-,
+    description: "Two bursts of noise will play. One interval contains a faint tone hidden within the noise. Which interval contained the tone? Press Interval 1 or Interval 2.",
     literature_references: ["Moore et al. (2000)"]
   },
   audio: { sampleRate: 44100 },
@@ -285,7 +282,7 @@ export const tenTestConfig: ExperimentConfig = {
 };
 
 /**
- * 7. Amplitude Modulation (AM) Detection
+ * 6. Amplitude Modulation (AM) Detection
  * Tests temporal envelope processing.
  */
 export const amDetectionConfig: ExperimentConfig = {
@@ -295,8 +292,7 @@ export const amDetectionConfig: ExperimentConfig = {
     seed: 654,
     rationale: "Detect the presence of Amplitude Modulation on a broadband noise carrier.",
     summary: "Select the FLUCTUATING interval.",
-    description: "Two bursts of noise will play. One interval has a rhythmic 'wah-wah' fluctuation; the other is steady. Which interval was FLUCTUATING? Press Interval 1 or Interval 2."
-,
+    description: "Two bursts of noise will play. One interval has a rhythmic 'wah-wah' fluctuation; the other is steady. Which interval was FLUCTUATING? Press Interval 1 or Interval 2.",
     literature_references: ["Viemeister (1979) Temporal modulation transfer function"]
   },
   audio: { sampleRate: 44100 },
@@ -341,7 +337,7 @@ export const amDetectionConfig: ExperimentConfig = {
 };
 
 /**
- * 8. Profile Analysis (Green, 1988)
+ * 7. Profile Analysis (Green, 1988)
  * Demonstrates complex masking, global level roving, and individual component level randomization.
  */
 export const profileAnalysisConfig: ExperimentConfig = {
@@ -351,8 +347,7 @@ export const profileAnalysisConfig: ExperimentConfig = {
     seed: 111,
     rationale: "Detect an intensity increment in one component of a multi-tone complex. Global and individual roving force the listener to use spectral shape (profile) cues rather than absolute loudness.",
     summary: "Select the interval with the louder middle tone.",
-    description: "Two sounds will play. One has a slightly different 'timbre' or 'shape' because the middle tone is louder. Which interval was it? Press Interval 1 or Interval 2."
-,
+    description: "Two sounds will play. One has a slightly different 'timbre' or 'shape' because the middle tone is louder. Which interval was it? Press Interval 1 or Interval 2.",
     literature_references: ["Green (1988) Profile Analysis"]
   },
   audio: { sampleRate: 44100 },

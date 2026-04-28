@@ -85,7 +85,7 @@ export function synthesizeMultiComponent(
   let minOnsetMs = 0;
   let maxOnsetMs = 0;
   
-  const resolvedOnsets = gen.components.map((comp: any) => {
+  gen.components.forEach((comp: any) => {
     let onset = comp.onsetDelayMs || 0;
     if (perturbations) {
       for (const p of perturbations) {
@@ -94,19 +94,14 @@ export function synthesizeMultiComponent(
         }
         if (p.type === "itd" && (!p.targetFrequency || p.targetFrequency === comp.frequency)) {
           const mode = (p as any).mode || "both";
-          const ear = (p as any).ear || "right";
           if (mode === "envelope" || mode === "both") {
-            const compEar = comp.ear || "both";
-            if (compEar === ear || compEar === "both") {
-               onset += resolveValue((p as any).deltaMicroseconds, adaptiveValue, rng) / 1000;
-            }
+             onset += resolveValue((p as any).deltaMicroseconds, adaptiveValue, rng) / 1000;
           }
         }
       }
     }
     minOnsetMs = Math.min(minOnsetMs, onset);
     maxOnsetMs = Math.max(maxOnsetMs, onset);
-    return onset;
   });
 
   // Calculate Global Gain for this interval (e.g., for roving)
@@ -131,90 +126,118 @@ export function synthesizeMultiComponent(
 
   for (let compIdx = 0; compIdx < gen.components.length; compIdx++) {
     const comp = gen.components[compIdx];
-    let freq = comp.frequency;
-    let phase = (comp.phaseDegrees || 0) * Math.PI / 180;
-    // Apply normalization offset to the resolved onset
-    let onsetMs = resolvedOnsets[compIdx] + globalOffsetMs;
-    const ear = comp.ear || "both";
+    const baseFreq = comp.frequency;
+    const basePhase = (comp.phaseDegrees || 0) * Math.PI / 180;
+    const compEar = comp.ear || "both";
 
-    // 2. Resolve remaining Runtime Perturbations (amplitude, phase, frequency)
-    let pertAmpOffset = 0;
-    if (perturbations) {
-      for (const p of perturbations) {
-        const pAny = p as any;
-        const matchesFrequency = !pAny.targetFrequency || pAny.targetFrequency === comp.frequency;
-        
-        if (p.type === "spectral_profile" && matchesFrequency) {
-          pertAmpOffset += resolveValue(p.deltaDb, adaptiveValue, rng);
-        }
-        if (p.type === "mistuning" && matchesFrequency) {
-          const delta = resolveValue(p.deltaPercent, adaptiveValue, rng);
-          freq *= (1 + delta / 100);
-        }
-        if (p.type === "phase_shift" && matchesFrequency) {
-          const earMatch = !p.ear || p.ear === ear || (p.ear === 'both' && ear === 'both');
-          if (earMatch) {
+    // 2. Resolve perturbations for each ear separately
+    const resolveEarState = (targetEar: "left" | "right") => {
+      let freq = baseFreq;
+      let phase = basePhase;
+      let ampOffsetDb = 0;
+      let onsetOffsetMs = 0;
+
+      if (perturbations) {
+        for (const p of perturbations) {
+          const pAny = p as any;
+          const matchesFrequency = !pAny.targetFrequency || pAny.targetFrequency === comp.frequency;
+          if (!matchesFrequency) continue;
+
+          const pEar = pAny.ear || "both";
+          const earMatch = pEar === "both" || pEar === targetEar;
+          if (!earMatch) continue;
+
+          if (p.type === "spectral_profile") {
+            ampOffsetDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+          } else if (p.type === "mistuning") {
+            const delta = resolveValue(p.deltaPercent, adaptiveValue, rng);
+            freq *= (1 + delta / 100);
+          } else if (p.type === "phase_shift") {
             const delta = resolveValue(p.deltaDegrees, adaptiveValue, rng);
             phase += delta * Math.PI / 180;
-          }
-        }
-        if (p.type === "itd" && matchesFrequency) {
-          const pAny = p as any;
-          const mode = pAny.mode || "both";
-          const pEar = pAny.ear || "right";
-          if (mode === "fine_structure" || mode === "both") {
-            const earMatch = ear === pEar || ear === "both";
-            if (earMatch) {
-              const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
-              // ΔPhase = 360 * f * Δt
-              const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
-              phase += deltaPhaseDeg * Math.PI / 180;
+          } else if (p.type === "gain") {
+            ampOffsetDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+          } else if (p.type === "onset_asynchrony") {
+            onsetOffsetMs += resolveValue(p.delayMs, adaptiveValue, rng);
+          } else if (p.type === "itd") {
+            const mode = pAny.mode || "both";
+            const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
+            
+            if (mode === "fine_structure" || mode === "both") {
+               // ΔPhase = 360 * f * Δt
+               const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
+               phase += deltaPhaseDeg * Math.PI / 180;
+            }
+            if (mode === "envelope" || mode === "both") {
+               onsetOffsetMs += itdUs / 1000;
             }
           }
         }
       }
-    }
 
-    const onsetSamples = Math.floor((onsetMs / 1000) * sampleRate);
-    const durationSamples = Math.floor((gen.durationMs / 1000) * sampleRate);
-    const calibrationOffset = getCalibrationOffset(freq, calibration);
-    const finalDigitalDb = comp.levelDb + pertAmpOffset + calibrationOffset;
-    const baseAmp = Math.pow(10, finalDigitalDb / 20) * intervalGainAmp;
+      const calibrationOffset = getCalibrationOffset(freq, calibration);
+      const finalAmp = Math.pow(10, (comp.levelDb + ampOffsetDb + calibrationOffset) / 20) * intervalGainAmp;
 
-    // Use a phase accumulator for perfectly smooth frequency modulation
-    let currentPhase = phase;
-    const dt = 1 / sampleRate;
+      return { freq, phase, amp: finalAmp, onsetMs: (comp.onsetDelayMs || 0) + onsetOffsetMs };
+    };
+
+    const leftState = resolveEarState("left");
+    const rightState = resolveEarState("right");
+
     const durationSec = gen.durationMs / 1000;
+    const durationSamples = Math.floor(durationSec * sampleRate);
+    const dt = 1 / sampleRate;
 
-    // OPTIMIZATION: Only iterate over the specific range where this component exists.
-    // We add a 1-sample safety margin to endI to ensure no clipping at the boundary.
-    const startI = Math.max(0, onsetSamples);
-    const endI = Math.min(globalDurationSamples, onsetSamples + durationSamples + 1);
+    // We use the same onset for buffer range calculation as before, 
+    // but now it's normalized relative to the earliest global onset.
+    const leftOnsetSamples = Math.floor((leftState.onsetMs + globalOffsetMs) / 1000 * sampleRate);
+    const rightOnsetSamples = Math.floor((rightState.onsetMs + globalOffsetMs) / 1000 * sampleRate);
+
+    // Phase accumulators for each ear
+    let leftPhase = leftState.phase;
+    let rightPhase = rightState.phase;
+
+    // Optimization: find the overall range covered by this component across both ears
+    const startI = Math.max(0, Math.min(leftOnsetSamples, rightOnsetSamples));
+    const endI = Math.min(globalDurationSamples, Math.max(leftOnsetSamples, rightOnsetSamples) + durationSamples + 1);
 
     for (let i = startI; i < endI; i++) {
-      const t = (i - onsetSamples) / sampleRate;
-      const envelope = calculateEnvelope(t, durationSec, gen.globalEnvelope);
-      
-      let instFreq = freq;
-      let instAmp = baseAmp;
+      const tL = (i - leftOnsetSamples) / sampleRate;
+      const tR = (i - rightOnsetSamples) / sampleRate;
 
-      if (comp.modulators) {
-        for (const mod of comp.modulators) {
-          const modVal = Math.sin(2 * Math.PI * mod.rateHz * t + (mod.phaseDegrees || 0) * Math.PI / 180);
-          if (mod.type === "AM") {
-            instAmp *= (1 + mod.depth * modVal);
-          } else if (mod.type === "FM") {
-            instFreq += mod.depth * modVal;
+      // Handle Left Ear
+      if ((compEar === "left" || compEar === "both") && tL >= 0 && tL <= durationSec) {
+        const envelope = calculateEnvelope(tL, durationSec, gen.globalEnvelope);
+        let instFreq = leftState.freq;
+        let instAmp = leftState.amp;
+
+        if (comp.modulators) {
+          for (const mod of comp.modulators) {
+            const modVal = Math.sin(2 * Math.PI * mod.rateHz * tL + (mod.phaseDegrees || 0) * Math.PI / 180);
+            if (mod.type === "AM") instAmp *= (1 + mod.depth * modVal);
+            else if (mod.type === "FM") instFreq += mod.depth * modVal;
           }
         }
+        left[i] += instAmp * Math.sin(leftPhase) * envelope;
+        leftPhase += 2 * Math.PI * instFreq * dt;
       }
 
-      const sample = instAmp * Math.sin(currentPhase) * envelope;
-      if (ear === "left" || ear === "both") left[i] += sample;
-      if (ear === "right" || ear === "both") right[i] += sample;
+      // Handle Right Ear
+      if ((compEar === "right" || compEar === "both") && tR >= 0 && tR <= durationSec) {
+        const envelope = calculateEnvelope(tR, durationSec, gen.globalEnvelope);
+        let instFreq = rightState.freq;
+        let instAmp = rightState.amp;
 
-      // Increment phase based on the instantaneous frequency
-      currentPhase += 2 * Math.PI * instFreq * dt;
+        if (comp.modulators) {
+          for (const mod of comp.modulators) {
+            const modVal = Math.sin(2 * Math.PI * mod.rateHz * tR + (mod.phaseDegrees || 0) * Math.PI / 180);
+            if (mod.type === "AM") instAmp *= (1 + mod.depth * modVal);
+            else if (mod.type === "FM") instFreq += mod.depth * modVal;
+          }
+        }
+        right[i] += instAmp * Math.sin(rightPhase) * envelope;
+        rightPhase += 2 * Math.PI * instFreq * dt;
+      }
     }
   }
 
@@ -236,57 +259,96 @@ export function synthesizeNoise(
   const baseAmp = Math.pow(10, gen.levelDb / 20);
   const ear = gen.ear || "both";
 
-  const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
-
-  // 1. Resolve all perturbations ONCE before the sample loop
+  // Calculate Global Gain for this interval (e.g., for roving)
   let intervalGainDb = 0;
-  let dynamicAmDepth = 0;
-  const tones: { amp: number, freq: number }[] = [];
-
   if (perturbations) {
-    for (const p of perturbations) {
+    perturbations.forEach(p => {
       if (p.type === "gain") {
         intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
-      } else if (p.type === "am_depth") {
-        dynamicAmDepth += resolveValue(p.deltaDepth, adaptiveValue, rng);
-      } else if (p.type === "spectral_profile") {
-        const delta = resolveValue(p.deltaDb, adaptiveValue, rng);
-        tones.push({
-          freq: p.targetFrequency,
-          amp: baseAmp * Math.pow(10, delta / 20)
-        });
+      }
+    });
+  }
+  const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
+
+  const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
+
+  // 1. Resolve perturbations for each ear separately
+  const resolveEarState = (targetEar: "left" | "right") => {
+    let gainDb = 0;
+    let amDepthOffset = 0;
+    const earTones: { amp: number, freq: number }[] = [];
+
+    if (perturbations) {
+      for (const p of perturbations) {
+        const pAny = p as any;
+        const pEar = pAny.ear || "both";
+        const earMatch = pEar === "both" || pEar === targetEar;
+        if (!earMatch) continue;
+
+        if (p.type === "gain") {
+          gainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+        } else if (p.type === "am_depth") {
+          amDepthOffset += resolveValue(p.deltaDepth, adaptiveValue, rng);
+        } else if (p.type === "spectral_profile") {
+          const delta = resolveValue(p.deltaDb, adaptiveValue, rng);
+          earTones.push({
+            freq: p.targetFrequency,
+            amp: baseAmp * Math.pow(10, delta / 20)
+          });
+        }
       }
     }
-  }
 
-  const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
+    const totalGainAmp = Math.pow(10, gainDb / 20) * intervalGainAmp;
+    const amMod = gen.modulators?.find((m: any) => m.type === "AM");
+    const finalAmDepth = amMod 
+      ? Math.max(0, Math.min(1, (amMod.depth || 0) + amDepthOffset))
+      : (amDepthOffset > 0 ? amDepthOffset : 0);
+    
+    return { 
+      gain: totalGainAmp, 
+      amDepth: finalAmDepth, 
+      amRate: amMod?.rateHz || 8, // Default rate if just applying depth
+      amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180,
+      tones: earTones 
+    };
+  };
+
+  const leftState = resolveEarState("left");
+  const rightState = resolveEarState("right");
   const durationSec = gen.durationMs / 1000;
-  const finalAmDepth = gen.modulators 
-    ? Math.max(0, Math.min(1, (gen.modulators.find((m: any) => m.type === "AM")?.depth || 0) + dynamicAmDepth))
-    : 0;
-  const amRate = gen.modulators?.find((m: any) => m.type === "AM")?.rateHz || 0;
-  const amPhase = (gen.modulators?.find((m: any) => m.type === "AM")?.phaseDegrees || 0) * Math.PI / 180;
 
   // 2. Optimized Sample Loop
   for (let i = 0; i < targetSamples; i++) {
     const t = i / sampleRate;
     const envelope = calculateEnvelope(t, durationSec, gen.envelope);
-    let currentAmp = baseAmp * envelope * intervalGainAmp;
-    
-    if (finalAmDepth > 0) {
-      const modVal = Math.sin(2 * Math.PI * amRate * t + amPhase);
-      currentAmp *= (1 + finalAmDepth * modVal);
+    const noiseBase = baseNoise[i] * baseAmp * envelope;
+
+    // Handle Left Ear
+    if (ear === "left" || ear === "both") {
+      let currentAmp = leftState.gain;
+      if (leftState.amDepth > 0) {
+        currentAmp *= (1 + leftState.amDepth * Math.sin(2 * Math.PI * leftState.amRate * t + leftState.amPhase));
+      }
+      let sample = noiseBase * currentAmp;
+      for (const tone of leftState.tones) {
+        sample += tone.amp * envelope * Math.sin(2 * Math.PI * tone.freq * t);
+      }
+      left[i] = sample;
     }
 
-    let sample = baseNoise[i] * currentAmp;
-
-    // Add pre-calculated tones
-    for (const tone of tones) {
-      sample += tone.amp * envelope * Math.sin(2 * Math.PI * tone.freq * t);
+    // Handle Right Ear
+    if (ear === "right" || ear === "both") {
+      let currentAmp = rightState.gain;
+      if (rightState.amDepth > 0) {
+        currentAmp *= (1 + rightState.amDepth * Math.sin(2 * Math.PI * rightState.amRate * t + rightState.amPhase));
+      }
+      let sample = noiseBase * currentAmp;
+      for (const tone of rightState.tones) {
+        sample += tone.amp * envelope * Math.sin(2 * Math.PI * tone.freq * t);
+      }
+      right[i] = sample;
     }
-    
-    if (ear === "left" || ear === "both") left[i] = sample;
-    if (ear === "right" || ear === "both") right[i] = sample;
   }
 
   return { left, right };
