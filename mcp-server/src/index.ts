@@ -170,6 +170,9 @@ class PsychoacousticServer {
                 type: "object",
                 properties: {
                   name: { type: "string", description: "Custom name for the experiment." },
+                  rationale: { type: "string", description: "Scientific rationale for the experiment design." },
+                  summary: { type: "string", description: "A short, user-facing summary (max 150 chars) shown during the experiment." },
+                  description: { type: "string", description: "A detailed description shown on the selection screen and in the help popup." },
                   frequencyHz: { type: "number", minimum: 20, maximum: 20000, description: "Override the primary frequency (Hz)." },
                   levelDb: { type: "number", minimum: 0, maximum: 100, description: "Override the base presentation level (dB SPL)." },
                   durationMs: { type: "number", minimum: 10, maximum: 5000, description: "Override stimulus duration (ms)." },
@@ -283,6 +286,7 @@ ARCHITECTURE & BINAURAL PRECISION:
 - IPD (Interaural Phase Difference): Use the high-level 'itd' perturbation with mode: 'fine_structure'. This handles frequency-to-phase conversion automatically.
 - True ITD (Interaural Time Difference): Use the high-level 'itd' perturbation with mode: 'both' or 'envelope'.
 - Adaptive Linking (MANDATORY): If you use { "adaptive": true } in any perturbation, you MUST also define an 'adaptive' configuration block. Conversely, if you define an 'adaptive' block, at least one perturbation MUST be set to { "adaptive": true }.
+- User Instructions (REQUIRED): Every experiment must provide 'meta.summary' (short text shown during trials) and 'meta.description' (long text shown in help popups). These are CRITICAL for the participant's experience.
 - Finalization: Use evaluate_and_finalize_experiment as your final step to check for clipping risks and adaptive stability.
 
 HUMAN AUDITORY THRESHOLDS (EMPIRICAL YARDSTICKS):
@@ -364,7 +368,7 @@ HIGH-LEVEL DESIGN & BATCHING:
 - seed: number — Master RNG seed; used for noise generation AND interval-order randomization
 - rationale?: string — Scientific rationale
 - summary: string (required) — A short summary (max 150 chars) shown during the experiment
-- description?: string — A detailed description shown on the selection screen and in the help popup
+- description: string (required) — A detailed description shown on the selection screen and in the help popup
 - literature_references?: string[] — Citation list
 - advisor_warnings?: string[] — Custom warnings to surface in experiment design
 
@@ -875,6 +879,9 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       let config = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
 
       if (parameters.name) config.meta.name = parameters.name;
+      if (parameters.rationale) config.meta.rationale = parameters.rationale;
+      if (parameters.summary) config.meta.summary = parameters.summary;
+      if (parameters.description) config.meta.description = parameters.description;
 
       // High-level mapping logic
       if (parameters.frequencyHz !== undefined) {

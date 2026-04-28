@@ -202,8 +202,8 @@ export const ExperimentConfigSchema = z.object({
     version: z.string(),
     seed: z.number().int(),
     rationale: z.string().optional(),
-    summary: z.string().optional().describe("A short summary (max 150 chars) shown during the experiment.").refine(s => !s || s.length <= 150, "Summary must be 150 characters or less."),
-    description: z.string().optional().describe("A detailed description shown on the selection screen and in the help popup."),
+    summary: z.string().describe("A short summary (max 150 chars) shown during the experiment.").refine(s => s.length <= 150, "Summary must be 150 characters or less."),
+    description: z.string().describe("A detailed description shown on the selection screen and in the help popup."),
 
     literature_references: z.array(z.string()).optional(),
     advisor_warnings: z.array(z.string()).optional(),
