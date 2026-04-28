@@ -92,6 +92,16 @@ export function synthesizeMultiComponent(
         if (p.type === "onset_asynchrony" && p.targetFrequency === comp.frequency) {
           onset += resolveValue((p as any).delayMs, adaptiveValue, rng);
         }
+        if (p.type === "itd" && (!p.targetFrequency || p.targetFrequency === comp.frequency)) {
+          const mode = (p as any).mode || "both";
+          const ear = (p as any).ear || "right";
+          if (mode === "envelope" || mode === "both") {
+            const compEar = comp.ear || "both";
+            if (compEar === ear || compEar === "both") {
+               onset += resolveValue((p as any).deltaMicroseconds, adaptiveValue, rng) / 1000;
+            }
+          }
+        }
       }
     }
     minOnsetMs = Math.min(minOnsetMs, onset);
@@ -146,6 +156,20 @@ export function synthesizeMultiComponent(
           if (earMatch) {
             const delta = resolveValue(p.deltaDegrees, adaptiveValue, rng);
             phase += delta * Math.PI / 180;
+          }
+        }
+        if (p.type === "itd" && matchesFrequency) {
+          const pAny = p as any;
+          const mode = pAny.mode || "both";
+          const pEar = pAny.ear || "right";
+          if (mode === "fine_structure" || mode === "both") {
+            const earMatch = ear === pEar || ear === "both";
+            if (earMatch) {
+              const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
+              // ΔPhase = 360 * f * Δt
+              const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
+              phase += deltaPhaseDeg * Math.PI / 180;
+            }
           }
         }
       }

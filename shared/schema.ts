@@ -118,6 +118,15 @@ export const GainPerturbationSchema = BasePerturbationSchema.extend({
   ear: z.enum(["left", "right", "both"]).optional().describe("Optional: target only one ear for dichotic level roving."),
 });
 
+export const ITDPerturbationSchema = BasePerturbationSchema.extend({
+  type: z.literal("itd"),
+  targetFrequency: z.number().optional().describe("For fine-structure ITD, which frequency component to shift. If omitted, applies to all components (broadband ITD)."),
+  deltaMicroseconds: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  mode: z.enum(["fine_structure", "envelope", "both"]).default("both")
+    .describe("fine_structure: shift phase only; envelope: shift onset only; both: shift both."),
+  ear: z.enum(["left", "right"]).default("right").describe("Which ear to delay/shift. Delaying the right ear moves the sound to the left."),
+});
+
 export const PerturbationSchema = z.union([
   SpectralProfilePerturbationSchema,
   AsynchronyPerturbationSchema,
@@ -125,6 +134,7 @@ export const PerturbationSchema = z.union([
   PhaseShiftPerturbationSchema,
   AMDepthPerturbationSchema,
   GainPerturbationSchema,
+  ITDPerturbationSchema,
 ]);
 
 /**

@@ -158,8 +158,8 @@ class PsychoacousticServer {
 
 ARCHITECTURE & BINAURAL PRECISION:
 - Smart Server / Dumb Engine: The Audio Engine only renders explicit components. It does not auto-generate complex stimulus relationships. You must use tools like calc_frequencies, calc_phases, and calc_amplitudes to supply explicit numerical arrays.
-- IPD (Interaural Phase Difference): Set onsetDelayMs to 0 and use phaseDegrees to shift one ear's component. Set ear on the PhaseShiftPerturbation to target only that ear.
-- True ITD (Interaural Time Difference): Use onsetDelayMs to shift the entire gated stimulus, and use the calc_itd tool to convert microseconds to ms.
+- IPD (Interaural Phase Difference): Use the high-level 'itd' perturbation with mode: 'fine_structure'. This handles frequency-to-phase conversion automatically.
+- True ITD (Interaural Time Difference): Use the high-level 'itd' perturbation with mode: 'both' or 'envelope'.
 - Finalization: Use evaluate_and_finalize_experiment as your final step to check for clipping risks and adaptive stability.
 
 HUMAN AUDITORY THRESHOLDS (EMPIRICAL YARDSTICKS):
@@ -300,6 +300,12 @@ By default, perturbations apply only to the 'target' interval.
 #### am_depth
 - targetFrequency?: number
 - deltaDepth: value
+
+#### itd
+- deltaMicroseconds: value
+- mode: "fine_structure" | "envelope" | "both" (default "both")
+- ear: "left" | "right" (default "right")
+- targetFrequency?: number — (Optional) target a specific component.
 
 ## paradigm (required)
 - type: "2AFC" | "3AFC" | "Probe-Signal"

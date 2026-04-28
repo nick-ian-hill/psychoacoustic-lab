@@ -286,6 +286,7 @@ playBtn.addEventListener('click', async () => {
             if (rp.delayMs !== undefined) rp.delayMs = resolveParam(rp.delayMs);
             if (rp.deltaDegrees !== undefined) rp.deltaDegrees = resolveParam(rp.deltaDegrees);
             if (rp.deltaDepth !== undefined) rp.deltaDepth = resolveParam(rp.deltaDepth);
+            if (rp.deltaMicroseconds !== undefined) rp.deltaMicroseconds = resolveParam(rp.deltaMicroseconds);
             resolvedPerturbations.push(rp);
           }
         });
