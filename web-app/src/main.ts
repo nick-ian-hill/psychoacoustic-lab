@@ -19,6 +19,7 @@ let responseButtons: HTMLButtonElement[] = [];
 let targetIntervalIndex = -1;
 let lastTrialData: any = null; // Store the exact resolved stimuli for logging
 let highlightTimeouts: any[] = [];
+let isProcessingResponse = false;
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
@@ -179,6 +180,9 @@ startBtn.addEventListener('click', async () => {
     }
 
     // Initialize Audio Engine
+    if (engine) {
+      await engine.close();
+    }
     engine = new AudioEngine(currentConfig.audio.sampleRate, currentConfig.meta.seed);
 
     // Initialize StaircaseController (the full-featured implementation)
@@ -325,30 +329,44 @@ playBtn.addEventListener('click', async () => {
 });
 
 function handleResponse(responseIndex: number) {
-  // 1. IMMEDIATELY disable all buttons to force focus release on mobile
+  if (isProcessingResponse) return;
+  isProcessingResponse = true;
+
+  // Disable all buttons immediately to prevent double-triggers (e.g. rapid trackpad taps).
   responseButtons.forEach(b => b.disabled = true);
 
   playBtn.textContent = "\u00A0";
   const isCorrect = responseIndex === targetIntervalIndex;
 
-  // Flash correct/incorrect feedback on the chosen button
   const btn = responseButtons[responseIndex];
   btn.classList.add(isCorrect ? 'correct' : 'incorrect');
-  btn.blur(); // Remove focus border
+  btn.blur();
+
+  const feedbackMs = currentConfig.paradigm.timing.feedbackDurationMs ?? 400;
 
   setTimeout(() => {
     btn.classList.remove('correct', 'incorrect');
 
-    staircase.processResponse(isCorrect, {
-      targetInterval: targetIntervalIndex + 1,
-      response: responseIndex + 1,
-      parameterValue: staircase.getCurrentValue(),
-      unit: currentConfig.adaptive.unit || "",
-      trialState: lastTrialData
-    });
+    try {
+      staircase.processResponse(isCorrect, {
+        targetInterval: targetIntervalIndex + 1,
+        response: responseIndex + 1,
+        parameterValue: staircase.getCurrentValue(),
+        unit: currentConfig.adaptive.unit || "",
+        trialState: lastTrialData
+      });
+    } catch (e) {
+      // staircase.processResponse can throw if the config is malformed.
+      console.error("Staircase update failed:", e);
+      isProcessingResponse = false;
+      playBtn.disabled = false;
+      playBtn.textContent = "Error \u2014 check config";
+      return;
+    }
 
     if (staircase.isFinished(currentConfig.termination)) {
       endExperiment();
+      isProcessingResponse = false;
     } else {
       updateStatus();
       responseButtons.forEach(btn => {
@@ -356,17 +374,19 @@ function handleResponse(responseIndex: number) {
         btn.classList.remove('active', 'correct', 'incorrect');
       });
 
-      const itiMs = currentConfig.paradigm.timing.itiMs;
-      playBtn.textContent = "\u00A0"; // Clear text but maintain button height
+      playBtn.textContent = "\u00A0";
       playBtn.disabled = true;
+
       setTimeout(() => {
+        isProcessingResponse = false;
         if (experimentArea.classList.contains('hidden')) return;
         playBtn.disabled = false;
         playBtn.click();
-      }, itiMs);
+      }, currentConfig.paradigm.timing.itiMs);
     }
-  }, currentConfig.paradigm.timing.feedbackDurationMs);
+  }, feedbackMs);
 }
+
 
 /**
  * Highlights each interval button in precise synchrony with the audio.
@@ -422,14 +442,18 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     });
 
     // 3. Reliable response enablement: check AudioContext time against enableButtonsAt.
-    // This is much more precise than source.onended + setTimeout.
-    if (!buttonsEnabled && now >= enableButtonsAt) {
+    // FALLBACK: If AudioContext time freezes (common on mobile sleep/interrupt), use wall-clock timeout.
+    const wallClockTimeout = (wallNow - wallStart) > (totalDurationMs + 1000);
+    if (!buttonsEnabled && (now >= enableButtonsAt || wallClockTimeout)) {
+      if (wallClockTimeout && now < enableButtonsAt) {
+        console.warn("[highlightIntervals] AudioContext clock appears frozen. Forcing button enablement via wall-clock.");
+      }
       responseButtons.forEach(btn => btn.disabled = false);
       buttonsEnabled = true;
     }
 
-    // Ensure we don't stop the loop until buttons are enabled
-    if (now < enableButtonsAt) allFinished = false;
+    // Ensure we don't stop the loop until buttons are enabled or timeout reached
+    if (now < enableButtonsAt && !wallClockTimeout) allFinished = false;
 
     if (!allFinished) {
       frameId = requestAnimationFrame(update);
@@ -458,9 +482,11 @@ function clearFeedback() {
     container.focus();
   }
 
-  // 2. Clear all visual classes and reset buttons
+  // 2. Clear visual classes related to stimulus playback.
+  // Note: 'correct' and 'incorrect' classes are managed by the handleResponse timer
+  // and are intentionally NOT cleared here to prevent premature removal at loop end.
   responseButtons.forEach(btn => {
-    btn.classList.remove('active', 'correct', 'incorrect');
+    btn.classList.remove('active');
     btn.blur();
     btn.style.borderColor = '';
     btn.style.color = '';

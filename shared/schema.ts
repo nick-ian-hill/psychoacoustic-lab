@@ -138,7 +138,7 @@ export const ParadigmSchema = z.object({
   randomizeOrder: z.boolean(),
   timing: z.object({
     isiMs: z.number(),
-    itiMs: z.number().default(1000).describe("Inter-trial interval in milliseconds. The next trial always starts automatically after this interval."),
+    itiMs: z.number().min(50).default(1000).describe("Inter-trial interval in milliseconds (min 50ms). The next trial always starts automatically after this interval."),
     feedbackDurationMs: z.number().default(400).optional().describe("Duration in milliseconds for which the feedback (correct/incorrect) is displayed after a response."),
     responseDelayMs: z.number().min(0).default(250).optional().describe("Delay between the end of stimulus presentation and enabling the response buttons."),
     allowReplay: z.boolean().optional().describe("If true, the user can replay the stimulus before responding."),

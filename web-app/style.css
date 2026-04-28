@@ -1,15 +1,15 @@
 :root {
   color-scheme: dark;
-  --bg: #0f1115;
-  --panel-bg: #1a1d24;
-  --text: #e2e8f0;
+  --bg: #0f172a;
+  --panel-bg: #1e293b;
+  --text: #f8fafc;
   --text-muted: #94a3b8;
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
+  --accent: #38bdf8;
+  --accent-secondary: #f472b6;
   --success: #10b981;
   --error: #ef4444;
-  --border: #334155;
-  --radius: 12px;
+  --border: rgba(148, 163, 184, 0.1);
+  --radius: 4px;
 }
 
 option {
@@ -34,7 +34,8 @@ body {
   align-items: center;
   justify-content: center;
   scrollbar-gutter: stable;
-  /* Prevent layout shift when scrollbars appear */
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 .container {
@@ -43,10 +44,9 @@ body {
   background: var(--panel-bg);
   border-radius: var(--radius);
   padding: 2rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border);
   position: relative;
-  /* Ensure dropdowns can anchor correctly */
 }
 
 header {
@@ -55,13 +55,15 @@ header {
 }
 
 h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 800;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+h1 span {
+  color: var(--accent);
 }
 
 p.subtitle {
@@ -94,7 +96,7 @@ label {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 1rem;
   display: flex;
   justify-content: space-between;
@@ -125,7 +127,7 @@ label {
   right: 0;
   background: var(--panel-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
   z-index: 100;
   overflow-y: auto;
@@ -171,11 +173,12 @@ textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 1rem;
+  border-radius: var(--radius);
+  font-family: monospace;
+  font-size: 0.875rem;
   resize: vertical;
-  min-height: 100px;
+  min-height: 120px;
+  line-height: 1.6;
 }
 
 textarea:focus {
@@ -183,31 +186,47 @@ textarea:focus {
   border-color: var(--accent);
 }
 
-textarea {
-  resize: vertical;
-  min-height: 100px;
-  font-family: monospace;
-  font-size: 0.8rem;
-}
 
 .btn {
-  width: 100%;
-  padding: 0.875rem;
+  display: inline-block;
+  width: fit-content;
+  padding: 1rem 2rem;
   background: var(--accent);
-  color: white;
+  color: var(--bg);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  text-align: center;
 }
+
+
 
 
 
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+  background: rgba(244, 114, 182, 0.05);
 }
 
 .experiment-area {
@@ -223,7 +242,7 @@ textarea {
 .status-badge {
   padding: 0.5rem 1rem;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(56, 189, 248, 0.1);
   color: var(--accent);
   font-size: 0.875rem;
   font-weight: 600;
@@ -263,12 +282,12 @@ textarea {
 
 @media (hover: hover) and (pointer: fine) {
   .btn:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: #7dd3fc;
   }
 
   .response-btn:hover:not(:disabled) {
     border-color: var(--accent);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
   }
 }
 
@@ -305,8 +324,8 @@ textarea {
 .response-btn.active {
   border-color: var(--accent);
   color: #ffffff;
-  background: rgba(59, 130, 246, 0.12);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 0 12px rgba(59, 130, 246, 0.1);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.45), inset 0 0 12px rgba(56, 189, 248, 0.1);
   opacity: 1;
 }
 
