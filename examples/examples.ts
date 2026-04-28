@@ -87,10 +87,22 @@ export const auditoryGroupingConfig: ExperimentConfig = {
       deltaDb: { adaptive: true }
     },
     {
+      type: "gain",
+      applyTo: "all",
+      deltaDb: { type: "uniform", min: -10, max: 10 }
+    },
+    {
       type: "onset_asynchrony",
       targetFrequency: 1000,
+      applyTo: "all",
       delayMs: -100 // Target leads by 100ms
-    }
+    },
+    // Phase Roving: Randomizes starting phase per component/interval.
+    { type: "phase_shift", targetFrequency: 200, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 400, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 600, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 800, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 1000, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } }
   ],
   paradigm: {
     type: "2AFC",
@@ -125,8 +137,8 @@ export const itdDiscrimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 888,
     rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using the high-level 'itd' perturbation.",
-    summary: "Select the OFF-CENTRE interval.",
-    description: "Listen on headphones. One interval sounds centered; the other sounds shifted to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2.",
+    summary: "Select the interval in which the tone was shiftd right.",
+    description: "Listen using headphones. In one interval the tone is centered; in the other the tone is shifted to the right. In which interval was the tone shifted right?",
     literature_references: ["Klumpp & Eady (1956)", "Moore (2014)"]
   },
   audio: { sampleRate: 44100 },
@@ -142,7 +154,7 @@ export const itdDiscrimConfig: ExperimentConfig = {
     {
       type: "itd",
       mode: "fine_structure", // Only shift phase (IPD)
-      ear: "right", // Delay the right ear
+      ear: "left", // Delay the right ear
       deltaMicroseconds: { adaptive: true }
     }
   ],
@@ -155,7 +167,7 @@ export const itdDiscrimConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaMicroseconds",
-    initialValue: 100,
+    initialValue: 300,
     stepType: "geometric",
     stepSizes: [2, 1.414, 1.189],
     stepSizeInterval: 2,
@@ -185,20 +197,30 @@ export const srimConfig: ExperimentConfig = {
     literature_references: ["Kidd Jr et al. (2016)", "Gallun et al. (2013)"]
   },
   audio: { sampleRate: 44100 },
-  stimuli: [{
-    type: "multi_component",
-    components: [
-      // Informational Maskers (Left Ear)
-      { frequency: 400, levelDb: 50, phaseDegrees: 12, ear: "left" },
-      { frequency: 600, levelDb: 50, phaseDegrees: 90, ear: "left" },
-      { frequency: 1500, levelDb: 50, phaseDegrees: 180, ear: "left" },
-      { frequency: 2200, levelDb: 50, phaseDegrees: 270, ear: "left" },
-      // Target Tone (Right Ear)
-      { frequency: 1000, levelDb: 50, phaseDegrees: 0, ear: "right" }
-    ],
-    durationMs: 300,
-    globalEnvelope: { attackMs: 10, releaseMs: 10 }
-  }],
+  stimuli: [
+    {
+      type: "multi_component",
+      components: [
+        // Informational Maskers (Left Ear)
+        { frequency: 400, levelDb: 50, phaseDegrees: 12, ear: "left" },
+        { frequency: 600, levelDb: 50, phaseDegrees: 90, ear: "left" },
+        { frequency: 1500, levelDb: 50, phaseDegrees: 180, ear: "left" },
+        { frequency: 2200, levelDb: 50, phaseDegrees: 270, ear: "left" }
+      ],
+      durationMs: 300,
+      globalEnvelope: { attackMs: 10, releaseMs: 10 }
+    },
+    {
+      type: "multi_component",
+      components: [
+        // Target Tone (Right Ear) - ONLY in target interval
+        { frequency: 1000, levelDb: 50, phaseDegrees: 0, ear: "right" }
+      ],
+      durationMs: 300,
+      globalEnvelope: { attackMs: 10, releaseMs: 10 },
+      applyTo: "target"
+    }
+  ],
   perturbations: [
     {
       type: "spectral_profile",
@@ -281,11 +303,11 @@ export const tenTestConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDb",
-    initialValue: 20,
-    stepSizes: [2, 1],
+    initialValue: 0,
+    stepSizes: [4, 2, 1],
     rule: { correctDown: 2 },
-    minValue: -10,
-    maxValue: 30,
+    minValue: -38,
+    maxValue: 10,
     reversals: 10,
     unit: "dB"
   },
@@ -388,6 +410,12 @@ export const profileAnalysisConfig: ExperimentConfig = {
     { type: "spectral_profile", targetFrequency: 800, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
     { type: "spectral_profile", targetFrequency: 1600, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
     { type: "spectral_profile", targetFrequency: 3200, applyTo: "all", deltaDb: { type: "uniform", min: -2, max: 2 } },
+    // Phase Roving: Randomizes starting phase per component/interval.
+    { type: "phase_shift", targetFrequency: 200, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 400, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 800, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 1600, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+    { type: "phase_shift", targetFrequency: 3200, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
     // Target Signal: An adaptive increment added ONLY to the 800 Hz component in the TARGET interval.
     {
       type: "spectral_profile",
