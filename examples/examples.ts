@@ -109,88 +109,35 @@ export const auditoryGroupingConfig: ExperimentConfig = {
 };
 
 /**
- * 3. Log-Spaced Complex Detection
- * Example using the Math Toolkit for component generation.
+ * 3. ITD/IPD Discrimination (MODERN - TFS)
+ * Reference: Klumpp & Eady (1956); Moore (2014)
+ * Uses the high-level 'itd' perturbation to automatically handle phase-shifting
+ * based on the component frequency.
  */
-export const logSpacedConfig: ExperimentConfig = {
+export const itdDiscrimConfig: ExperimentConfig = {
   meta: {
-    name: "Log-Spaced Detection",
-    version: "2.0.0",
-    seed: 777,
-    rationale: "Explicit components calculated via calc_frequencies toolkit.",
-    instructions: "Two multi-tone sounds will play. One interval contains a tone that stands out in level. Which interval was it? Press Interval 1 or Interval 2."
-  },
-  audio: { sampleRate: 44100 },
-  stimuli: [{
-    type: "multi_component",
-    components: [
-      { frequency: 200, levelDb: 50, phaseDegrees: 0, ear: "both" },
-      { frequency: 317.48, levelDb: 50, phaseDegrees: 68.8, ear: "both" },
-      { frequency: 503.97, levelDb: 50, phaseDegrees: 137.5, ear: "both" },
-      { frequency: 800, levelDb: 50, phaseDegrees: 28.6, ear: "both" }
-    ],
-    durationMs: 400,
-    globalEnvelope: { attackMs: 20, releaseMs: 20 }
-  }],
-  perturbations: [
-    {
-      type: "spectral_profile",
-      targetFrequency: 503.97,
-      deltaDb: { adaptive: true }
-    }
-  ],
-  paradigm: {
-    type: "2AFC",
-    intervals: [{ condition: "reference" }, { condition: "target" }],
-    randomizeOrder: true,
-    timing: { isiMs: 500, itiMs: 1000 }
-  },
-  adaptive: {
-    type: "staircase",
-    parameter: "perturbations[0].deltaDb",
-    initialValue: 10,
-    stepSizes: [4, 2, 1],
-    rule: { correctDown: 2 },
-    minValue: 0,
-    maxValue: 40,
-    reversals: 12,
-    unit: "dB"
-  },
-  ui: { showCurrentValue: true },
-  termination: { reversals: 12 }
-};
-
-/**
- * 4. Interaural Phase Difference (IPD) Discrimination (MODERN - TFS)
- * Reference: Moore (2014) "Auditory processing of temporal fine structure";
- * Prendergast et al. (2017). 
- * Highly cited paradigm for assessing hidden hearing loss / cochlear synaptopathy.
- */
-export const ipdDiscrimConfig: ExperimentConfig = {
-  meta: {
-    name: "IPD Discrimination (TFS)",
+    name: "ITD/IPD Discrimination",
     version: "2.0.0",
     seed: 888,
-    rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using binaural phase shifts. Impaired in Hidden Hearing Loss.",
-    instructions: "Listen carefully on headphones. One interval sounds like the tone is coming from directly ahead; the other sounds like it has moved to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2.",
-    literature_references: ["Moore (2014) Auditory processing of temporal fine structure", "Prendergast et al. (2017)"]
+    rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using the high-level 'itd' perturbation.",
+    instructions: "Listen on headphones. One interval sounds centered; the other sounds shifted to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2.",
+    literature_references: ["Klumpp & Eady (1956)", "Moore (2014)"]
   },
   audio: { sampleRate: 44100 },
   stimuli: [{
     type: "multi_component",
     components: [
-      { frequency: 500, levelDb: 70, phaseDegrees: 0, ear: "left" },
-      { frequency: 500, levelDb: 70, phaseDegrees: 0, ear: "right" }
+      { frequency: 500, levelDb: 70, phaseDegrees: 0, ear: "both" }
     ],
     durationMs: 400,
     globalEnvelope: { attackMs: 20, releaseMs: 20 }
   }],
   perturbations: [
     {
-      type: "phase_shift",
-      targetFrequency: 500,
-      ear: "right", // Only shift the RIGHT ear component to create a genuine interaural phase difference
-      deltaDegrees: { adaptive: true }
+      type: "itd",
+      mode: "fine_structure", // Only shift phase (IPD)
+      ear: "right", // Delay the right ear
+      deltaMicroseconds: { adaptive: true }
     }
   ],
   paradigm: {
@@ -201,15 +148,15 @@ export const ipdDiscrimConfig: ExperimentConfig = {
   },
   adaptive: {
     type: "staircase",
-    parameter: "perturbations[0].deltaDegrees",
-    initialValue: 90, // Start with a 90-degree phase shift
+    parameter: "perturbations[0].deltaMicroseconds",
+    initialValue: 100, // Start with 100 microseconds
     stepType: "geometric",
     stepSizes: [2, 1.414, 1.189],
     rule: { correctDown: 2 },
     minValue: 0,
-    maxValue: 180,
+    maxValue: 1000,
     reversals: 12,
-    unit: "°"
+    unit: "\u03BCs" // Microseconds symbol
   },
   ui: { showCurrentValue: true },
   termination: { reversals: 12 }
