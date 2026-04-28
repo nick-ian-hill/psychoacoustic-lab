@@ -45,6 +45,7 @@ class PsychoacousticServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
+          name: "about_toolkit",
           description: "MANDATORY START: You MUST call this tool before designing a NEW experiment or generating a configuration. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters. 4) STOP: You are strictly forbidden from generating a final JSON 'ExperimentConfig' for a new experiment until the user approves your plain-text plan. (Note: These restrictions do NOT apply to general repository analysis, debugging, or research tasks).",
           inputSchema: { type: "object", properties: {} }
         },
