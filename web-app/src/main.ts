@@ -13,8 +13,10 @@ const setupArea = document.getElementById('setup-area') as HTMLDivElement;
 const experimentArea = document.getElementById('experiment-area') as HTMLDivElement;
 
 const statusBadge = document.getElementById('status-badge') as HTMLDivElement;
+const playBtnContainer = document.getElementById('play-btn-container') as HTMLDivElement;
 const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
 const responseButtonsContainer = document.getElementById('response-buttons-container') as HTMLDivElement;
+
 let responseButtons: HTMLButtonElement[] = [];
 let targetIntervalIndex = -1;
 let lastTrialData: any = null; // Store the exact resolved stimuli for logging
@@ -22,9 +24,19 @@ let highlightTimeouts: any[] = [];
 let isProcessingResponse = false;
 
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
+const selectionDescription = document.getElementById('selection-description') as HTMLDivElement;
+
+const helpModal = document.getElementById('help-modal') as HTMLDivElement;
+const modalBody = document.getElementById('modal-body') as HTMLDivElement;
+const modalClose = document.getElementById('modal-close') as HTMLButtonElement;
+const infoBtn = document.getElementById('info-btn') as HTMLButtonElement;
+
+
+
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
 const downloadResultsBtn = document.getElementById('download-results-btn') as HTMLButtonElement;
 const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
+
 
 let engine: AudioEngine;
 let staircase: StaircaseController;
@@ -186,8 +198,27 @@ function selectOption(index: number) {
   selectedText.textContent = text;
   optionsList.forEach(opt => opt.classList.remove('selected'));
   option.classList.add('selected');
+  updateSelectionDescription(value);
   toggleDropdown(false);
 }
+
+function updateSelectionDescription(value: string) {
+  if (value === 'custom') {
+    selectionDescription.classList.add('hidden');
+    return;
+  }
+  const config = (examples as any)[`${value}Config`];
+  if (config) {
+    const text = config.meta.description || config.meta.summary || "";
+    if (text) {
+      selectionDescription.textContent = text;
+      selectionDescription.classList.remove('hidden');
+    } else {
+      selectionDescription.classList.add('hidden');
+    }
+  }
+}
+
 
 dropdownTrigger.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -206,12 +237,17 @@ window.addEventListener('click', () => toggleDropdown(false));
 
 
 configSelect.addEventListener('change', () => {
+  updateSelectionDescription(configSelect.value);
   if (configSelect.value === 'custom') {
     customJsonGroup.classList.remove('hidden');
   } else {
     customJsonGroup.classList.add('hidden');
   }
 });
+
+// Initialize description for default selection
+updateSelectionDescription(configSelect.value);
+
 
 startBtn.addEventListener('click', async () => {
   try {
@@ -228,7 +264,13 @@ startBtn.addEventListener('click', async () => {
       rawConfig = (examples as any)[`${configSelect.value}Config`];
     }
 
+    if (!rawConfig) {
+      alert(`Configuration Error: Could not find configuration for '${configSelect.value}'.`);
+      return;
+    }
+
     const parseResult = ExperimentConfigSchema.safeParse(rawConfig);
+
     if (!parseResult.success) {
       alert("Invalid Configuration: \n" + JSON.stringify(parseResult.error.format(), null, 2));
       return;
@@ -262,12 +304,23 @@ startBtn.addEventListener('click', async () => {
 
     // Set dynamic instructions from config
     const instructionEl = document.getElementById('instruction-text');
+    const summary = currentConfig.meta.summary || currentConfig.meta.description || "Select the target.";
     if (instructionEl) {
-      instructionEl.textContent = currentConfig.meta.instructions || "Listen carefully to each interval and select the one that contains the target.";
-      // Default to true if property is missing
+      instructionEl.textContent = summary;
       const showInstructions = currentConfig.ui?.showInstructions ?? true;
       instructionEl.classList.toggle('hidden', !showInstructions);
     }
+
+    // Setup Help Modal content - only show icon if we have both summary AND description
+    const hasDescription = !!currentConfig.meta.description;
+    const hasSummary = !!currentConfig.meta.summary;
+    infoBtn.classList.toggle('hidden', !(hasSummary && hasDescription));
+    if (hasDescription) {
+      modalBody.textContent = currentConfig.meta.description || "";
+    }
+
+
+
 
     // Generate dynamic response buttons based on the paradigm intervals
     responseButtonsContainer.innerHTML = '';
@@ -334,7 +387,8 @@ playBtn.addEventListener('click', async () => {
   await engine.resume();
 
   // Always hide play button after first click as we are always in automated mode
-  playBtn.classList.add('hidden');
+  playBtnContainer.classList.add('hidden');
+
 
   playBtn.disabled = true;
   playBtn.classList.add('playing');
@@ -560,7 +614,6 @@ function updateStatus() {
     const unit = currentConfig.adaptive?.unit || "";
     parts.push(`Threshold: ${thresh.toFixed(2)}${unit}`);
   }
-
   if (parts.length === 0) {
     statusBadge.classList.add('hidden');
   } else {
@@ -569,8 +622,12 @@ function updateStatus() {
   }
 }
 
+
+
+
 function endExperiment() {
-  playBtn.classList.add('hidden');
+  playBtnContainer.classList.add('hidden');
+
   responseButtons.forEach(btn => btn.classList.add('hidden'));
   statusBadge.classList.add('hidden');
   document.getElementById('instruction-text')?.classList.add('hidden');
@@ -626,3 +683,18 @@ function triggerDownload(content: string, mimeType: string, filename: string) {
 restartBtn.addEventListener('click', () => {
   window.location.reload();
 });
+
+// ─── Modal Handlers ──────────────────────────────────────────────────────────
+
+infoBtn.addEventListener('click', () => {
+  helpModal.classList.remove('hidden');
+});
+
+modalClose.addEventListener('click', () => {
+  helpModal.classList.add('hidden');
+});
+
+helpModal.querySelector('.modal-overlay')?.addEventListener('click', () => {
+  helpModal.classList.add('hidden');
+});
+

@@ -10,7 +10,9 @@ export const freqDiscrimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 123,
     rationale: "Threshold for detecting frequency difference.",
-    instructions: "Two tones will play in sequence. Which interval contained the HIGHER pitched tone? Press Interval 1 or Interval 2."
+    summary: "Select the HIGHER pitched tone.",
+    description: "Two tones will play in sequence. Which interval contained the HIGHER pitched tone? Press Interval 1 or Interval 2."
+
   },
   audio: { sampleRate: 44100 },
   stimuli: [{
@@ -61,7 +63,9 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 999,
     rationale: "Using explicit components to model onset asynchrony LEAD.",
-    instructions: "Two chord-like sounds will play. One interval contains a tone that is slightly louder than the others. Which interval was it? Press Interval 1 or Interval 2."
+    summary: "Select the interval with the louder tone.",
+    description: "Two chord-like sounds will play. One interval contains a tone that is slightly louder than the others. Which interval was it? Press Interval 1 or Interval 2."
+
   },
   audio: { sampleRate: 44100 },
   stimuli: [{
@@ -121,7 +125,9 @@ export const itdDiscrimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 888,
     rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using the high-level 'itd' perturbation.",
-    instructions: "Listen on headphones. One interval sounds centered; the other sounds shifted to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2.",
+    summary: "Select the OFF-CENTRE interval.",
+    description: "Listen on headphones. One interval sounds centered; the other sounds shifted to one side. Which interval sounded OFF-CENTRE? Press Interval 1 or Interval 2."
+,
     literature_references: ["Klumpp & Eady (1956)", "Moore (2014)"]
   },
   audio: { sampleRate: 44100 },
@@ -175,7 +181,9 @@ export const srimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 456,
     rationale: "Target is spatially separated from random informational maskers.",
-    instructions: "Use headphones. One interval contains a faint tone in your RIGHT ear amongst other sounds. Which interval contained the right-ear tone? Press Interval 1 or Interval 2.",
+    summary: "Select the interval with the right-ear tone.",
+    description: "Use headphones. One interval contains a faint tone in your RIGHT ear amongst other sounds. Which interval contained the right-ear tone? Press Interval 1 or Interval 2."
+,
     literature_references: ["Kidd Jr et al. (2016)", "Gallun et al. (2013)"]
   },
   audio: { sampleRate: 44100 },
@@ -233,7 +241,9 @@ export const tenTestConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 321,
     rationale: "Detection of a pure tone in a broadband threshold-equalizing noise.",
-    instructions: "Two bursts of noise will play. One interval contains a faint tone hidden within the noise. Which interval contained the tone? Press Interval 1 or Interval 2.",
+    summary: "Select the interval containing the faint tone.",
+    description: "Two bursts of noise will play. One interval contains a faint tone hidden within the noise. Which interval contained the tone? Press Interval 1 or Interval 2."
+,
     literature_references: ["Moore et al. (2000)"]
   },
   audio: { sampleRate: 44100 },
@@ -284,7 +294,9 @@ export const amDetectionConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 654,
     rationale: "Detect the presence of Amplitude Modulation on a broadband noise carrier.",
-    instructions: "Two bursts of noise will play. One interval has a rhythmic 'wah-wah' fluctuation; the other is steady. Which interval was FLUCTUATING? Press Interval 1 or Interval 2.",
+    summary: "Select the FLUCTUATING interval.",
+    description: "Two bursts of noise will play. One interval has a rhythmic 'wah-wah' fluctuation; the other is steady. Which interval was FLUCTUATING? Press Interval 1 or Interval 2."
+,
     literature_references: ["Viemeister (1979) Temporal modulation transfer function"]
   },
   audio: { sampleRate: 44100 },
@@ -338,7 +350,9 @@ export const profileAnalysisConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 111,
     rationale: "Detect an intensity increment in one component of a multi-tone complex. Global and individual roving force the listener to use spectral shape (profile) cues rather than absolute loudness.",
-    instructions: "Two sounds will play. One has a slightly different 'timbre' or 'shape' because the middle tone is louder. Which interval was it? Press Interval 1 or Interval 2.",
+    summary: "Select the interval with the louder middle tone.",
+    description: "Two sounds will play. One has a slightly different 'timbre' or 'shape' because the middle tone is louder. Which interval was it? Press Interval 1 or Interval 2."
+,
     literature_references: ["Green (1988) Profile Analysis"]
   },
   audio: { sampleRate: 44100 },
