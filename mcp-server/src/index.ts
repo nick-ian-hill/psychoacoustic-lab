@@ -27,9 +27,10 @@ class PsychoacousticServer {
   constructor() {
     this.server = new Server(
       {
-        name: "psychoacoustic-math-toolkit",
+        name: "psychoacousticlab",
         version: "2.0.0",
       },
+
       {
         capabilities: {
           tools: {},
@@ -256,6 +257,7 @@ HIGH-LEVEL DESIGN & BATCHING:
               text: "Available Examples: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis"
             }]
           };
+
         case "get_example_config":
           return this.handleGetExample(request.params.arguments);
         case "get_schema_reference":
@@ -291,9 +293,11 @@ HIGH-LEVEL DESIGN & BATCHING:
 - version: string — Semantic version string
 - seed: number — Master RNG seed; used for noise generation AND interval-order randomization
 - rationale?: string — Scientific rationale
-- instructions?: string — Participant-facing instruction text displayed in the UI during the experiment
+- summary: string (required) — A short summary (max 150 chars) shown during the experiment
+- description?: string — A detailed description shown on the selection screen and in the help popup
 - literature_references?: string[] — Citation list
 - advisor_warnings?: string[] — Custom warnings to surface in experiment design
+
 
 ## audio (required)
 - sampleRate: number — Default 44100. Use 48000 for high-quality binaural work.
@@ -615,11 +619,12 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     }
 
     // 5. Instruction UX suggestion
-    if (!config.meta.instructions) {
+    if (!config.meta.summary) {
       if (config.paradigm.type === "2AFC" || config.paradigm.type === "3AFC") {
-        warnings.push(`UX SUGGESTION: Consider adding meta.instructions. E.g., 'Which interval contained the target? Press Interval 1 or Interval 2.'`);
+        warnings.push(`UX SUGGESTION: Consider adding meta.summary. E.g., 'Select the higher pitched tone.'`);
       }
     }
+
 
     return {
       content: [{
@@ -640,7 +645,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     try {
       const examples = await import("../../examples/examples.js");
       const config = (examples as any)[`${name}Config`];
-      if (!config) throw new Error(`Example '${name}Config' not found. Available: freqDiscrim, auditoryGrouping, logSpaced, ipdDiscrim, srim, tenTest, amDetection`);
+      if (!config) throw new Error(`Example '${name}Config' not found. Available: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis`);
       return { content: [{ type: "text", text: JSON.stringify(config, null, 2) }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `Error loading example: ${e.message}` }], isError: true };
@@ -670,7 +675,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       let config = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
 
       if (parameters.name) config.meta.name = parameters.name;
-      
+
       // High-level mapping logic
       if (parameters.frequencyHz !== undefined) {
         config.stimuli.forEach((s: any) => {
@@ -743,12 +748,12 @@ Partial object. All fields are optional and fall back to defaults if omitted.
 
 ## Stimuli
 ${config.stimuli.map((s, i) => {
-  if (s.type === 'multi_component') {
-    return `- Generator ${i+1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms`;
-  } else {
-    return `- Generator ${i+1}: ${s.noiseType} noise, ${s.durationMs}ms`;
-  }
-}).join('\n')}
+      if (s.type === 'multi_component') {
+        return `- Generator ${i + 1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms`;
+      } else {
+        return `- Generator ${i + 1}: ${s.noiseType} noise, ${s.durationMs}ms`;
+      }
+    }).join('\n')}
 
 ## Logic
 **Adaptive Tracking**: ${config.adaptive ? `Yes (${config.adaptive.rule.correctDown}-down/1-up on ${config.adaptive.parameter})` : "No (Fixed)"}

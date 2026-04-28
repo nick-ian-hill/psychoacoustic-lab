@@ -1,6 +1,6 @@
 # Psychoacoustic Lab
 
-An advanced, flexible platform for designing and running psychoacoustic experiments. It combines a Web Audio synthesis engine with an MCP (Model Context Protocol) Server "Math Toolkit" to provide lab-grade acoustic precision and AI-assisted experiment generation.
+An advanced, flexible platform for designing and running psychoacoustic experiments. It combines a Web Audio synthesis engine with an MCP (Model Context Protocol) server to provide lab-grade acoustic precision and AI-assisted experiment generation.
 
 ## AI Integration (MCP)
 
@@ -29,8 +29,7 @@ Add the following to your `mcp_config.json` (typically in `%USERPROFILE%\.gemini
 ```
 
 ### 2. GitHub Copilot (VS Code)
-### 2. GitHub Copilot (VS Code)
-To use the psychoacoustic toolkit within VS Code, you can configure it as a workspace-specific server:
+To use the psychoacoustic-lab MCP server within VS Code, you can configure it as a workspace-specific server:
 
 1. **Create a workspace**: Open your project folder in VS Code.
 2. **Create the MCP configuration**:
@@ -103,7 +102,7 @@ The project is split into three main components:
 - **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing buffer padding to prevent sample clipping. The `ear` field on `phase_shift` perturbations ensures only the target channel is shifted, creating a genuine interaural phase difference.
 - **Global Level Control**: Apply a master trim gain (`globalLevelDb`) to the entire trial stimulus. This occurs after per-generator synthesis but before final normalization, providing a clean way to adjust overall presentation levels while maintaining calibrated relative component ratios.
 - **Multi-Layer Masking**: Stack an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval for complex BMLD paradigms.
-- **Dynamic Participant Instructions**: Supply experiment-specific instructions via `meta.instructions` (e.g., "Which interval contained the higher-pitched tone?") — displayed in the UI during the experiment.
+- **Dynamic Participant Instructions**: Supply experiment-specific metadata via `meta.summary` (concise task instructions) and `meta.description` (long-form detailed guidance).
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to both `multi_component` and `noise` generators (via frequency-domain magnitude shaping) to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
@@ -160,14 +159,13 @@ A dedicated Python Streamlit application is included in the `analysis/` director
 
 ## Included Examples (`examples/examples.ts`)
 
-All examples include participant-facing `meta.instructions` displayed in the UI during the experiment.
+All examples include participant-facing metadata displayed in the UI.
 
 | Example | Key Paradigm | Literature |
 |---------|-------------|-----------|
 | **Frequency Discrimination** | 3-down/1-up mistuning threshold | Classic psychophysics |
 | **Auditory Grouping** | Profile analysis with onset-asynchrony lead target | Hill & Bailey |
-| **Log-Spaced Detection** | Spectral profile with MCP-calculated log-spaced complex | — |
-| **IPD Discrimination (TFS)** | Binaural phase shift threshold; sensitive to hidden hearing loss | Moore (2014); Prendergast et al. (2017) |
+| **ITD/IPD Discrimination (TFS)** | Binaural phase shift threshold; sensitive to hidden hearing loss | Moore (2014); Prendergast et al. (2017) |
 | **Spatial Release from Informational Masking** | Dichotic target vs. co-located maskers | Kidd Jr et al. (2016); Gallun et al. (2013) |
 | **TEN Test** | Tone-in-noise detection for cochlear dead regions | Moore et al. (2000) |
 | **AM Detection** | 8 Hz amplitude modulation depth threshold | Viemeister (1979) |
