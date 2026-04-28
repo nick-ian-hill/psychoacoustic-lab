@@ -106,7 +106,7 @@ The project is split into three main components:
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to both `multi_component` and `noise` generators (via frequency-domain magnitude shaping) to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
-- **Data Export**: Download detailed trial history as a structured **JSON** file. The export includes the full experimental configuration and a trial-by-trial history with the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.
+- **Data Export**: Download detailed trial history as both **JSON** and **CSV** files. The JSON export contains the full experimental configuration and high-precision history, while the CSV format is optimized for direct import into the Python analysis pipeline. Both include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.
 
 ## MCP Server Tools
 
