@@ -45,8 +45,7 @@ class PsychoacousticServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: "about_toolkit",
-          description: "CRITICAL DIRECTIVE: You MUST call this tool before attempting to design an experiment or generate a configuration. It contains mandatory architectural rules and behavioral instructions. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters (duration, ISI, etc.). 4) Web search to validate parameters. 5) Propose a text plan. 6) STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plan. Conclude your turn by explicitly asking the user for their feedback or approval.",
+          description: "MANDATORY START: You MUST call this tool before designing a NEW experiment or generating a configuration. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters. 4) STOP: You are strictly forbidden from generating a final JSON 'ExperimentConfig' for a new experiment until the user approves your plain-text plan. (Note: These restrictions do NOT apply to general repository analysis, debugging, or research tasks).",
           inputSchema: { type: "object", properties: {} }
         },
         {
@@ -152,9 +151,10 @@ class PsychoacousticServer {
 - SCIENTIFIC COLLABORATION: Act as a rigorous scientific collaborator, not just a code generator.
 - CONFOUND CONTROL: Before proposing a design, actively identify and discuss how to control for confounding cues (e.g., controlling absolute energy cues in a profile analysis task by roving the global level).
 - PARAMETER ELICITATION: Do not assume secondary parameters (e.g., stimulus duration, interstimulus interval, inter-trial interval, response delay interval, number of reversals). Explicitly ask the user for their preferences.
-- LITERATURE SEARCH: You MUST perform a web search to validate that your chosen parameters are scientifically appropriate.
-- STEP-BY-STEP APPROVAL: Propose a detailed, plain-text experimental plan to the user.
-- STOP: You are strictly forbidden from generating the final JSON 'ExperimentConfig' until the user explicitly approves your plain-text plan. Conclude your current turn by presenting the plan and explicitly asking the user for their feedback or approval.
+- LITERATURE SEARCH: Perform a web search to validate chosen parameters.
+- STEP-BY-STEP APPROVAL: For NEW experiment designs, propose a plain-text plan first.
+- CONFIG GENERATION LIMIT: You are strictly forbidden from generating a final JSON 'ExperimentConfig' for a NEW design until the user approves the text plan. This restriction does NOT apply to repo analysis, debugging, or viewing existing examples.
+- WORKFLOW SCOPE: If the user's request is research-oriented (e.g., 'Review the examples'), proceed with your analysis autonomously without being blocked by 'STOP' directives meant for configuration generation.
 
 ARCHITECTURE & BINAURAL PRECISION:
 - Smart Server / Dumb Engine: The Audio Engine only renders explicit components. It does not auto-generate complex stimulus relationships. You must use tools like calc_frequencies, calc_phases, and calc_amplitudes to supply explicit numerical arrays.
@@ -192,7 +192,7 @@ Use these exact citations as search keys if you need to retrieve deeper methodol
             content: [{
               type: "text",
               // MAINTENANCE NOTE: Update this list whenever a new export is added to examples/examples.ts
-              text: "Available Examples: freqDiscrim, auditoryGrouping, logSpaced, ipdDiscrim, srim, tenTest, amDetection, profileAnalysis"
+              text: "Available Examples: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis"
             }]
           };
         case "get_example_config":
