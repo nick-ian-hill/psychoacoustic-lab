@@ -32,9 +32,10 @@ export const EnvelopeSchema = z.object({
 
 export const ModulatorSchema = z.object({
   type: z.enum(["AM", "FM"]),
-  rateHz: z.number(),
+  rateHz: z.number().optional().describe("Rate in Hz. For AM, if sharedEnvelopeId is provided, this may be ignored or used as bandwidth."),
   depth: z.number(), // 0 to 1 for AM, or Hz deviation for FM
   phaseDegrees: z.number().optional(),
+  sharedEnvelopeId: z.string().optional().describe("If provided, this modulator uses a shared noise-based envelope rather than a sine wave."),
 });
 
 export const StimulusComponentSchema = z.object({
@@ -72,9 +73,22 @@ export const NoiseGeneratorSchema = z.object({
   applyTo: z.enum(["target", "all", "reference"]).optional().describe("Whether this generator applies to only the target interval, reference intervals, or all intervals."),
 });
 
+export const FilteredNoiseGeneratorSchema = z.object({
+  type: z.literal("filtered_noise"),
+  firCoefficients: z.array(z.number()),
+  levelDb: z.number(),
+  durationMs: z.number(),
+  envelope: EnvelopeSchema,
+  ear: EarRoutingSchema.optional(),
+  modulators: z.array(ModulatorSchema).optional(),
+  onsetDelayMs: z.number().optional().describe("Temporal offset in milliseconds."),
+  applyTo: z.enum(["target", "all", "reference"]).optional().describe("Whether this generator applies to only the target interval, reference intervals, or all intervals."),
+});
+
 export const StimulusGeneratorSchema = z.union([
   MultiComponentGeneratorSchema,
   NoiseGeneratorSchema,
+  FilteredNoiseGeneratorSchema,
 ]);
 
 /**
@@ -145,7 +159,7 @@ export const PerturbationSchema = z.union([
  * Paradigm
  */
 export const ParadigmSchema = z.object({
-  type: z.enum(["2AFC", "3AFC", "Probe-Signal"]),
+  type: z.enum(["2AFC", "3AFC", "m-AFC", "Probe-Signal"]),
   intervals: z.array(z.object({
     condition: z.enum(["reference", "target", "probe"]),
     fixed: z.boolean().optional().describe("If true, this interval's position is never randomized, even if randomizeOrder is true. Use for lead-in/lead-out cues."),
@@ -194,52 +208,35 @@ export const CalibrationProfileSchema = z.object({
 export type CalibrationProfile = z.infer<typeof CalibrationProfileSchema>;
 
 /**
- * Final Experiment Configuration
+ * Block Schema
  */
-export const ExperimentConfigSchema = z.object({
+export const BlockSchema = z.object({
+  id: z.string(),
+  trials: z.number().int().optional().describe("Deprecated: use termination.maxTrials. Kept for back-compat."),
+  feedback: z.boolean().default(true),
   meta: z.object({
-    name: z.string(),
-    version: z.string(),
-    seed: z.number().int(),
-    rationale: z.string().optional(),
-    summary: z.string().describe("A short summary (max 150 chars) shown during the experiment.").refine(s => s.length <= 150, "Summary must be 150 characters or less."),
-    description: z.string().describe("A detailed description shown on the selection screen and in the help popup."),
-
-    literature_references: z.array(z.string()).optional(),
-    advisor_warnings: z.array(z.string()).optional(),
-  }),
-
-  calibration: CalibrationProfileSchema.optional(),
-  globalLevelDb: z.number().optional(),
-  stimuli: z.array(StimulusGeneratorSchema),
-  perturbations: z.array(PerturbationSchema).optional(),
-  conditions: z.object({
-    reference: z.any().optional(),
-    target: z.any().optional(),
+    summary: z.string().optional(),
+    description: z.string().optional(),
   }).optional(),
   paradigm: ParadigmSchema,
+  stimuli: z.array(StimulusGeneratorSchema),
+  perturbations: z.array(PerturbationSchema).optional(),
   adaptive: AdaptiveConfigSchema.optional(),
   ui: z.object({
     showInstructions: z.boolean().default(true),
     showTrialNumber: z.boolean().default(true),
-    showReversals: z.boolean().default(true),
+    showReversals: z.boolean().default(false),
     showCurrentValue: z.boolean().default(false),
     showAverageThreshold: z.boolean().default(false),
-  }).partial().default({
-    showInstructions: true,
-    showTrialNumber: true,
-    showReversals: true,
-    showCurrentValue: false,
-    showAverageThreshold: false,
-  }).optional(),
+  }).partial().optional(),
   termination: z.object({
     maxTrials: z.number().int().optional(),
     reversals: z.number().int().optional(),
+    correctTrials: z.number().int().optional().describe("Number of correct trials required to terminate the block."),
     discardReversals: z.number().int().optional().describe("Number of initial reversals to discard when calculating the final threshold. Defaults to 4."),
-  }),
+  }).optional(),
 }).superRefine((data, ctx) => {
   const hasAdaptivePerturbation = data.perturbations?.some(p => {
-    // Check all possible adaptive fields in perturbations
     const pAny = p as any;
     const val = pAny.deltaDb || pAny.deltaPercent || pAny.deltaMicroseconds || pAny.delayMs || pAny.deltaDegrees || pAny.deltaDepth;
     return val && typeof val === 'object' && val.adaptive === true;
@@ -262,8 +259,36 @@ export const ExperimentConfigSchema = z.object({
   }
 });
 
+/**
+ * Final Experiment Configuration
+ */
+export const ExperimentConfigSchema = z.object({
+  meta: z.object({
+    name: z.string(),
+    version: z.string(),
+    seed: z.number().int(),
+    rationale: z.string().optional(),
+    summary: z.string().describe("A short summary (max 150 chars) shown during the experiment.").refine(s => s.length <= 150, "Summary must be 150 characters or less."),
+    description: z.string().describe("A detailed description shown on the selection screen and in the help popup."),
+    literature_references: z.array(z.string()).optional(),
+    advisor_warnings: z.array(z.string()).optional(),
+  }),
+  calibration: CalibrationProfileSchema.optional(),
+  globalLevelDb: z.number().optional(),
+  ui: z.object({
+    showInstructions: z.boolean().default(true),
+    showTrialNumber: z.boolean().default(true),
+    showReversals: z.boolean().default(false),
+    showCurrentValue: z.boolean().default(false),
+    showAverageThreshold: z.boolean().default(false),
+  }).partial().optional(),
+  blocks: z.array(BlockSchema),
+});
+
 export type ExperimentConfig = z.infer<typeof ExperimentConfigSchema>;
+export type BlockConfig = z.infer<typeof BlockSchema>;
 export type StimulusGenerator = z.infer<typeof StimulusGeneratorSchema>;
 export type Perturbation = z.infer<typeof PerturbationSchema>;
 export type AdaptiveParamRef = z.infer<typeof AdaptiveParamRefSchema>;
 export type AdaptiveConfig = z.infer<typeof AdaptiveConfigSchema>;
+

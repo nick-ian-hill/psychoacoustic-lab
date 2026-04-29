@@ -72,13 +72,29 @@ function resolveValue(val: any, adaptiveValue: number | undefined, rng: () => nu
   return 0;
 }
 
+export function applyFIR(input: Float32Array, fir: number[]): Float32Array {
+  const output = new Float32Array(input.length);
+  const firLen = fir.length;
+  for (let i = 0; i < input.length; i++) {
+    let sum = 0;
+    for (let j = 0; j < firLen; j++) {
+      if (i - j >= 0) {
+        sum += input[i - j] * fir[j];
+      }
+    }
+    output[i] = sum;
+  }
+  return output;
+}
+
 export function synthesizeMultiComponent(
   gen: any,
   sampleRate: number,
   rng: () => number,
   perturbations?: Perturbation[],
   adaptiveValue?: number,
-  calibration?: CalibrationProfile
+  calibration?: CalibrationProfile,
+  sharedEnvelopes?: Map<string, Float32Array>
 ): SynthesisResult {
   // 1. Pre-resolve onsets to determine the required buffer range and normalization offset.
   // This ensures that lead-asynchrony (negative onsetMs) doesn't cause clicks by starting at index 0 without a ramp.
@@ -93,9 +109,14 @@ export function synthesizeMultiComponent(
           onset += resolveValue((p as any).delayMs, adaptiveValue, rng);
         }
         if (p.type === "itd" && (!p.targetFrequency || p.targetFrequency === comp.frequency)) {
-          const mode = (p as any).mode || "both";
-          if (mode === "envelope" || mode === "both") {
-             onset += resolveValue((p as any).deltaMicroseconds, adaptiveValue, rng) / 1000;
+          const pAny = p as any;
+          const pEar = pAny.ear || "both";
+          // Only the specified ear gets an onset shift, so only that ear can define the min/max
+          if (pEar === "both" || pEar === "left" || pEar === "right") {
+            const mode = pAny.mode || "both";
+            if (mode === "envelope" || mode === "both") {
+              onset += resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng) / 1000;
+            }
           }
         }
       }
@@ -164,14 +185,14 @@ export function synthesizeMultiComponent(
             const mode = pAny.mode || "both";
             const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
             
-            if (mode === "fine_structure" || mode === "both") {
-               // ΔPhase = 360 * f * Δt
-               const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
-               phase -= deltaPhaseDeg * Math.PI / 180;
-            }
-            if (mode === "envelope" || mode === "both") {
-               onsetOffsetMs += itdUs / 1000;
-            }
+             if (mode === "fine_structure" || mode === "both") {
+                // ΔPhase = 360 * f * Δt
+                const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
+                phase -= deltaPhaseDeg * Math.PI / 180;
+             }
+             if (mode === "envelope" || mode === "both") {
+                onsetOffsetMs += itdUs / 1000;
+             }
           }
         }
       }
@@ -215,7 +236,14 @@ export function synthesizeMultiComponent(
 
         if (comp.modulators) {
           for (const mod of comp.modulators) {
-            const modVal = Math.sin(2 * Math.PI * mod.rateHz * tL + (mod.phaseDegrees || 0) * Math.PI / 180);
+            let modVal;
+            if (mod.sharedEnvelopeId && sharedEnvelopes?.has(mod.sharedEnvelopeId)) {
+               const sharedEnv = sharedEnvelopes.get(mod.sharedEnvelopeId)!;
+               modVal = sharedEnv[i % sharedEnv.length];
+            } else {
+               modVal = Math.sin(2 * Math.PI * mod.rateHz * tL + (mod.phaseDegrees || 0) * Math.PI / 180);
+            }
+            
             if (mod.type === "AM") instAmp *= (1 + mod.depth * modVal);
             else if (mod.type === "FM") instFreq += mod.depth * modVal;
           }
@@ -233,7 +261,14 @@ export function synthesizeMultiComponent(
 
         if (comp.modulators) {
           for (const mod of comp.modulators) {
-            const modVal = Math.sin(2 * Math.PI * mod.rateHz * tR + (mod.phaseDegrees || 0) * Math.PI / 180);
+            let modVal;
+            if (mod.sharedEnvelopeId && sharedEnvelopes?.has(mod.sharedEnvelopeId)) {
+               const sharedEnv = sharedEnvelopes.get(mod.sharedEnvelopeId)!;
+               modVal = sharedEnv[i % sharedEnv.length];
+            } else {
+               modVal = Math.sin(2 * Math.PI * mod.rateHz * tR + (mod.phaseDegrees || 0) * Math.PI / 180);
+            }
+            
             if (mod.type === "AM") instAmp *= (1 + mod.depth * modVal);
             else if (mod.type === "FM") instFreq += mod.depth * modVal;
           }
@@ -253,7 +288,8 @@ export function synthesizeNoise(
   rng: () => number,
   perturbations?: Perturbation[],
   adaptiveValue?: number,
-  calibration?: CalibrationProfile
+  calibration?: CalibrationProfile,
+  sharedEnvelopes?: Map<string, Float32Array>
 ): SynthesisResult {
   const duration = gen.durationMs / 1000;
   // Add +1 sample to include the point at t=duration where the envelope is exactly 0.
@@ -306,7 +342,8 @@ export function synthesizeNoise(
       gain: totalGainAmp, 
       amDepth: finalAmDepth, 
       amRate: amMod?.rateHz || 8, // Default rate if just applying depth
-      amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180
+      amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180,
+      sharedEnvelopeId: amMod?.sharedEnvelopeId
     };
   };
 
@@ -323,7 +360,10 @@ export function synthesizeNoise(
     // Handle Left Ear
     if (ear === "left" || ear === "both") {
       let currentAmp = leftState.gain;
-      if (leftState.amDepth > 0) {
+      if (leftState.sharedEnvelopeId && sharedEnvelopes?.has(leftState.sharedEnvelopeId)) {
+        const sharedEnv = sharedEnvelopes.get(leftState.sharedEnvelopeId)!;
+        currentAmp *= (1 + leftState.amDepth * sharedEnv[i % sharedEnv.length]);
+      } else if (leftState.amDepth > 0) {
         currentAmp *= (1 + leftState.amDepth * Math.sin(2 * Math.PI * leftState.amRate * t + leftState.amPhase));
       }
       let sample = noiseBase * currentAmp;
@@ -333,7 +373,10 @@ export function synthesizeNoise(
     // Handle Right Ear
     if (ear === "right" || ear === "both") {
       let currentAmp = rightState.gain;
-      if (rightState.amDepth > 0) {
+      if (rightState.sharedEnvelopeId && sharedEnvelopes?.has(rightState.sharedEnvelopeId)) {
+        const sharedEnv = sharedEnvelopes.get(rightState.sharedEnvelopeId)!;
+        currentAmp *= (1 + rightState.amDepth * sharedEnv[i % sharedEnv.length]);
+      } else if (rightState.amDepth > 0) {
         currentAmp *= (1 + rightState.amDepth * Math.sin(2 * Math.PI * rightState.amRate * t + rightState.amPhase));
       }
       let sample = noiseBase * currentAmp;
@@ -342,4 +385,29 @@ export function synthesizeNoise(
   }
 
   return { left, right };
+}
+
+export function synthesizeFilteredNoise(
+  gen: any,
+  sampleRate: number,
+  rng: () => number,
+  perturbations?: Perturbation[],
+  adaptiveValue?: number,
+  calibration?: CalibrationProfile,
+  sharedEnvelopes?: Map<string, Float32Array>
+): SynthesisResult {
+  // Filtered noise is synthesized as white noise then filtered by FIR
+  const noiseGen = {
+    ...gen,
+    type: "noise",
+    noiseType: "white",
+    bandLimit: undefined // We filter manually
+  };
+  
+  const noiseResult = synthesizeNoise(noiseGen, sampleRate, rng, perturbations, adaptiveValue, calibration, sharedEnvelopes);
+  
+  return {
+    left: applyFIR(noiseResult.left, gen.firCoefficients),
+    right: applyFIR(noiseResult.right, gen.firCoefficients)
+  };
 }

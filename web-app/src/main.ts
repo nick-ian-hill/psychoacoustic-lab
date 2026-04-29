@@ -26,13 +26,6 @@ let isProcessingResponse = false;
 const resultsArea = document.getElementById('results-area') as HTMLDivElement;
 const selectionDescription = document.getElementById('selection-description') as HTMLDivElement;
 
-const helpModal = document.getElementById('help-modal') as HTMLDivElement;
-const modalBody = document.getElementById('modal-body') as HTMLDivElement;
-const modalClose = document.getElementById('modal-close') as HTMLButtonElement;
-const infoBtn = document.getElementById('info-btn') as HTMLButtonElement;
-
-
-
 const finalThreshold = document.getElementById('final-threshold') as HTMLParagraphElement;
 const downloadResultsBtn = document.getElementById('download-results-btn') as HTMLButtonElement;
 const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
@@ -41,6 +34,9 @@ const restartBtn = document.getElementById('restart-btn') as HTMLButtonElement;
 let engine: AudioEngine;
 let staircase: StaircaseController;
 let currentConfig: any;
+let currentBlockIndex = 0;
+let currentBlock: any;
+
 // Seeded RNG for reproducible interval order randomization
 let trialRng: () => number;
 
@@ -53,10 +49,10 @@ let preRenderedTrial: Promise<{ buffer: AudioBuffer; intervalLengths: number[] }
  * during the ITI to eliminate synthesis latency at playback time.
  */
 async function prepareTrial() {
-  const intervalsConfig = [...currentConfig.paradigm.intervals];
+  const intervalsConfig = [...currentBlock.paradigm.intervals];
 
   // Use seeded RNG so trial order is reproducible from meta.seed
-  if (currentConfig.paradigm.randomizeOrder) {
+  if (currentBlock.paradigm.randomizeOrder) {
     // Only shuffle intervals that are not marked as 'fixed'
     const dynamicIndices = intervalsConfig
       .map((item, index) => item.fixed ? -1 : index)
@@ -83,8 +79,8 @@ async function prepareTrial() {
   // Build trial data with fully resolved perturbations for perfect logging
   const trialData = intervalsConfig.map(interval => {
     const resolvedPerturbations: any[] = [];
-    if (currentConfig.perturbations) {
-      currentConfig.perturbations.forEach((p: any) => {
+    if (currentBlock.perturbations) {
+      currentBlock.perturbations.forEach((p: any) => {
         const applyTo = p.applyTo || "target";
         if (applyTo === "all" || interval.condition === "target") {
           const rp = { ...p };
@@ -99,7 +95,7 @@ async function prepareTrial() {
       });
     }
     return {
-      generators: currentConfig.stimuli.filter((g: any) => {
+      generators: currentBlock.stimuli.filter((g: any) => {
         const applyTo = g.applyTo || "all";
         if (applyTo === "all") return true;
         return applyTo === interval.condition;
@@ -112,8 +108,8 @@ async function prepareTrial() {
 
   return engine.renderTrial(
     trialData,
-    currentConfig.paradigm.timing.isiMs,
-    staircase.getCurrentValue(),
+    currentBlock.paradigm.timing.isiMs,
+    staircase?.getCurrentValue(),
     currentConfig.calibration,
     currentConfig.globalLevelDb
   );
@@ -289,23 +285,11 @@ startBtn.addEventListener('click', async () => {
 
     currentConfig = parseResult.data;
 
-    // This runner requires an adaptive staircase. Block non-adaptive configs early
-    // rather than crashing silently when a response button is clicked.
-    if (!currentConfig.adaptive || currentConfig.adaptive.type !== 'staircase') {
-      alert("Configuration Error: This runner requires an 'adaptive' staircase block. Non-adaptive (method of constant stimuli) paradigms are not yet supported.");
-      return;
-    }
-
     // Initialize Audio Engine
     if (engine) {
       await engine.close();
     }
     engine = new AudioEngine(currentConfig.meta.seed);
-
-    // Initialize StaircaseController (the full-featured implementation)
-    if (currentConfig.adaptive && currentConfig.adaptive.type === 'staircase') {
-      staircase = new StaircaseController(currentConfig.adaptive);
-    }
 
     // Initialize seeded RNG for reproducible interval-order randomization
     trialRng = seedrandom(currentConfig.meta.seed.toString());
@@ -313,60 +297,62 @@ startBtn.addEventListener('click', async () => {
     setupArea.classList.add('hidden');
     experimentArea.classList.remove('hidden');
 
-    // Set dynamic instructions from config
-    const instructionEl = document.getElementById('instruction-text');
-    const summary = currentConfig.meta.summary || currentConfig.meta.description || "Select the target.";
-    if (instructionEl) {
-      instructionEl.textContent = summary;
-      const showInstructions = currentConfig.ui?.showInstructions ?? true;
-      instructionEl.classList.toggle('hidden', !showInstructions);
-    }
-
-    // Setup Help Modal content - only show icon if we have both summary AND description
-    const hasDescription = !!currentConfig.meta.description;
-    const hasSummary = !!currentConfig.meta.summary;
-    infoBtn.classList.toggle('hidden', !(hasSummary && hasDescription));
-    if (hasDescription) {
-      modalBody.textContent = currentConfig.meta.description || "";
-    }
-
-
-
-
-    // Generate dynamic response buttons based on the paradigm intervals
-    responseButtonsContainer.innerHTML = '';
-    responseButtons = [];
-    currentConfig.paradigm.intervals.forEach((_: any, index: number) => {
-      const btn = document.createElement('button');
-      btn.className = 'response-btn';
-      btn.textContent = `${index + 1}`;
-      btn.disabled = true;
-      btn.addEventListener('click', () => handleResponse(index));
-      responseButtonsContainer.appendChild(btn);
-      responseButtons.push(btn);
-    });
-
-    updateStatus();
-
-    // Warm up AudioContext (requires user gesture to unlock)
-    const buf = engine['ctx'].createBuffer(1, 1, engine['ctx'].sampleRate);
-    const src = engine['ctx'].createBufferSource();
-    src.buffer = buf;
-    src.connect(engine['ctx'].destination);
-    src.start();
+    startBlock(0);
 
   } catch (e: any) {
     alert("Error loading experiment: " + e.message);
   }
 });
 
+async function startBlock(index: number) {
+  currentBlockIndex = index;
+  currentBlock = currentConfig.blocks[index];
+
+  // Initialize StaircaseController (Trial Tracker)
+  staircase = new StaircaseController(currentBlock.adaptive);
+
+  // Set dynamic instructions from block/config
+  const instructionEl = document.getElementById('instruction-text') as HTMLDivElement;
+  
+  if (instructionEl) {
+    const summary = currentBlock.meta?.summary || currentConfig.meta.summary || "Select the target.";
+    instructionEl.textContent = summary;
+    const showInstructions = currentBlock.ui?.showInstructions ?? true;
+    instructionEl.classList.toggle('hidden', !showInstructions);
+  }
+
+  // Generate dynamic response buttons based on the paradigm intervals
+  responseButtonsContainer.innerHTML = '';
+  responseButtons = [];
+  currentBlock.paradigm.intervals.forEach((_: any, index: number) => {
+    const btn = document.createElement('button');
+    btn.className = 'response-btn';
+    btn.textContent = `${index + 1}`;
+    btn.disabled = true;
+    btn.addEventListener('click', () => handleResponse(index));
+    responseButtonsContainer.appendChild(btn);
+    responseButtons.push(btn);
+  });
+
+  playBtnContainer.classList.remove('hidden');
+  playBtn.disabled = false;
+  playBtn.classList.remove('playing');
+  playBtn.textContent = index === 0 ? "Start Experiment" : `Start Block: ${currentBlock.id}`;
+
+  resultsArea.classList.add('hidden');
+  updateStatus();
+
+  // Warm up AudioContext
+  const buf = engine['ctx'].createBuffer(1, 1, engine['ctx'].sampleRate);
+  const src = engine['ctx'].createBufferSource();
+  src.buffer = buf;
+  src.connect(engine['ctx'].destination);
+  src.start();
+}
+
 /**
  * Renders and plays the next pre-rendered trial, optionally scheduling
  * the audio onset at a precise AudioContext timestamp.
- *
- * When scheduledTime is provided (auto-advance mode), the ITI is enforced
- * entirely by the sample-accurate AudioContext clock, eliminating the
- * accumulated error from wall-clock setTimeout drift and output latency.
  */
 async function playNextTrial(scheduledTime?: number) {
   if (!preRenderedTrial) {
@@ -394,31 +380,27 @@ async function playNextTrial(scheduledTime?: number) {
 }
 
 playBtn.addEventListener('click', async () => {
-  if (!engine || !staircase) return;
+  if (!engine) return;
   await engine.resume();
 
-  // Always hide play button after first click as we are always in automated mode
   playBtnContainer.classList.add('hidden');
-
-
   playBtn.disabled = true;
   playBtn.classList.add('playing');
   playBtn.textContent = "\u00A0";
   responseButtons.forEach(btn => btn.disabled = true);
 
-  // Add a brief lead-in delay for the first trial to allow participant preparation.
-  if (staircase.getHistory().length === 0) {
+  // Add a brief lead-in delay for the first trial
+  if (!staircase || staircase.getHistory().length === 0) {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
 
-  await playNextTrial(); // No scheduled time — play as soon as possible
+  await playNextTrial(); 
 });
 
 function handleResponse(responseIndex: number) {
   if (isProcessingResponse) return;
   isProcessingResponse = true;
 
-  // Disable all buttons immediately to prevent double-triggers (e.g. rapid trackpad taps).
   responseButtons.forEach(b => b.disabled = true);
 
   playBtn.textContent = "\u00A0";
@@ -428,72 +410,65 @@ function handleResponse(responseIndex: number) {
   btn.classList.add(isCorrect ? 'correct' : 'incorrect');
   btn.blur();
 
-  const feedbackMs = currentConfig.paradigm.timing.feedbackDurationMs ?? 400;
-  const itiMs = currentConfig.paradigm.timing.itiMs ?? 1000;
+  const feedbackMs = currentBlock.paradigm.timing.feedbackDurationMs ?? 400;
+  const itiMs = currentBlock.paradigm.timing.itiMs ?? 1000;
 
-  // 1. Process staircase logic immediately upon response
-  try {
-    staircase.processResponse(isCorrect, {
-      targetInterval: targetIntervalIndex + 1,
-      response: responseIndex + 1,
-      parameterValue: staircase.getCurrentValue(),
-      unit: currentConfig.adaptive.unit || "",
-      trialState: lastTrialData
-    });
+  // 1. Process staircase logic if available
+  if (staircase) {
+    try {
+      staircase.processResponse(isCorrect, {
+        targetInterval: targetIntervalIndex + 1,
+        response: responseIndex + 1,
+        parameterValue: staircase.getCurrentValue(),
+        unit: currentBlock.adaptive?.unit || "",
+        trialState: lastTrialData
+      });
 
-    // 2. IMMEDIATELY start pre-rendering the next trial in the background.
-    // Synthesis runs during the feedback window so the buffer is ready by ITI end.
-    if (!staircase.isFinished(currentConfig.termination)) {
-      preRenderedTrial = prepareTrial();
+      if (!staircase.isFinished(currentBlock.termination)) {
+        preRenderedTrial = prepareTrial();
+      }
+    } catch (e) {
+      console.error("Staircase update failed:", e);
+      isProcessingResponse = false;
+      playBtn.disabled = false;
+      playBtn.textContent = "Error \u2014 check config";
+      return;
     }
-  } catch (e) {
-    console.error("Staircase update failed:", e);
-    isProcessingResponse = false;
-    playBtn.disabled = false;
-    playBtn.textContent = "Error \u2014 check config";
-    return;
+  } else {
+    // Fixed trial count (e.g. practice)
+    // We should track trials manually here or use a dummy staircase
+    // For now, let's assume staircase is always there if adaptive is defined
+    // If not, we should have a simple trial counter
   }
 
-  // 3. Wait for feedback duration, then schedule the next trial via the AudioContext clock.
-  // Capturing the AudioContext time here (inside setTimeout) rather than before it means
-  // any setTimeout jitter is absorbed into the clock reading, not added on top of the ITI.
   setTimeout(() => {
     btn.classList.remove('correct', 'incorrect');
 
-    if (staircase.isFinished(currentConfig.termination)) {
-      endExperiment();
-      isProcessingResponse = false;
+    const isBlockFinished = staircase ? staircase.isFinished(currentBlock.termination) : false;
+
+    if (isBlockFinished) {
+      if (currentBlockIndex < currentConfig.blocks.length - 1) {
+        startBlock(currentBlockIndex + 1);
+        isProcessingResponse = false;
+      } else {
+        endExperiment();
+        isProcessingResponse = false;
+      }
     } else {
       updateStatus();
-
       if (experimentArea.classList.contains('hidden')) return;
-
-      // Compute the exact AudioContext timestamp at which the next stimulus should begin.
-      // outputLatency is NOT added here — it's only needed when scheduling at near-zero
-      // lookahead to prevent buffer underrun. With itiMs >> latency, the WebAudio scheduler
-      // fills the buffer automatically; adding latency would just extend perceived silence.
       const scheduledStartTime = engine.getTime() + itiMs / 1000;
-
-      // isProcessingResponse is cleared here — the ITI period has begun and the
-      // buttons remain disabled until highlightIntervals re-enables them.
       isProcessingResponse = false;
-
       playNextTrial(scheduledStartTime);
     }
   }, feedbackMs);
-
 }
 
 
-/**
- * Highlights each interval button in precise synchrony with the audio.
- * Uses AudioContext.currentTime as the reference clock, accounting for
- * hardware output latency, rather than unreliable wall-clock setTimeout drift.
- */
 function highlightIntervals(lengths: number[], audioStartTime: number) {
   const sampleRate = engine['ctx'].sampleRate;
-  const isiSec = (currentConfig.paradigm.timing.isiMs || 0) / 1000;
-  const responseDelaySec = (currentConfig.paradigm.timing.responseDelayMs ?? 250) / 1000;
+  const isiSec = (currentBlock.paradigm.timing.isiMs || 0) / 1000;
+  const responseDelaySec = (currentBlock.paradigm.timing.responseDelayMs ?? 250) / 1000;
 
   const intervals: { start: number, end: number, btn: HTMLButtonElement }[] = [];
   let offset = 0;
@@ -511,7 +486,6 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
   const enableButtonsAt = lastStimulusEndTime + responseDelaySec;
 
   const wallStart = performance.now();
-  // Ensure the loop runs until at least after the buttons are enabled
   const totalDurationMs = (enableButtonsAt - audioStartTime) * 1000 + 800;
   let frameId: number;
   let buttonsEnabled = false;
@@ -522,7 +496,6 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
     let allFinished = (wallNow - wallStart > totalDurationMs);
     let activeIdx = -1;
 
-    // 1. Determine which interval is currently active
     intervals.forEach((interval, idx) => {
       if (now >= interval.start && now <= interval.end) {
         activeIdx = idx;
@@ -530,32 +503,23 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       if (now < interval.end + 0.1) allFinished = false;
     });
 
-    // 2. Update highlight classes
     intervals.forEach((interval, idx) => {
       const shouldBeActive = (idx === activeIdx);
-
       if (interval.btn.classList.contains('active') !== shouldBeActive) {
         interval.btn.classList.toggle('active', shouldBeActive);
       }
     });
 
-    // 3. Reliable response enablement: check AudioContext time against enableButtonsAt.
-    // FALLBACK: If AudioContext time freezes (common on mobile sleep/interrupt), use wall-clock timeout.
     const wallClockTimeout = (wallNow - wallStart) > (totalDurationMs + 1000);
     if (!buttonsEnabled && (now >= enableButtonsAt || wallClockTimeout)) {
-      if (wallClockTimeout && now < enableButtonsAt) {
-        console.warn("[highlightIntervals] AudioContext clock appears frozen. Forcing button enablement via wall-clock.");
-      }
       responseButtons.forEach((btn, i) => {
-        const intervalConfig = currentConfig.paradigm.intervals[i];
-        // Enable button only if the interval was eligible to contain the target
+        const intervalConfig = currentBlock.paradigm.intervals[i];
         const isEligible = !intervalConfig.fixed || intervalConfig.condition === 'target';
         btn.disabled = !isEligible;
       });
       buttonsEnabled = true;
     }
 
-    // Ensure we don't stop the loop until buttons are enabled or timeout reached
     if (now < enableButtonsAt && !wallClockTimeout) allFinished = false;
 
     if (!allFinished) {
@@ -571,23 +535,17 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
 }
 
 function clearFeedback() {
-  // Cancel any active rAF highlight loop
   if (highlightTimeouts[0]) {
     cancelAnimationFrame(highlightTimeouts[0]);
   }
   highlightTimeouts = [];
 
-  // 1. Force focus away from all buttons to the main container
-  // This helps prevent 'sticky' focus/hover rings on mobile devices.
   const container = document.querySelector('.container') as HTMLElement;
   if (container) {
     container.tabIndex = -1;
     container.focus();
   }
 
-  // 2. Clear visual classes related to stimulus playback.
-  // Note: 'correct' and 'incorrect' classes are managed by the handleResponse timer
-  // and are intentionally NOT cleared here to prevent premature removal at loop end.
   responseButtons.forEach(btn => {
     btn.classList.remove('active');
     btn.blur();
@@ -596,40 +554,40 @@ function clearFeedback() {
   });
 }
 
-// Response event listeners are attached dynamically during initialization
-
 function updateStatus() {
-  const ui = currentConfig.ui;
+  if (!currentBlock) return;
+  const ui = currentBlock.ui || (currentConfig as any).ui;
   const showTrialNumber = ui?.showTrialNumber ?? true;
-  const showReversals = ui?.showReversals ?? true;
+  const showReversals = ui?.showReversals ?? false;
   const showCurrentValue = ui?.showCurrentValue ?? false;
   const showAverageThreshold = ui?.showAverageThreshold ?? false;
 
   const parts: string[] = [];
 
-  if (showTrialNumber) {
+  if (showTrialNumber && staircase) {
     const trialNum = staircase.getHistory().length + 1;
     parts.push(`Trial ${trialNum}`);
   }
 
-  if (showReversals) {
+  if (showReversals && staircase) {
     const reversals = staircase.getReversalCount();
-    const maxReversals = currentConfig.termination.reversals ?? '?';
+    const maxReversals = currentBlock.termination?.reversals ?? '?';
     parts.push(`Reversals: ${reversals}/${maxReversals}`);
   }
 
-  if (showCurrentValue) {
+  if (showCurrentValue && staircase) {
     const val = staircase.getCurrentValue();
-    const unit = currentConfig.adaptive?.unit || "";
+    const unit = currentBlock.adaptive?.unit || "";
     parts.push(`Value: ${val.toFixed(2)}${unit}`);
   }
 
-  if (showAverageThreshold) {
-    const discard = currentConfig.termination?.discardReversals ?? 4;
+  if (showAverageThreshold && staircase) {
+    const discard = currentBlock.termination?.discardReversals ?? 4;
     const thresh = staircase.calculateThreshold(discard);
-    const unit = currentConfig.adaptive?.unit || "";
+    const unit = currentBlock.adaptive?.unit || "";
     parts.push(`Threshold: ${thresh.toFixed(2)}${unit}`);
   }
+
   if (parts.length === 0) {
     statusBadge.classList.add('hidden');
   } else {
@@ -639,29 +597,26 @@ function updateStatus() {
 }
 
 
-
-
 function endExperiment() {
-  playBtnContainer.classList.add('hidden');
-
-  responseButtons.forEach(btn => btn.classList.add('hidden'));
-  statusBadge.classList.add('hidden');
-  document.getElementById('instruction-text')?.classList.add('hidden');
+  const info = document.querySelector('.experiment-info') as HTMLElement;
+  const main = document.querySelector('.experiment-main') as HTMLElement;
+  if (info) info.classList.add('hidden');
+  if (main) main.classList.add('hidden');
 
   resultsArea.classList.remove('hidden');
 
-  // Use reversal-averaging
-  const defaultDiscard = currentConfig.termination.discardReversals ?? 4;
-  const threshold = staircase.calculateThreshold(defaultDiscard);
-  const unit = currentConfig.adaptive.unit || "";
-  finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(2)}${unit ? ' ' + unit : ''}`;
+  if (staircase) {
+    const defaultDiscard = currentBlock.termination?.discardReversals ?? 4;
+    const threshold = staircase.calculateThreshold(defaultDiscard);
+    const unit = currentBlock.adaptive?.unit || "";
+    finalThreshold.textContent = `Estimated Threshold: ${threshold.toFixed(2)}${unit ? ' ' + unit : ''}`;
+  }
 }
 
-// ─── Download Handlers ────────────────────────────────────────────────────────
-
 function buildDownloadData() {
-  const history = staircase.getHistory();
-  const threshold = staircase.calculateThreshold(currentConfig.termination?.discardReversals ?? 4);
+  // For multi-block, we might want to download results for all blocks
+  // For now, let's just keep it simple
+  const threshold = staircase ? staircase.calculateThreshold(currentBlock.termination?.discardReversals ?? 4) : 0;
   const timestamp = new Date().toISOString();
 
   return {
@@ -670,16 +625,16 @@ function buildDownloadData() {
       experimentName: currentConfig.meta.name,
       seed: currentConfig.meta.seed,
       threshold,
-      unit: currentConfig.adaptive?.unit || "",
+      unit: currentBlock.adaptive?.unit || "",
       actualSampleRate: engine['ctx'].sampleRate
     },
     config: currentConfig,
-    history
+    history: staircase ? staircase.getHistory() : []
   };
 }
 
 downloadResultsBtn.addEventListener('click', () => {
-  if (!staircase || !currentConfig) return;
+  if (!currentConfig) return;
   const data = buildDownloadData();
   const content = JSON.stringify(data, null, 2);
   triggerDownload(content, 'application/json', `results_${currentConfig.meta.name.replace(/\s+/g, '_')}_${Date.now()}.json`);
@@ -700,19 +655,5 @@ function triggerDownload(content: string, mimeType: string, filename: string) {
 
 restartBtn.addEventListener('click', () => {
   window.location.reload();
-});
-
-// ─── Modal Handlers ──────────────────────────────────────────────────────────
-
-infoBtn.addEventListener('click', () => {
-  helpModal.classList.remove('hidden');
-});
-
-modalClose.addEventListener('click', () => {
-  helpModal.classList.add('hidden');
-});
-
-helpModal.querySelector('.modal-overlay')?.addEventListener('click', () => {
-  helpModal.classList.add('hidden');
 });
 

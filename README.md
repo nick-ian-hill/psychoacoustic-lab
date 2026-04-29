@@ -78,13 +78,12 @@ Add to your `claude_desktop_config.json`:
 
 The project is split into three main components:
 
-1. **`shared/schema.ts`**: The source of truth. Defines Zod schemas for `ExperimentConfig`, including a highly flexible `MultiComponentGenerator` capable of modeling arbitrary acoustic scenes with explicit frequency, level, phase, and dichotic routing per component.
-2. **`mcp-server`**: A "Math Toolkit" and Expert Advisor. It exposes tools to an AI agent to calculate complex arrays (e.g., log-spaced frequencies, Schroeder phases, pink noise tilts, ITD/IPD conversions) and provides a final validation endpoint that checks for per-channel clipping risks, adaptive stability, calibration mismatches, and IPD configuration errors.
-3. **`web-app`**: A complete frontend execution environment featuring a dark-mode UI for running adaptive staircase trials, and a high-performance **Web Worker**-based audio engine that handles complex real-time synthesis without blocking the main thread.
+1. **`shared/schema.ts`**: The source of truth. Defines Zod schemas for `ExperimentConfig`, utilizing a **Block-Based Architecture** for multi-stage studies (e.g., Practice → Test).
+2. **`mcp-server`**: A "Math Toolkit" and Expert Advisor. Includes **Specialized Stimulus Utilities** for generating complex configurations like notched noise, harmonic complexes, and BMLD presets. It provides a final validation endpoint that checks for per-block clipping risks, adaptive stability, calibration mismatches, and IPD configuration errors across all blocks. High-level architectural and procedural guidance is provided in `GEMINI.md` and `SKILLS.md`.
+3. **`web-app`**: A complete frontend execution environment. The UI provides per-block metadata and instructions, while the **Web Worker**-based audio engine handles advanced synthesis like FIR filtering and correlated noise modulation.
 
 ## Features
 
-- **Synchronized UI Feedback**: Interval buttons highlight in precise synchrony with audio stimuli by scheduling `setTimeout` callbacks against the `AudioContext` clock (including hardware output latency), rather than the wall clock. This eliminates drift from GC pauses and event-loop jitter.
 - **Raised Cosine Ramps**: Support for both Linear and Raised Cosine (Hann) onset/offset ramps. Raised Cosine ramps provide the cleanest possible spectrum by ensuring a zero-slope transition at the start and end of the sound.
 - **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
@@ -92,41 +91,50 @@ The project is split into three main components:
 - **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from the randomization process. This enables standard professional paradigms like **4I2AFC** (4-interval 2-alternative forced choice), where intervals 1 and 4 are fixed references and the target only shuffles between 2 and 3.
 - **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `targetFrequency` on any perturbation to apply it globally to all components in the stimulus:
   - **Level**: via `gain` (global) or `spectral_profile` (per-component).
-  - **Frequency**: via `mistuning` (supports global pitch roving).
-  - **Timing**: via `onset_asynchrony` (supports global onset roving).
-  - **Phase**: via `phase_shift` (supports global phase roving).
-  - **Modulation**: via `am_depth` (supports global AM depth roving).
+  - **Frequency**: via `mistuning` for global pitch roving.
+  - **Timing**: via `onset_asynchrony` for global onset roving.
+  - **Phase**: via `phase_shift` for global phase roving.
+  - **Modulation**: via `am_depth` for global AM depth roving.
 - **Adaptive Staircase**: Full-featured `StaircaseController` supporting N-down/1-up rules, fast-start logic (`initialN`/`switchReversalCount`), dynamic step-size reduction on reversals, and standard reversal-point threshold averaging (with configurable `discardReversals`, defaulting to 4).
-- **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Supports White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp brick-wall band-limiting.
+- **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Generates White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp brick-wall band-limiting.
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
-- **Web Worker Synthesis**: Offloads all heavy sample-by-sample calculations and FFT operations to a background thread, ensuring a stutter-free 60 fps UI and utilizing zero-copy Transferable objects for maximum efficiency.
+- **Block-Based Architecture**: Group multiple experiment stages into a single session. Each block can have its own paradigm, stimuli, adaptive rules, and termination criteria (e.g., a fixed-level practice block followed by an adaptive test block).
+- **Shared-Envelope Modulation**: Support for `sharedEnvelopeId` on noise modulators. This allows multiple noise bands to share a single, perfectly correlated modulation envelope, which is essential for studying Comodulation Masking Release (CMR).
+- **FIR Filtered Noise**: A `filtered_noise` generator that accepts custom FIR coefficients. This allows for high-precision masking paradigms like **Notched Noise** masking to measure auditory filter shapes.
 - **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing buffer padding to prevent sample clipping. The `ear` field on `phase_shift` perturbations ensures only the target channel is shifted, creating a genuine interaural phase difference.
 - **Global Level Control**: Apply a master trim gain (`globalLevelDb`) to the entire trial stimulus. This occurs after per-generator synthesis but before final normalization, providing a clean way to adjust overall presentation levels while maintaining calibrated relative component ratios.
 - **Interval-Specific Stimuli**: Use the `applyTo` field on any stimulus generator (`"target"`, `"reference"`, or `"all"`) to define complex scenes where sounds only play in specific intervals (e.g., adding a target tone to a noise masker only in the signal interval).
 - **Multi-Layer Masking**: Stack an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval. Combined with `applyTo`, this enables clean, explicit modeling of Signal-in-Noise paradigms without architectural hacks.
-- **Dynamic Participant Instructions**: Supply experiment-specific metadata via `meta.summary` (concise task instructions) and `meta.description` (long-form detailed guidance).
+- **Dynamic Participant Instructions**: Supply experiment-level and block-level metadata via `meta.summary` (concise task instructions) and `meta.description` (long-form detailed guidance). Block-level instructions automatically update the UI as the experiment progresses.
+- **Global & Block UI Control**: Configure UI visibility (e.g., `showCurrentValue`, `showTrialNumber`) either globally for the experiment or override them per-block for different experimental phases.
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
-- **Termination & Thresholding**: Configure exactly how and when an experiment ends:
-  - **`reversals`**: Stop after $N$ reversals (standard for staircase).
-  - **`maxTrials`**: A safety limit to end the experiment regardless of performance.
-  - **`discardReversals`**: Automatically ignore the first $N$ reversals (default 4) to ensure threshold averaging only uses stable performance data.
-- **Hardware Calibration**: Apply log-frequency interpolated dB offsets to both `multi_component` and `noise` generators (via frequency-domain magnitude shaping) to account for transducer frequency responses.
-- **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
-- **Data Export**: Download detailed trial history as both **JSON** and **CSV** files. The JSON export contains the full experimental configuration and high-precision history, while the CSV format is optimized for direct import into the Python analysis pipeline. Both include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.
+- **Termination & Thresholding**: Configure exactly how and when an experiment ends (e.g., stopping after $N$ reversals or $M$ trials).
+- **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
+- **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
+- **Data Export**: Download detailed trial history as both **JSON** and **CSV** files. Both formats include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.
+
+## Technical Implementation
+
+- **Web Worker Synthesis**: Offloads heavy sample-by-sample calculations and FFT operations to a background thread, ensuring a stutter-free 60 fps UI and utilizing zero-copy Transferable objects for maximum memory efficiency.
+- **Synchronized UI Feedback**: Interval buttons highlight in precise synchrony with audio stimuli by scheduling callbacks against the `AudioContext` hardware clock. This eliminates visual drift from garbage collection pauses and event-loop jitter.
+- **Click-Free Synthesis**: The engine ensures every stimulus buffer concludes at a zero-crossing point, eliminating DC-offset clicks during rapid interval transitions or adaptive parameter changes.
+- **Binaural Alignment**: Automatically manages buffer padding and sample-accurate offsets to keep stimuli phase-aligned across channels, even when applying differential delays or phase shifts.
 
 ## MCP Server Tools
 
 | Tool | Description |
 |------|-------------|
-| `about_toolkit` | High-level architectural guidance on using the toolkit |
 | `list_examples` | List all included example experiment names |
 | `get_example_config` | Retrieve the full JSON config for a named example |
-| `get_schema_reference` | Annotated documentation for every `ExperimentConfig` field — use this before building a new experiment |
+| `get_schema_reference` | Annotated documentation for every `ExperimentConfig` field — use this before building an experiment |
 | `calc_frequencies` | Calculate component frequencies with linear, log, or ERB spacing |
 | `calc_phases` | Calculate component phases (Sine, Schroeder+/-, or seeded Random) |
 | `calc_amplitudes` | Calculate component levels in dB (Flat or accurate 3 dB/octave Pink Tilt) |
 | `calc_itd` | Convert ITD in microseconds to `onsetDelayMs`, with equivalent IPD in degrees and phase-ambiguity warnings |
-| `evaluate_and_finalize_experiment` | Expert validation: per-channel clipping check, reversal count, IPD ear-targeting check |
+| `generate_harmonic_complex` | Generate a `multi_component` config for a harmonic complex with custom F0 and envelope |
+| `generate_notched_noise` | Generate a `filtered_noise` config with FIR coefficients for specified notch widths |
+| `calc_bmld_config` | Generate stimuli and perturbations for N0Spi or NpiS0 BMLD experiments |
+| `evaluate_and_finalize_experiment` | Expert validation: per-block clipping check, reversal count, IPD ear-targeting check |
 
 ## Getting Started
 
@@ -170,12 +178,9 @@ All examples include participant-facing metadata displayed in the UI.
 | Example | Key Paradigm | Literature |
 |---------|-------------|-----------|
 | **Frequency Discrimination** | 3-down/1-up mistuning threshold | Classic psychophysics |
-| **Auditory Grouping** | Profile analysis with onset-asynchrony lead target | Hill & Bailey |
-| **ITD/IPD Discrimination (TFS)** | Binaural phase shift threshold; sensitive to hidden hearing loss | Moore (2014); Prendergast et al. (2017) |
-| **Spatial Release from Informational Masking** | Dichotic target vs. co-located maskers | Kidd Jr et al. (2016); Gallun et al. (2013) |
-| **TEN Test** | Tone-in-noise detection for cochlear dead regions | Moore et al. (2000) |
-| **AM Detection** | 8 Hz amplitude modulation depth threshold | Viemeister (1979) |
-| **Profile Analysis** | Complex masking, global level roving, and individual component level randomization | Green (1988) |
+| **Practice & Test Demo** | Multi-block sequential stages | Modern study design |
+| **ITD/IPD Discrimination** | Binaural phase shift threshold (TFS) | Moore (2014) |
+| **AM Detection (Shared)** | Correlated noise modulation (CMR) | Hall et al. (1984) |
 
 ## Limitations & Future Work
 

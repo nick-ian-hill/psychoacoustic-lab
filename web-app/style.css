@@ -247,7 +247,7 @@ textarea:focus {
  .results-area {
    width: 100%;
    text-align: center;
-   margin-top: 1.5rem;
+   margin-top: 0.5rem;
    animation: fadeIn 0.4s ease-out;
  }
 
@@ -261,7 +261,7 @@ textarea:focus {
    font-size: 1.125rem;
    font-weight: 500;
    color: var(--text);
-   margin-bottom: 2rem;
+   margin-bottom: 1.5rem;
  }
 
 .experiment-area {
@@ -321,29 +321,6 @@ textarea:focus {
   line-height: 1.4;
 }
 
-.info-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.info-btn:hover {
-  color: var(--accent);
-  background: rgba(56, 189, 248, 0.1);
-}
-
-.info-btn svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
 
 
 .experiment-main {

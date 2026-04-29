@@ -18,11 +18,11 @@ export class StaircaseController {
   private lastDirection: "up" | "down" | null = null;
   private isFastStarting: boolean;
 
-  constructor(config: AdaptiveConfig) {
-    this.config = config;
-    this.currentValue = config.initialValue;
+  constructor(config?: AdaptiveConfig) {
+    this.config = config || {} as any;
+    this.currentValue = config ? config.initialValue : 0;
     this.currentStepIndex = 0;
-    this.isFastStarting = (config.initialN || 1) < config.rule.correctDown;
+    this.isFastStarting = config ? ((config.initialN || 1) < config.rule.correctDown) : false;
   }
 
   getCurrentValue(): number {
@@ -39,9 +39,11 @@ export class StaircaseController {
 
     if (correct) {
       this.consecutiveCorrect++;
-      const targetN = this.isFastStarting ? (this.config.initialN || 1) : this.config.rule.correctDown;
+      const targetN = (this.config.rule) 
+        ? (this.isFastStarting ? (this.config.initialN || 1) : this.config.rule.correctDown)
+        : Infinity; // Never step down if no rules defined
       
-      if (this.consecutiveCorrect >= targetN) {
+      if (this.consecutiveCorrect >= targetN && this.config.stepSizes) {
         if (this.config.stepType === "geometric") {
           this.currentValue /= this.getStepSize();
         } else {
@@ -57,23 +59,27 @@ export class StaircaseController {
         this.lastDirection = "down";
       }
     } else {
-      if (this.config.stepType === "geometric") {
-        this.currentValue *= this.getStepSize();
-      } else {
-        this.currentValue += this.getStepSize();
+      if (this.config.stepSizes) {
+        if (this.config.stepType === "geometric") {
+          this.currentValue *= this.getStepSize();
+        } else {
+          this.currentValue += this.getStepSize();
+        }
+        
+        if (this.lastDirection === "down") {
+          isReversal = true;
+          this.reversalCount++;
+          this.handleReversal();
+        }
+        this.lastDirection = "up";
       }
       this.consecutiveCorrect = 0;
-      
-      if (this.lastDirection === "down") {
-        isReversal = true;
-        this.reversalCount++;
-        this.handleReversal();
-      }
-      this.lastDirection = "up";
     }
 
     // Bounds check
-    this.currentValue = Math.max(this.config.minValue, Math.min(this.config.maxValue, this.currentValue));
+    if (this.config.minValue !== undefined) {
+      this.currentValue = Math.max(this.config.minValue, Math.min(this.config.maxValue, this.currentValue));
+    }
 
     const result: TrialResult = {
       trialIndex: this.history.length,
@@ -99,16 +105,21 @@ export class StaircaseController {
 
     // Advance step size if needed (e.g. every reversal or every N reversals)
     const interval = this.config.stepSizeInterval || 1;
-    if (this.reversalCount % interval === 0) {
+    if (this.reversalCount % interval === 0 && this.config.stepSizes) {
       if (this.currentStepIndex < this.config.stepSizes.length - 1) {
         this.currentStepIndex++;
       }
     }
   }
 
-  isFinished(termination: { maxTrials?: number; reversals?: number }): boolean {
+  isFinished(termination?: { maxTrials?: number; reversals?: number; correctTrials?: number }): boolean {
+    if (!termination) return false;
     if (termination.reversals && this.reversalCount >= termination.reversals) return true;
     if (termination.maxTrials && this.history.length >= termination.maxTrials) return true;
+    if (termination.correctTrials) {
+      const correctCount = this.history.filter(h => h.correct).length;
+      if (correctCount >= termination.correctTrials) return true;
+    }
     return false;
   }
 

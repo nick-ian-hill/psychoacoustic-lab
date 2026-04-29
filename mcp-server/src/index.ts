@@ -46,11 +46,6 @@ class PsychoacousticServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: "about_toolkit",
-          description: "MANDATORY START: You MUST call this tool before designing a NEW experiment or generating a configuration. BEHAVIORAL RULES: 1) Act as a rigorous scientific collaborator. 2) Identify confounds. 3) Ask about secondary parameters. 4) STOP: You are strictly forbidden from generating a final JSON 'ExperimentConfig' for a new experiment until the user approves your plain-text plan. (Note: These restrictions do NOT apply to general repository analysis, debugging, or research tasks).",
-          inputSchema: { type: "object", properties: {} }
-        },
-        {
           name: "list_examples",
           description: "List the names of all included classic and modern psychoacoustic experiment examples. USE THIS before designing custom paradigms to see established patterns and ensure your configuration aligns with standard practices.",
           inputSchema: { type: "object", properties: {} }
@@ -160,6 +155,56 @@ class PsychoacousticServer {
           }
         },
         {
+          name: "generate_harmonic_complex",
+          description: "[Tier 2: Component Generator] Generate a harmonic complex stimulus. Outputs a 'multi_component' generator object. All DSP math is performed based on the provided sampleRate.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              f0: { type: "number", minimum: 20, maximum: 5000, description: "Fundamental frequency in Hz." },
+              numHarmonics: { type: "integer", minimum: 1, maximum: 100 },
+              spectralTiltDbPerOctave: { type: "number", description: "Amplitude roll-off (e.g., -6 for 6dB/octave tilt)." },
+              startingPhase: { type: "string", enum: ["sine", "random", "schroeder_positive", "schroeder_negative"] },
+              durationMs: { type: "integer", minimum: 10, maximum: 5000 },
+              levelDb: { type: "number", minimum: 0, maximum: 100, description: "Level of the fundamental component (dB SPL)." },
+              sampleRate: { type: "integer", default: 44100 },
+              seed: { type: "integer", description: "Required for 'random' phases." }
+            },
+            required: ["f0", "numHarmonics", "durationMs", "levelDb"]
+          }
+        },
+        {
+          name: "generate_notched_noise",
+          description: "[Tier 2: Component Generator] Generate FIR coefficients for a notched noise masker approximating a roex(p, r) filter shape. All DSP math is performed based on the provided sampleRate.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              centerFreq: { type: "number", minimum: 100, maximum: 10000 },
+              notchWidthHz: { type: "number", minimum: 0 },
+              p: { type: "number", description: "Slope parameter p (steepness)." },
+              r: { type: "number", description: "Dynamic range parameter r (limit)." },
+              filterOrder: { type: "integer", enum: [511, 1023], default: 511 },
+              sampleRate: { type: "integer", default: 44100 }
+            },
+            required: ["centerFreq", "notchWidthHz", "p", "r"]
+          }
+        },
+        {
+          name: "calc_bmld_config",
+          description: "[Tier 2: Component Generator] Calculate configuration for Binaural Masking Level Difference (BMLD) experiments (e.g., N0Spi).",
+          inputSchema: {
+            type: "object",
+            properties: {
+              preset: { type: "string", enum: ["N0S0", "N0Spi", "NpiS0", "NuSpi"] },
+              signalFreq: { type: "number" },
+              signalLevelDb: { type: "number" },
+              noiseLevelDb: { type: "number" },
+              durationMs: { type: "number" },
+              sampleRate: { type: "integer", default: 44100 }
+            },
+            required: ["preset", "signalFreq", "signalLevelDb", "noiseLevelDb", "durationMs"]
+          }
+        },
+        {
           name: "generate_config_from_template",
           description: "[Tier 1: Orchestrator] Create a valid ExperimentConfig by providing high-level parameters to a known paradigm template. Use this to quickly bootstrap an experiment without manual JSON construction.",
           inputSchema: {
@@ -261,64 +306,9 @@ class PsychoacousticServer {
       ],
     }));
 
+
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       switch (request.params.name) {
-        case "about_toolkit":
-          return {
-            content: [{
-              type: "text",
-              text: `BEHAVIORAL RULES & MANDATORY WORKFLOW:
-- SCIENTIFIC COLLABORATION: Act as a rigorous scientific collaborator, not just a code generator.
-- CONFOUND CONTROL: Before proposing a design, actively identify and discuss how to control for confounding cues (e.g., controlling absolute energy cues in a profile analysis task by roving the global level).
-- PARAMETER ELICITATION: Do not assume secondary parameters (e.g., stimulus duration, interstimulus interval, inter-trial interval, response delay interval, number of reversals). Explicitly ask the user for their preferences.
-- LITERATURE SEARCH: Perform a web search to validate chosen parameters.
-- STEP-BY-STEP APPROVAL: For NEW experiment designs, propose a plain-text plan first.
-- CONFIG GENERATION LIMIT: You are strictly forbidden from generating a final JSON 'ExperimentConfig' for a NEW design until the user approves the text plan. This restriction does NOT apply to repo analysis, debugging, or viewing existing examples.
-- WORKFLOW SCOPE: If the user's request is research-oriented (e.g., 'Review the examples'), proceed with your analysis autonomously without being blocked by 'STOP' directives meant for configuration generation.
-
-ARCHITECTURE & BINAURAL PRECISION:
-- Smart Server / Dumb Engine: The Audio Engine only renders explicit components. It does not auto-generate complex stimulus relationships.
-- TIERED TOOLING & ABSTRACTION:
-  * TIER 1: Orchestrators (e.g., generate_config_from_template, generate_batch_configs) — Use these to build entire experiments or condition batches in one shot.
-  * TIER 2: Component Generators (e.g., generate_stimulus_block) — The RECOMMENDED way to build custom stimuli safely. It handles internal math and ensures schema compliance.
-  * TIER 3: Primitives (e.g., calc_frequencies, calc_phases, calc_itd) — Low-level math utilities for manual overrides and precise component-level targeting.
-- Stimulus Construction: Prefer Tier 2 tools over Tier 3 primitives unless you need granular control over individual frequency/phase/level arrays.
-- IPD (Interaural Phase Difference): Use the high-level 'itd' perturbation with mode: 'fine_structure'. This handles frequency-to-phase conversion automatically.
-- True ITD (Interaural Time Difference): Use the high-level 'itd' perturbation with mode: 'both' or 'envelope'.
-- Adaptive Linking (MANDATORY): If you use { "adaptive": true } in any perturbation, you MUST also define an 'adaptive' configuration block. Conversely, if you define an 'adaptive' block, at least one perturbation MUST be set to { "adaptive": true }.
-- User Instructions (REQUIRED): Every experiment must provide 'meta.summary' (short text shown during trials) and 'meta.description' (long text shown in help popups). These are CRITICAL for the participant's experience.
-- Finalization: Use evaluate_and_finalize_experiment as your final step to check for clipping risks and adaptive stability.
-
-HUMAN AUDITORY THRESHOLDS (EMPIRICAL YARDSTICKS):
-To prevent hallucinating arbitrary parameters, base your initial values and boundaries on these human limits:
-- Absolute Detection: Human sensitivity peaks in the mid-range (1000 to 4000 Hz), where thresholds can approach 0 dB SPL.
-- Frequency Discrimination: Human pitch acuity is exceptionally fine. The pure-tone Just Noticeable Difference (JND) is roughly 0.16% of the base frequency in the mid-frequency range. Expressed as a Weber fraction: \\frac{\\Delta f}{f} \\approx 0.0016. For example, the JND for a 2000 Hz tone is approximately 3.2 Hz.
-- Intensity Discrimination: For pure tones or broadband noises at comfortable listening levels, the intensity JND is typically around 1 dB.
-- ITD / IPD & Phase-Locking: Normal hearing listeners are exquisitely sensitive to ITDs, with detection thresholds near 10 µs. The average threshold for a 1000 Hz tone is roughly 11 µs. Auditory nerve fibers encode this by phase-locking to the stimulus waveform. Crucial Limit: Humans cannot resolve fine-structure ITD/IPD above ~1000-1400 Hz due to a loss of binaural phase-locking, and monaural phase-locking ceases entirely by roughly 4000-5000 Hz. Guardrail: Do not design experiments relying on temporal fine structure (TFS) cues for target frequencies above 4000 Hz.
-- Frequency Range & Aging: The nominal range of human hearing is 20-20,000 Hz. However, sensitivity to frequencies above 15,000 Hz decreases significantly with age and noise exposure. Guardrail: When designing for the general population, avoid placing critical targets or maskers in the extreme high-frequency range (>12,000 Hz) unless the experiment specifically targets high-frequency audiometry.
-- Gap Detection: For normal-hearing adults, the mean behavioral gap detection threshold for broadband noise is approximately 2 to 5 ms.
-- Tonotopy & Tone-in-Noise Masking: The basilar membrane acts as a mechanical frequency analyzer, with high frequencies mapped to the base and low frequencies to the apex (tonotopy). This creates overlapping "auditory filters." Detection of a tone in noise is primarily energetic; a tone becomes audible once the signal-to-noise ratio within its specific "critical band" (Equivalent Rectangular Bandwidth, or ERB) is sufficiently high. Guardrail: Use the "erb" spacing in calc_frequencies to correctly model this physiological filter spacing.
-
-METHODOLOGICAL PARADIGMS & PSYCHOPHYSICS:
-- Adaptive Staircases: The engine uses n-down/1-up adaptive tracking. A 2-down/1-up rule targets the 70.7% correct point on the psychometric function, while a 3-down/1-up rule targets the 79.4% correct point.
-- Step Types & Sizes: Step sizes should start large and systematically decrease after early reversals. Use the linear step type for additive units (like dB), but you must use the geometric step type for variables strictly bounded by zero (like percentage mistuning or AM depth).
-- Roving: To prevent participants from using absolute energy or loudness cues, employ roving (e.g., applying a uniform random gain perturbation across all intervals) to force listeners to rely on the target cue.
-
-SEMINAL REFERENCES FOR LITERATURE SEARCH:
-Use these exact citations as search keys if you need to retrieve deeper methodological logic:
-- Levitt, H. (1971). Transformed up-down methods in psychoacoustics. The Journal of the Acoustical Society of America. (Definitive guide to n-down/1-up rules).
-- Fletcher, H. (1940). Auditory Patterns. Reviews of Modern Physics. (Critical Bands and tone-in-noise masking).
-- Klumpp, R. G., & Eady, H. R. (1956). Some Measurements of Interaural Time Difference Thresholds. The Journal of the Acoustical Society of America. (Establishes the ~10 µs ITD acuity limit).
-- Watson, C. S., & Fitzhugh, R. J. (1990). The method of constant stimuli is inefficient. The Journal of the Acoustical Society of America. (Rationale for adaptive procedures).
-- Moore, B. C. J. (2012). An Introduction to the Psychology of Hearing. (The definitive textbook for general threshold yardsticks, ERB scales, and masking).
-- Viemeister, N. F. (1979). Temporal modulation transfer function based upon modulation thresholds. The Journal of the Acoustical Society of America. (Baseline for AM detection and temporal resolution).
-
-HIGH-LEVEL DESIGN & BATCHING:
-- Bootstrapping: Use 'generate_config_from_template' to quickly create a standard experiment (e.g. Freq Discrimination) by providing just F0 and Level.
-- Multi-Condition Studies: Use 'generate_batch_configs' to create multiple ExperimentConfigs at once (e.g., measuring ITD thresholds at 500, 1000, and 2000 Hz). This ensures consistency across conditions.
-- Verification: Use 'summarize_experiment' to get a human-readable scientific summary of any config to verify it matches your experimental intent.`
-            }]
-          };
         case "list_examples":
           return {
             content: [{
@@ -346,6 +336,12 @@ HIGH-LEVEL DESIGN & BATCHING:
           return this.handleGenerateStimulusBlock(request.params.arguments);
         case "evaluate_and_finalize_experiment":
           return this.handleFinalize(request.params.arguments);
+        case "generate_harmonic_complex":
+          return this.handleGenerateHarmonicComplex(request.params.arguments);
+        case "generate_notched_noise":
+          return this.handleGenerateNotchedNoise(request.params.arguments);
+        case "calc_bmld_config":
+          return this.handleCalcBmld(request.params.arguments);
         case "generate_config_from_template":
           return this.handleGenerateFromTemplate(request.params.arguments);
         case "generate_batch_configs":
@@ -637,6 +633,136 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     }
   }
 
+  private handleGenerateHarmonicComplex(args: any) {
+    const { f0, numHarmonics, spectralTiltDbPerOctave = 0, startingPhase, durationMs, levelDb, sampleRate = 44100, seed } = args;
+    const frequencies: number[] = [];
+    for (let k = 1; k <= numHarmonics; k++) {
+      const f = f0 * k;
+      if (f < sampleRate / 2) frequencies.push(f);
+    }
+    const levels = frequencies.map(f => levelDb + spectralTiltDbPerOctave * Math.log2(f / f0));
+    const phases = this.internalCalcPhases(startingPhase || "sine", frequencies.length, seed);
+
+    const components = frequencies.map((f, i) => ({
+      frequency: parseFloat(f.toFixed(2)),
+      levelDb: parseFloat(levels[i].toFixed(2)),
+      phaseDegrees: phases[i]
+    }));
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          type: "multi_component",
+          durationMs,
+          components,
+          globalEnvelope: { attackMs: 10, releaseMs: 10, type: "cosine" }
+        }, null, 2)
+      }]
+    };
+  }
+
+  private handleGenerateNotchedNoise(args: any) {
+    const { centerFreq, notchWidthHz, p, r, filterOrder = 511, sampleRate = 44100 } = args;
+    const N = filterOrder + 1;
+    const coeffs = new Float32Array(N);
+    const halfN = N / 2;
+
+    const getRoex = (f: number) => {
+      const g = Math.abs(f - centerFreq) / centerFreq;
+      if (Math.abs(f - centerFreq) < notchWidthHz / 2) return 0;
+      return (1 - r) * (1 + p * g) * Math.exp(-p * g) + r;
+    };
+
+    const mag = new Float32Array(halfN + 1);
+    for (let i = 0; i <= halfN; i++) {
+      const f = (i / halfN) * (sampleRate / 2);
+      mag[i] = getRoex(f);
+    }
+
+    for (let n = 0; n < N; n++) {
+      let sum = mag[0];
+      for (let k = 1; k < halfN; k++) {
+        const theta = (2 * Math.PI * k * (n - halfN)) / N;
+        sum += 2 * mag[k] * Math.cos(theta);
+      }
+      sum += mag[halfN] * Math.cos(Math.PI * (n - halfN));
+      coeffs[n] = sum / N;
+    }
+
+    for (let n = 0; n < N; n++) {
+      const w = 0.54 - 0.46 * Math.cos((2 * Math.PI * n) / (N - 1));
+      coeffs[n] *= w;
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          type: "filtered_noise",
+          levelDb: 70,
+          durationMs: 500,
+          envelope: { attackMs: 10, releaseMs: 10, type: "cosine" },
+          firCoefficients: Array.from(coeffs).map(c => parseFloat(c.toFixed(6)))
+        }, null, 2)
+      }]
+    };
+  }
+
+  private handleCalcBmld(args: any) {
+    const { preset, signalFreq, signalLevelDb, noiseLevelDb, durationMs } = args;
+    const stimuli: any[] = [];
+    const perturbations: any[] = [];
+
+    const noiseGen = {
+      type: "noise",
+      noiseType: "white",
+      levelDb: noiseLevelDb,
+      durationMs,
+      envelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
+      ear: "both"
+    };
+
+    const signalGen = {
+      type: "multi_component",
+      durationMs,
+      components: [
+        { frequency: signalFreq, levelDb: signalLevelDb, ear: "both" }
+      ],
+      globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
+      applyTo: "target"
+    };
+
+    stimuli.push(noiseGen, signalGen);
+
+    if (preset === "N0Spi") {
+      perturbations.push({
+        type: "phase_shift",
+        targetFrequency: signalFreq,
+        ear: "right",
+        deltaDegrees: 180,
+        applyTo: "target"
+      });
+    } else if (preset === "NuSpi") {
+        (noiseGen as any).ear = "left";
+        stimuli.push({ ...noiseGen, ear: "right" });
+        perturbations.push({
+            type: "phase_shift",
+            targetFrequency: signalFreq,
+            ear: "right",
+            deltaDegrees: 180,
+            applyTo: "target"
+        });
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({ stimuli, perturbations }, null, 2)
+      }]
+    };
+  }
+
   private handleCalcItd(args: any) {
     const { itdMicroseconds, frequencyHz, sampleRate = 44100 } = args;
     const itdMs = itdMicroseconds / 1000;
@@ -702,130 +828,91 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     }
     const config = result.data;
     const warnings: string[] = [];
+    const sampleRate = 44100;
 
-    // 1. Worst-case Total power / clipping check.
-    const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
-      let maxDb = 0;
-      if (!config.perturbations) return 0;
-      for (const p of config.perturbations) {
-        if (p.type === type && (!targetFreq || (p as any).targetFrequency === targetFreq)) {
-          const val = (p as any).deltaDb;
-          if (typeof val === 'number') maxDb += val;
-          else if (val?.adaptive) maxDb += config.adaptive?.maxValue || 0;
-          else if (val?.type === 'uniform') maxDb += val.max;
-        }
-      }
-      return maxDb;
-    };
+    config.blocks.forEach((block, blockIdx) => {
+      const calculatePeakPower = (condition: "target" | "reference") => {
+        let totalPowerL = 0;
+        let totalPowerR = 0;
+        
+        const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
+          let maxDb = 0;
+          if (!block.perturbations) return 0;
+          for (const p of block.perturbations) {
+            if (p.type === type && (!targetFreq || (p as any).targetFrequency === targetFreq)) {
+              const val = (p as any).deltaDb;
+              if (typeof val === 'number') maxDb += val;
+              else if (val?.adaptive) maxDb += block.adaptive?.maxValue || 0;
+              else if (val?.type === 'uniform') maxDb += val.max;
+            }
+          }
+          return maxDb;
+        };
 
-    // Calculates peak power per interval (Target vs Reference) to account for applyTo filtering.
-    const calculatePeakPower = (condition: "target" | "reference") => {
-      let totalPowerL = 0;
-      let totalPowerR = 0;
-      
-      const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
+        const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
 
-      for (const gen of config.stimuli) {
-        const genApplyTo = (gen as any).applyTo || "all";
-        if (genApplyTo !== "all" && genApplyTo !== condition) continue;
+        for (const gen of block.stimuli) {
+          const genApplyTo = (gen as any).applyTo || "all";
+          if (genApplyTo !== "all" && genApplyTo !== condition) continue;
 
-        if (gen.type === "multi_component") {
-          for (const c of gen.components as any[]) {
-            const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+          if (gen.type === "multi_component") {
+            for (const c of gen.components as any[]) {
+              const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+              const p = Math.pow(10, pDb / 10);
+              if (c.ear === "left") { totalPowerL += p; }
+              else if (c.ear === "right") { totalPowerR += p; }
+              else { totalPowerL += p; totalPowerR += p; }
+            }
+          } else if (gen.type === "noise" || gen.type === "filtered_noise") {
+            const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
             const p = Math.pow(10, pDb / 10);
-            if (c.ear === "left") { totalPowerL += p; }
-            else if (c.ear === "right") { totalPowerR += p; }
+            if (gen.ear === "left") { totalPowerL += p; }
+            else if (gen.ear === "right") { totalPowerR += p; }
             else { totalPowerL += p; totalPowerR += p; }
           }
-        } else if (gen.type === "noise") {
-          const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
-          const p = Math.pow(10, pDb / 10);
-          if (gen.ear === "left") { totalPowerL += p; }
-          else if (gen.ear === "right") { totalPowerR += p; }
-          else { totalPowerL += p; totalPowerR += p; }
+        }
+
+        if (config.globalLevelDb !== undefined) {
+          const globalLinear = Math.pow(10, config.globalLevelDb / 10);
+          totalPowerL *= globalLinear;
+          totalPowerR *= globalLinear;
+        }
+        return Math.max(totalPowerL, totalPowerR);
+      };
+
+      const peakChannelPower = Math.max(calculatePeakPower("target"), calculatePeakPower("reference"));
+      if (peakChannelPower > 0) {
+        const totalDb = 10 * Math.log10(peakChannelPower);
+        if (totalDb > 95) {
+          warnings.push(`Block ${blockIdx} (${block.id}): CLIPPING RISK: Worst-case peak level exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB).`);
         }
       }
 
-      if (config.globalLevelDb !== undefined) {
-        const globalLinear = Math.pow(10, config.globalLevelDb / 10);
-        totalPowerL *= globalLinear;
-        totalPowerR *= globalLinear;
+      if (block.adaptive && (block.termination?.reversals ?? 0) < 10) {
+        warnings.push(`Block ${blockIdx} (${block.id}): STABILITY WARNING: Adaptive staircase reversals are below 10.`);
       }
-      return Math.max(totalPowerL, totalPowerR);
-    };
 
-    const peakChannelPower = Math.max(calculatePeakPower("target"), calculatePeakPower("reference"));
-    if (peakChannelPower > 0) {
-      const totalDb = 10 * Math.log10(peakChannelPower);
-      if (totalDb > 95) {
-        warnings.push(`CLIPPING RISK: Worst-case peak level (base + roving + adaptive max) exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB). While the engine normalizes, this may cause unwanted compression of background components.`);
-      }
-    }
-
-    // 2. Adaptive staircase reversal count check
-    const reversalCount = config.termination?.reversals ?? 0;
-    if (config.adaptive && reversalCount < 10) {
-      warnings.push(`STABILITY WARNING: Adaptive staircase reversals (${reversalCount}) are below 10. Threshold estimate may be unreliable. Recommend ≥12 reversals.`);
-    }
-
-    // Removed noise calibration warning since it is now supported via FFT magnitude shaping
-
-    // 4. IPD paradigm check — phase_shift without ear targeting
-    if (config.perturbations) {
-      for (const p of config.perturbations) {
-        if (p.type === "phase_shift" && !p.ear) {
-          warnings.push(`IPD WARNING: A 'phase_shift' perturbation targets frequency ${p.targetFrequency} Hz but has no 'ear' field. If you have separate left/right components at this frequency, BOTH ears will be shifted — creating no net IPD. Set 'ear: \"right\"' (or \"left\") to target one ear.`);
+      // Path resolution check
+      if (block.adaptive) {
+        const path = block.adaptive.parameter;
+        const existsInStimuli = block.stimuli.some((_, i) => path.startsWith(`stimuli[${i}]`));
+        const existsInPerturbations = block.perturbations?.some((_, i) => path.startsWith(`perturbations[${i}]`));
+        if (!existsInStimuli && !existsInPerturbations) {
+          warnings.push(`Block ${blockIdx} (${block.id}): INVALID PATH: Adaptive parameter '${path}' does not resolve to an existing stimulus or perturbation.`);
         }
       }
-    }
 
-
-    // 5. Instruction UX suggestion
-    if (!config.meta.summary) {
-      if (config.paradigm.type === "2AFC" || config.paradigm.type === "3AFC") {
-        warnings.push(`UX SUGGESTION: Consider adding meta.summary. E.g., 'Select the higher pitched tone.'`);
-      }
-    }
-
-
-    // 6. Human Auditory Threshold Guardrails
-    const allFrequencies: number[] = [];
-    config.stimuli.forEach(s => {
-      if (s.type === 'multi_component') (s.components as any[]).forEach(c => allFrequencies.push(c.frequency));
-      else if (s.type === 'noise' && (s as any).bandLimit) {
-        allFrequencies.push((s as any).bandLimit.lowFreq);
-        allFrequencies.push((s as any).bandLimit.highFreq);
-      }
-      (s as any).modulators?.forEach((m: any) => {
-        if (m.type === 'AM' && m.rateHz > 50) {
-          warnings.push(`AUDITORY GUARDRAIL: AM rate of ${m.rateHz} Hz exceeds typical temporal envelope resolution (~50-60 Hz). At higher rates, listeners may perceive spectral sidebands or 'pitch' cues rather than fluctuations.`);
+      // Nyquist check
+      block.stimuli.forEach(gen => {
+        if (gen.type === 'multi_component') {
+          gen.components.forEach(comp => {
+            if (comp.frequency >= sampleRate / 2) {
+              warnings.push(`Block ${blockIdx} (${block.id}): NYQUIST VIOLATION: Frequency ${comp.frequency}Hz exceeds ${sampleRate/2}Hz.`);
+            }
+          });
         }
       });
     });
-
-    if (allFrequencies.some(f => f > 15000)) {
-      warnings.push("AUDITORY GUARDRAIL: Stimulus contains frequencies > 15,000 Hz. Sensitivity at these frequencies decreases significantly with age and noise exposure.");
-    }
-
-    if (config.perturbations) {
-      for (const p of config.perturbations) {
-        if (p.type === 'itd' && p.mode !== 'envelope') {
-          const targetFreq = (p as any).targetFrequency;
-          if (targetFreq && targetFreq > 1400) {
-            warnings.push(`AUDITORY GUARDRAIL: Fine-structure ITD/IPD sensitivity is poor above ~1400 Hz. Your perturbation targets ${targetFreq} Hz. Consider using 'envelope' mode or a lower frequency.`);
-          } else if (!targetFreq && allFrequencies.some(f => f > 1400)) {
-            warnings.push("AUDITORY GUARDRAIL: Broadband fine-structure ITD/IPD sensitivity is limited above ~1400 Hz. High-frequency components will not contribute to fine-structure cues.");
-          }
-        }
-        if (p.type === 'phase_shift') {
-          const targetFreq = (p as any).targetFrequency;
-          if (targetFreq && targetFreq > 4000) {
-            warnings.push(`AUDITORY GUARDRAIL: Phase-locking (required for fine-structure phase discrimination) ceases entirely above ~4000-5000 Hz. Your 'phase_shift' targets ${targetFreq} Hz and may be inaudible.`);
-          }
-        }
-      }
-    }
-
 
     return {
       content: [{
@@ -873,25 +960,25 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       const baseConfig = (examples as any)[`${templateName}Config`];
       if (!baseConfig) throw new Error(`Template '${templateName}' not found.`);
 
-      let config = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
+      let config = JSON.parse(JSON.stringify(baseConfig));
 
       if (parameters.name) config.meta.name = parameters.name;
       if (parameters.rationale) config.meta.rationale = parameters.rationale;
       if (parameters.summary) config.meta.summary = parameters.summary;
       if (parameters.description) config.meta.description = parameters.description;
 
-      // High-level mapping logic
+      // Map parameters to the first block for simplicity in template generation
+      const block = config.blocks[0];
+
       if (parameters.frequencyHz !== undefined) {
-        config.stimuli.forEach((s: any) => {
+        block.stimuli.forEach((s: any) => {
           if (s.type === 'multi_component') {
             s.components.forEach((c: any) => {
-              // Heuristic: update components that were at the 'nominal' frequency (usually 1000)
-              // or if it's a single-component stimulus.
               if (c.frequency === 1000 || s.components.length === 1) c.frequency = parameters.frequencyHz;
             });
           }
         });
-        config.perturbations?.forEach((p: any) => {
+        block.perturbations?.forEach((p: any) => {
           if ('targetFrequency' in p && (p.targetFrequency === 1000 || p.targetFrequency === undefined)) {
             p.targetFrequency = parameters.frequencyHz;
           }
@@ -899,19 +986,22 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       }
 
       if (parameters.levelDb !== undefined) {
-        config.stimuli.forEach((s: any) => { s.levelDb = parameters.levelDb; if (s.components) s.components.forEach((c: any) => c.levelDb = parameters.levelDb); });
+        block.stimuli.forEach((s: any) => {
+            s.levelDb = parameters.levelDb;
+            if (s.components) s.components.forEach((c: any) => c.levelDb = parameters.levelDb);
+        });
       }
 
       if (parameters.durationMs !== undefined) {
-        config.stimuli.forEach((s: any) => s.durationMs = parameters.durationMs);
+        block.stimuli.forEach((s: any) => s.durationMs = parameters.durationMs);
       }
 
-      if (parameters.adaptiveInitialValue !== undefined && config.adaptive) {
-        config.adaptive.initialValue = parameters.adaptiveInitialValue;
+      if (parameters.adaptiveInitialValue !== undefined && block.adaptive) {
+        block.adaptive.initialValue = parameters.adaptiveInitialValue;
       }
 
-      if (parameters.adaptiveStepSizes !== undefined && config.adaptive) {
-        config.adaptive.stepSizes = parameters.adaptiveStepSizes;
+      if (parameters.adaptiveStepSizes !== undefined && block.adaptive) {
+        block.adaptive.stepSizes = parameters.adaptiveStepSizes;
       }
 
       return this.handleFinalize({ config });
@@ -945,29 +1035,31 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     if (!result.success) return { isError: true, content: [{ type: "text", text: "Invalid Config" }] };
     const config = result.data;
 
-    const summary = `
+    let summary = `
 # Experiment Summary: ${config.meta.name}
-**Paradigm**: ${config.paradigm.type} (${config.paradigm.randomizeOrder ? "Randomized" : "Fixed Order"})
 **Rationale**: ${config.meta.rationale || "N/A"}
+**Total Blocks**: ${config.blocks.length}
 
-## Stimuli
-${config.stimuli.map((s, i) => {
-      const applyToStr = (s as any).applyTo && (s as any).applyTo !== "all" ? ` [${(s as any).applyTo}]` : "";
-      if (s.type === 'multi_component') {
-        return `- Generator ${i + 1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms${applyToStr}`;
-      } else {
-        return `- Generator ${i + 1}: ${s.noiseType} noise, ${s.durationMs}ms${applyToStr}`;
-      }
-    }).join('\n')}
-
-## Logic
-**Adaptive Tracking**: ${config.adaptive ? `Yes (${config.adaptive.rule.correctDown}-down/1-up on ${config.adaptive.parameter})` : "No (Fixed)"}
-**Step Sizes**: ${config.adaptive?.stepSizes.join(', ') || "N/A"} ${config.adaptive?.unit || ""}
-**Termination**: ${config.termination.reversals ? `${config.termination.reversals} reversals` : `${config.termination.maxTrials} trials`}
-
-## Perturbations
-${config.perturbations?.map(p => `- ${p.type} on ${'targetFrequency' in p ? p.targetFrequency + "Hz" : "all"}: ${JSON.stringify((p as any).deltaDb || (p as any).deltaPercent || (p as any).deltaMicroseconds)}`).join('\n') || "None"}
 `;
+
+    config.blocks.forEach((block, i) => {
+      summary += `## Block ${i + 1}: ${block.id}\n`;
+      summary += `**Paradigm**: ${block.paradigm.type}\n`;
+      summary += `### Stimuli\n`;
+      block.stimuli.forEach((s, j) => {
+        const applyToStr = (s as any).applyTo && (s as any).applyTo !== "all" ? ` [${(s as any).applyTo}]` : "";
+        if (s.type === 'multi_component') {
+          summary += `- Generator ${j + 1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms${applyToStr}\n`;
+        } else if (s.type === 'noise') {
+          summary += `- Generator ${j + 1}: ${(s as any).noiseType} noise, ${s.durationMs}ms${applyToStr}\n`;
+        } else if (s.type === 'filtered_noise') {
+          summary += `- Generator ${j + 1}: Filtered noise (FIR), ${s.durationMs}ms${applyToStr}\n`;
+        }
+      });
+      summary += `### Logic\n`;
+      summary += `**Adaptive**: ${block.adaptive ? `Yes (${block.adaptive.rule.correctDown}-down/1-up on ${block.adaptive.parameter})` : "No"}\n`;
+      summary += `**Termination**: ${block.termination?.reversals ? `${block.termination.reversals} reversals` : `${block.termination?.maxTrials} trials`}\n\n`;
+    });
 
     return { content: [{ type: "text", text: summary }] };
   }

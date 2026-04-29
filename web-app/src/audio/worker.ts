@@ -1,5 +1,5 @@
 import seedrandom from "seedrandom";
-import { synthesizeMultiComponent, synthesizeNoise, normalizeStereo } from "./synthesis";
+import { synthesizeMultiComponent, synthesizeNoise, synthesizeFilteredNoise, normalizeStereo } from "./synthesis";
 import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema";
 
 interface RenderTrialMessage {
@@ -13,30 +13,83 @@ interface RenderTrialMessage {
   globalLevelDb?: number;
 }
 
+function generateSharedEnvelope(durationSec: number, sampleRate: number, bandwidthHz: number, rng: () => number): Float32Array {
+  const numSamples = Math.ceil(durationSec * sampleRate);
+  const noise = new Float32Array(numSamples);
+  for (let i = 0; i < numSamples; i++) {
+    noise[i] = rng() * 2 - 1;
+  }
+  
+  // Simple one-pole low-pass filter for the envelope
+  const dt = 1 / sampleRate;
+  const rc = 1 / (2 * Math.PI * bandwidthHz);
+  const alpha = dt / (rc + dt);
+  const filtered = new Float32Array(numSamples);
+  let prev = 0;
+  for (let i = 0; i < numSamples; i++) {
+    filtered[i] = prev + alpha * (noise[i] - prev);
+    prev = filtered[i];
+  }
+  
+  // Normalize to peak 1
+  let peak = 0;
+  for (let i = 0; i < numSamples; i++) peak = Math.max(peak, Math.abs(filtered[i]));
+  if (peak > 0) {
+    for (let i = 0; i < numSamples; i++) filtered[i] /= peak;
+  }
+  return filtered;
+}
+
 self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
   const { id, intervals, isiMs, sampleRate, seed, adaptiveValue, calibration, globalLevelDb } = event.data;
-  // No shared top-level RNG. Each interval gets its own independently-seeded RNG
-  // (see per-interval loop below) so that roving draws (applyTo:"all") are statistically
-  // uncorrelated across intervals, regardless of internal synthesis complexity.
 
   const renderedIntervals: { left: Float32Array; right: Float32Array }[] = [];
   
   for (let intervalIdx = 0; intervalIdx < intervals.length; intervalIdx++) {
     const interval = intervals[intervalIdx];
-    // Per-interval RNG: seeded from the trial-unique seed combined with the interval index.
-    // This guarantees independent random streams per interval within a trial.
     const intervalRng = seedrandom(`${seed}-${intervalIdx}`);
+
+    // Pre-scan for shared envelopes
+    const sharedEnvelopes = new Map<string, Float32Array>();
+    const scanForEnvelopes = (gen: any) => {
+      if (gen.modulators) {
+        gen.modulators.forEach((mod: any) => {
+          if (mod.sharedEnvelopeId && !sharedEnvelopes.has(mod.sharedEnvelopeId)) {
+            // Use rateHz as bandwidth, default to 10Hz if missing
+            const bw = mod.rateHz || 10;
+            // Use a specific seed for this shared envelope so it's correlated across generators but unique across trials
+            const envRng = seedrandom(`${seed}-${intervalIdx}-env-${mod.sharedEnvelopeId}`);
+            sharedEnvelopes.set(mod.sharedEnvelopeId, generateSharedEnvelope(gen.durationMs / 1000, sampleRate, bw, envRng));
+          }
+        });
+      }
+      if (gen.components) {
+        gen.components.forEach((comp: any) => {
+          if (comp.modulators) {
+             comp.modulators.forEach((mod: any) => {
+                if (mod.sharedEnvelopeId && !sharedEnvelopes.has(mod.sharedEnvelopeId)) {
+                   const bw = mod.rateHz || 10;
+                   const envRng = seedrandom(`${seed}-${intervalIdx}-env-${mod.sharedEnvelopeId}`);
+                   sharedEnvelopes.set(mod.sharedEnvelopeId, generateSharedEnvelope(gen.durationMs / 1000, sampleRate, bw, envRng));
+                }
+             });
+          }
+        });
+      }
+    };
+    interval.generators.forEach(scanForEnvelopes);
 
     const layers: { left: Float32Array; right: Float32Array }[] = [];
     let maxLength = 0;
 
-    // 1. Synthesize each layer independently
     for (const gen of interval.generators) {
       let result;
       if (gen.type === "multi_component") {
-        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration);
+        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes);
       } else if (gen.type === "noise") {
-        result = synthesizeNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration);
+        result = synthesizeNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes);
+      } else if (gen.type === "filtered_noise") {
+        result = synthesizeFilteredNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes);
       }
       
       if (result) {
@@ -45,7 +98,6 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
       }
     }
 
-    // 2. Sum the layers into a single interval buffer
     const intervalLeft = new Float32Array(maxLength);
     const intervalRight = new Float32Array(maxLength);
 
@@ -78,14 +130,8 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     }
   }
 
-  // Step 1: Normalize first — removes any synthesis-level clipping risk while preserving
-  // all relative levels (ILD, spectral shape). This is purely a safety net.
   normalizeStereo(finalLeft, finalRight);
 
-  // Step 2: Apply globalLevelDb as a post-normalization presentation-level trim.
-  // Because normalization has already run, this cleanly scales the final output level
-  // without interfering with calibrated component ratios. A large positive value here
-  // may cause clipping at the DAC; that should be caught by evaluate_and_finalize_experiment.
   if (globalLevelDb !== undefined && globalLevelDb !== 0) {
     const gain = Math.pow(10, globalLevelDb / 20);
     for (let i = 0; i < finalLeft.length; i++) {
@@ -94,7 +140,6 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     }
   }
 
-  // Transfer the buffers and timing info to the main thread
   self.postMessage({
     id,
     left: finalLeft,
@@ -102,4 +147,5 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     intervalLengths: renderedIntervals.map(r => r.left.length)
   }, [finalLeft.buffer, finalRight.buffer] as any);
 };
+
 
