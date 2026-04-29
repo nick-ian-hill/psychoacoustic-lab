@@ -14,12 +14,12 @@ export function calculateEnvelope(t: number, durationSec: number, env: { attackM
   if (t <= 0 || t >= durationSec) return 0;
 
   if (t < attack && attack > 0) {
-    const fraction = t / attack;
+    const fraction = Math.max(0, Math.min(1, t / attack));
     return type === "cosine" ? 0.5 * (1 - Math.cos(Math.PI * fraction)) : fraction;
   }
 
   if (t > durationSec - release && release > 0) {
-    const fraction = (durationSec - t) / release;
+    const fraction = Math.max(0, Math.min(1, (durationSec - t) / release));
     return type === "cosine" ? 0.5 * (1 - Math.cos(Math.PI * fraction)) : fraction;
   }
 
@@ -115,11 +115,11 @@ export function synthesizeMultiComponent(
   }
   const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
 
-  // Normalize all onsets relative to the earliest one starting at 0ms.
   // The total span of the buffer must cover the stimulus duration PLUS the spread of the component onsets.
+  // We add +1 sample as a safety buffer to ensure the final envelope=0 sample is captured.
   const globalOffsetMs = -minOnsetMs;
   const globalDurationMs = gen.durationMs + (maxOnsetMs - minOnsetMs);
-  const globalDurationSamples = Math.ceil(globalDurationMs / 1000 * sampleRate);
+  const globalDurationSamples = Math.ceil(globalDurationMs / 1000 * sampleRate) + 1;
 
   const left = new Float32Array(globalDurationSamples);
   const right = new Float32Array(globalDurationSamples);
@@ -185,7 +185,7 @@ export function synthesizeMultiComponent(
     const rightState = resolveEarState("right");
 
     const durationSec = gen.durationMs / 1000;
-    const durationSamples = Math.floor(durationSec * sampleRate);
+    const durationSamples = Math.ceil(durationSec * sampleRate);
     const dt = 1 / sampleRate;
 
     // We use the same onset for buffer range calculation as before, 
@@ -253,7 +253,7 @@ export function synthesizeNoise(
   calibration?: CalibrationProfile
 ): SynthesisResult {
   const duration = gen.durationMs / 1000;
-  const targetSamples = Math.ceil(duration * sampleRate);
+  const targetSamples = Math.ceil(duration * sampleRate) + 1;
   const left = new Float32Array(targetSamples);
   const right = new Float32Array(targetSamples);
   const baseAmp = Math.pow(10, gen.levelDb / 20);
