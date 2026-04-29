@@ -293,7 +293,7 @@ startBtn.addEventListener('click', async () => {
     if (engine) {
       await engine.close();
     }
-    engine = new AudioEngine(currentConfig.audio.sampleRate, currentConfig.meta.seed);
+    engine = new AudioEngine(currentConfig.meta.seed);
 
     // Initialize StaircaseController (the full-featured implementation)
     if (currentConfig.adaptive && currentConfig.adaptive.type === 'staircase') {
@@ -342,7 +342,7 @@ startBtn.addEventListener('click', async () => {
     updateStatus();
 
     // Warm up AudioContext (requires user gesture to unlock)
-    const buf = engine['ctx'].createBuffer(1, 1, 44100);
+    const buf = engine['ctx'].createBuffer(1, 1, engine['ctx'].sampleRate);
     const src = engine['ctx'].createBufferSource();
     src.buffer = buf;
     src.connect(engine['ctx'].destination);
@@ -484,7 +484,7 @@ function handleResponse(responseIndex: number) {
  * hardware output latency, rather than unreliable wall-clock setTimeout drift.
  */
 function highlightIntervals(lengths: number[], audioStartTime: number) {
-  const sampleRate = currentConfig.audio.sampleRate || 44100;
+  const sampleRate = engine['ctx'].sampleRate;
   const isiSec = (currentConfig.paradigm.timing.isiMs || 0) / 1000;
   const responseDelaySec = (currentConfig.paradigm.timing.responseDelayMs ?? 250) / 1000;
 
@@ -658,7 +658,8 @@ function buildDownloadData() {
       experimentName: currentConfig.meta.name,
       seed: currentConfig.meta.seed,
       threshold,
-      unit: currentConfig.adaptive?.unit || ""
+      unit: currentConfig.adaptive?.unit || "",
+      actualSampleRate: engine['ctx'].sampleRate
     },
     config: currentConfig,
     history

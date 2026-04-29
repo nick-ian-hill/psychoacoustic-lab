@@ -373,9 +373,6 @@ HIGH-LEVEL DESIGN & BATCHING:
 - advisor_warnings?: string[] — Custom warnings to surface in experiment design
 
 
-## audio (required)
-- sampleRate: number — Default 44100. Use 48000 for high-quality binaural work.
-
 ## calibration? (optional)
 - id: string
 - description?: string

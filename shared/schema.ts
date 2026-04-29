@@ -209,9 +209,6 @@ export const ExperimentConfigSchema = z.object({
     advisor_warnings: z.array(z.string()).optional(),
   }),
 
-  audio: z.object({
-    sampleRate: z.number().int().default(44100),
-  }),
   calibration: CalibrationProfileSchema.optional(),
   globalLevelDb: z.number().optional(),
   stimuli: z.array(StimulusGeneratorSchema),

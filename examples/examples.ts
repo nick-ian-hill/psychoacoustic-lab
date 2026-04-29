@@ -14,7 +14,6 @@ export const freqDiscrimConfig: ExperimentConfig = {
     description: "Two tones will play in sequence. Which interval contained the HIGHER pitched tone? Press Interval 1 or Interval 2."
 
   },
-  audio: { sampleRate: 44100 },
   stimuli: [{
     type: "multi_component",
     components: [
@@ -67,7 +66,6 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     description: "Two chord-like sounds will play. One interval contains a tone that is slightly louder than the others. Which interval was it? Press Interval 1 or Interval 2."
 
   },
-  audio: { sampleRate: 44100 },
   stimuli: [{
     type: "multi_component",
     components: [
@@ -141,7 +139,6 @@ export const itdDiscrimConfig: ExperimentConfig = {
     description: "Listen using headphones. In one interval the tone is centered; in the other the tone is shifted to the right. In which interval was the tone shifted right?",
     literature_references: ["Klumpp & Eady (1956)", "Moore (2014)"]
   },
-  audio: { sampleRate: 44100 },
   stimuli: [{
     type: "multi_component",
     components: [
@@ -196,7 +193,6 @@ export const srimConfig: ExperimentConfig = {
     description: "Use headphones. One interval contains a faint tone in your RIGHT ear amongst other sounds. Which interval contained the right-ear tone? Press Interval 1 or Interval 2.",
     literature_references: ["Kidd Jr et al. (2016)", "Gallun et al. (2013)"]
   },
-  audio: { sampleRate: 44100 },
   stimuli: [
     {
       type: "multi_component",
@@ -265,7 +261,6 @@ export const tenTestConfig: ExperimentConfig = {
     description: "Two bursts of noise will play. One interval contains a faint tone hidden within the noise. Which interval contained the tone? Press Interval 1 or Interval 2.",
     literature_references: ["Moore et al. (2000)"]
   },
-  audio: { sampleRate: 44100 },
   stimuli: [
     {
       type: "noise",
@@ -329,7 +324,6 @@ export const amDetectionConfig: ExperimentConfig = {
     description: "Two bursts of noise will play. One interval has a rhythmic 'wah-wah' fluctuation; the other is steady. Which interval was FLUCTUATING? Press Interval 1 or Interval 2.",
     literature_references: ["Viemeister (1979) Temporal modulation transfer function"]
   },
-  audio: { sampleRate: 44100 },
   stimuli: [{
     type: "noise",
     noiseType: "white",
@@ -384,7 +378,6 @@ export const profileAnalysisConfig: ExperimentConfig = {
     description: "Two sounds will play. One has a slightly different 'timbre' or 'shape' because the middle tone is louder. Which interval was it? Press Interval 1 or Interval 2.",
     literature_references: ["Green (1988) Profile Analysis"]
   },
-  audio: { sampleRate: 44100 },
   stimuli: [{
     type: "multi_component",
     components: [
@@ -461,7 +454,6 @@ export const gapDetectionConfig: ExperimentConfig = {
     description: "Two bursts of noise will play. In one interval, there is a very brief silence (a gap) in the middle of the noise. Which interval had the GAP? Press Interval 1 or Interval 2.",
     literature_references: ["Plomp (1964)"]
   },
-  audio: { sampleRate: 44100 },
   stimuli: [
     {
       type: "noise",

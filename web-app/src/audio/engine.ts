@@ -9,10 +9,8 @@ export class AudioEngine {
   // This prevents noise realizations and roving values from being identical across trials.
   private renderCount: number = 0;
 
-  constructor(sampleRate: number, seed: number) {
-    this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate,
-    });
+  constructor(seed: number) {
+    this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     this.seed = seed;
 
     this.ctx.onstatechange = () => {
