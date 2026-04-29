@@ -117,9 +117,10 @@ export function synthesizeMultiComponent(
 
   // Normalize all onsets relative to the earliest one starting at 0ms.
   // The total span of the buffer must cover the stimulus duration PLUS the spread of the component onsets.
+  // We add +1 sample to ensure we include the point at t=durationSec where the envelope is exactly 0.
   const globalOffsetMs = -minOnsetMs;
   const globalDurationMs = gen.durationMs + (maxOnsetMs - minOnsetMs);
-  const globalDurationSamples = Math.ceil(globalDurationMs / 1000 * sampleRate);
+  const globalDurationSamples = Math.floor(globalDurationMs / 1000 * sampleRate) + 1;
   
   const left = new Float32Array(globalDurationSamples);
   const right = new Float32Array(globalDurationSamples);
@@ -255,7 +256,8 @@ export function synthesizeNoise(
   calibration?: CalibrationProfile
 ): SynthesisResult {
   const duration = gen.durationMs / 1000;
-  const targetSamples = Math.ceil(duration * sampleRate);
+  // Add +1 sample to include the point at t=duration where the envelope is exactly 0.
+  const targetSamples = Math.floor(duration * sampleRate) + 1;
   const left = new Float32Array(targetSamples);
   const right = new Float32Array(targetSamples);
   const baseAmp = Math.pow(10, gen.levelDb / 20);
