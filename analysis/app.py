@@ -1,18 +1,21 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
-from psychometrics import parse_psychoacoustic_csv, fit_psychometric_curve, calculate_threshold, logistic_function, weibull_function
+from psychometrics import parse_psychoacoustic_csv, parse_psychoacoustic_json, fit_psychometric_curve, calculate_threshold, logistic_function, weibull_function
 
 st.set_page_config(page_title="Psychoacoustic Lab Analysis", layout="wide")
 
 st.title("Psychoacoustic Lab: Data Analysis")
-st.markdown("Upload your `.csv` results file from the Psychoacoustic Lab web app to fit psychometric functions and calculate accurate thresholds.")
+st.markdown("Upload your results file (`.json` or `.csv`) from the Psychoacoustic Lab web app to fit psychometric functions and calculate accurate thresholds.")
 
-uploaded_file = st.file_uploader("Upload CSV Results", type="csv")
+uploaded_file = st.file_uploader("Upload Results File", type=["json", "csv"])
 
 if uploaded_file is not None:
     try:
-        df = parse_psychoacoustic_csv(uploaded_file)
+        if uploaded_file.name.endswith('.json'):
+            df = parse_psychoacoustic_json(uploaded_file)
+        else:
+            df = parse_psychoacoustic_csv(uploaded_file)
         
         st.success(f"Successfully loaded data: {len(df)} trials.")
         
@@ -157,4 +160,4 @@ if uploaded_file is not None:
             
     except Exception as e:
         st.error(f"Error parsing file: {str(e)}")
-        st.write("Ensure you uploaded a valid CSV exported from the Psychoacoustic Lab.")
+        st.write("Ensure you uploaded a valid results file (.json or .csv) exported from the Psychoacoustic Lab.")

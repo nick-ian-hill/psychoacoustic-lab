@@ -597,15 +597,6 @@ textarea:focus {
     padding: 1.25rem 0.75rem;
     font-size: 1.1rem;
   }
-
-  .results-actions {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .results-actions .btn {
-    width: 100%;
-  }
 }
 
 /* Landscape orientation or very short screens */
