@@ -11,33 +11,33 @@ export function calculateEnvelope(t: number, durationSec: number, env: { attackM
   const release = env.releaseMs / 1000;
   const type = env.type || "cosine";
 
-  if (t <= 0 || t >= durationSec) return 0;
+  if (t < 0 || t > durationSec) return 0;
 
   if (t < attack && attack > 0) {
-    const fraction = Math.max(0, Math.min(1, t / attack));
+    const fraction = t / attack;
     return type === "cosine" ? 0.5 * (1 - Math.cos(Math.PI * fraction)) : fraction;
   }
-
+  
   if (t > durationSec - release && release > 0) {
-    const fraction = Math.max(0, Math.min(1, (durationSec - t) / release));
+    const fraction = (durationSec - t) / release;
     return type === "cosine" ? 0.5 * (1 - Math.cos(Math.PI * fraction)) : fraction;
   }
-
+  
   return 1;
 }
 
 export function getCalibrationOffset(frequency: number, calibration?: CalibrationProfile): number {
   if (!calibration || calibration.points.length === 0) return 0;
-
+  
   const pts = calibration.points.sort((a, b) => a.frequency - b.frequency);
-
+  
   if (frequency <= pts[0].frequency) return pts[0].offsetDb;
   if (frequency >= pts[pts.length - 1].frequency) return pts[pts.length - 1].offsetDb;
 
   for (let i = 0; i < pts.length - 1; i++) {
-    if (frequency >= pts[i].frequency && frequency <= pts[i + 1].frequency) {
+    if (frequency >= pts[i].frequency && frequency <= pts[i+1].frequency) {
       const p1 = pts[i];
-      const p2 = pts[i + 1];
+      const p2 = pts[i+1];
       const logF = Math.log10(frequency);
       const logF1 = Math.log10(p1.frequency);
       const logF2 = Math.log10(p2.frequency);
@@ -84,7 +84,7 @@ export function synthesizeMultiComponent(
   // This ensures that lead-asynchrony (negative onsetMs) doesn't cause clicks by starting at index 0 without a ramp.
   let minOnsetMs = 0;
   let maxOnsetMs = 0;
-
+  
   gen.components.forEach((comp: any) => {
     let onset = comp.onsetDelayMs || 0;
     if (perturbations) {
@@ -95,7 +95,7 @@ export function synthesizeMultiComponent(
         if (p.type === "itd" && (!p.targetFrequency || p.targetFrequency === comp.frequency)) {
           const mode = (p as any).mode || "both";
           if (mode === "envelope" || mode === "both") {
-            onset += resolveValue((p as any).deltaMicroseconds, adaptiveValue, rng) / 1000;
+             onset += resolveValue((p as any).deltaMicroseconds, adaptiveValue, rng) / 1000;
           }
         }
       }
@@ -115,12 +115,12 @@ export function synthesizeMultiComponent(
   }
   const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
 
+  // Normalize all onsets relative to the earliest one starting at 0ms.
   // The total span of the buffer must cover the stimulus duration PLUS the spread of the component onsets.
-  // We add +1 sample as a safety buffer to ensure the final envelope=0 sample is captured.
   const globalOffsetMs = -minOnsetMs;
   const globalDurationMs = gen.durationMs + (maxOnsetMs - minOnsetMs);
-  const globalDurationSamples = Math.ceil(globalDurationMs / 1000 * sampleRate) + 1;
-
+  const globalDurationSamples = Math.ceil(globalDurationMs / 1000 * sampleRate);
+  
   const left = new Float32Array(globalDurationSamples);
   const right = new Float32Array(globalDurationSamples);
 
@@ -162,14 +162,14 @@ export function synthesizeMultiComponent(
           } else if (p.type === "itd") {
             const mode = pAny.mode || "both";
             const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
-
+            
             if (mode === "fine_structure" || mode === "both") {
-              // ΔPhase = 360 * f * Δt
-              const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
-              phase += deltaPhaseDeg * Math.PI / 180;
+               // ΔPhase = 360 * f * Δt
+               const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
+               phase += deltaPhaseDeg * Math.PI / 180;
             }
             if (mode === "envelope" || mode === "both") {
-              onsetOffsetMs += itdUs / 1000;
+               onsetOffsetMs += itdUs / 1000;
             }
           }
         }
@@ -185,7 +185,7 @@ export function synthesizeMultiComponent(
     const rightState = resolveEarState("right");
 
     const durationSec = gen.durationMs / 1000;
-    const durationSamples = Math.ceil(durationSec * sampleRate);
+    const durationSamples = Math.floor(durationSec * sampleRate);
     const dt = 1 / sampleRate;
 
     // We use the same onset for buffer range calculation as before, 
@@ -206,7 +206,8 @@ export function synthesizeMultiComponent(
       const tR = (i - rightOnsetSamples) / sampleRate;
 
       // Handle Left Ear
-      if ((compEar === "left" || compEar === "both") && tL >= 0 && tL <= durationSec) {
+      const leftActive = i >= leftOnsetSamples && i < leftOnsetSamples + durationSamples + 1;
+      if ((compEar === "left" || compEar === "both") && leftActive) {
         const envelope = calculateEnvelope(tL, durationSec, gen.globalEnvelope);
         let instFreq = leftState.freq;
         let instAmp = leftState.amp;
@@ -223,7 +224,8 @@ export function synthesizeMultiComponent(
       }
 
       // Handle Right Ear
-      if ((compEar === "right" || compEar === "both") && tR >= 0 && tR <= durationSec) {
+      const rightActive = i >= rightOnsetSamples && i < rightOnsetSamples + durationSamples + 1;
+      if ((compEar === "right" || compEar === "both") && rightActive) {
         const envelope = calculateEnvelope(tR, durationSec, gen.globalEnvelope);
         let instFreq = rightState.freq;
         let instAmp = rightState.amp;
@@ -253,7 +255,7 @@ export function synthesizeNoise(
   calibration?: CalibrationProfile
 ): SynthesisResult {
   const duration = gen.durationMs / 1000;
-  const targetSamples = Math.ceil(duration * sampleRate) + 1;
+  const targetSamples = Math.ceil(duration * sampleRate);
   const left = new Float32Array(targetSamples);
   const right = new Float32Array(targetSamples);
   const baseAmp = Math.pow(10, gen.levelDb / 20);
@@ -273,9 +275,9 @@ export function synthesizeNoise(
   const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
 
   // 1. Resolve perturbations for each ear separately
-  const resolveEarState = (targetEar: "left" | "right") => {
-    let gainDb = 0;
-    let amDepthOffset = 0;
+    const resolveEarState = (targetEar: "left" | "right") => {
+      let gainDb = 0;
+      let amDepthOffset = 0;
 
     if (perturbations) {
       for (const p of perturbations) {
@@ -294,13 +296,13 @@ export function synthesizeNoise(
 
     const totalGainAmp = Math.pow(10, gainDb / 20) * intervalGainAmp;
     const amMod = gen.modulators?.find((m: any) => m.type === "AM");
-    const finalAmDepth = amMod
+    const finalAmDepth = amMod 
       ? Math.max(0, Math.min(1, (amMod.depth || 0) + amDepthOffset))
       : (amDepthOffset > 0 ? amDepthOffset : 0);
-
-    return {
-      gain: totalGainAmp,
-      amDepth: finalAmDepth,
+    
+    return { 
+      gain: totalGainAmp, 
+      amDepth: finalAmDepth, 
       amRate: amMod?.rateHz || 8, // Default rate if just applying depth
       amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180
     };
