@@ -20,7 +20,7 @@ export const freqDiscrimConfig: ExperimentConfig = {
       { frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" }
     ],
     durationMs: 300,
-    globalEnvelope: { attackMs: 10, releaseMs: 10, type: "linear" }
+    globalEnvelope: { attackMs: 10, releaseMs: 10, type: "cosine" }
   }],
   perturbations: [
     {
