@@ -332,7 +332,7 @@ startBtn.addEventListener('click', async () => {
     currentConfig.paradigm.intervals.forEach((_: any, index: number) => {
       const btn = document.createElement('button');
       btn.className = 'response-btn';
-      btn.textContent = `Interval ${index + 1}`;
+      btn.textContent = `${index + 1}`;
       btn.disabled = true;
       btn.addEventListener('click', () => handleResponse(index));
       responseButtonsContainer.appendChild(btn);
