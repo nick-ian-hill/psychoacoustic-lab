@@ -45,7 +45,6 @@ export const freqDiscrimConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 50,
-    reversals: 12,
     unit: "%"
   },
   ui: { showCurrentValue: true },
@@ -116,7 +115,6 @@ export const auditoryGroupingConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 40,
-    reversals: 12,
     unit: "dB"
   },
   ui: { showCurrentValue: true },
@@ -171,7 +169,6 @@ export const itdDiscrimConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1000,
-    reversals: 12,
     unit: "\u03BCs" // Microseconds symbol
   },
   ui: { showCurrentValue: true },
@@ -239,7 +236,6 @@ export const srimConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: -10,
     maxValue: 40,
-    reversals: 12,
     unit: "dB"
   },
   ui: { showCurrentValue: true },
@@ -303,7 +299,6 @@ export const tenTestConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: -38,
     maxValue: 10,
-    reversals: 10,
     unit: "dB"
   },
   ui: { showCurrentValue: true },
@@ -350,18 +345,17 @@ export const amDetectionConfig: ExperimentConfig = {
   adaptive: {
     type: "staircase",
     parameter: "perturbations[0].deltaDepth",
-    initialValue: 1.0,
+    initialValue: 0.3, // Start closer to expected threshold
     stepType: "geometric",
-    stepSizes: [2, 1.414, 1.189],
+    stepSizes: [1.414, 1.122, 1.059], // 3dB -> 1dB -> 0.5dB resolution
     stepSizeInterval: 2,
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 1,
-    reversals: 8,
     unit: "depth"
   },
   ui: { showCurrentValue: true },
-  termination: { reversals: 8 }
+  termination: { reversals: 12 }
 };
 
 /**
@@ -433,7 +427,6 @@ export const profileAnalysisConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 30,
-    reversals: 12,
     unit: "dB"
   },
   ui: { showCurrentValue: true },
@@ -496,7 +489,6 @@ export const gapDetectionConfig: ExperimentConfig = {
     rule: { correctDown: 2 },
     minValue: 0,
     maxValue: 100,
-    reversals: 12,
     unit: "ms"
   },
   ui: { showCurrentValue: true },

@@ -106,6 +106,10 @@ The project is split into three main components:
 - **Multi-Layer Masking**: Stack an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval. Combined with `applyTo`, this enables clean, explicit modeling of Signal-in-Noise paradigms without architectural hacks.
 - **Dynamic Participant Instructions**: Supply experiment-specific metadata via `meta.summary` (concise task instructions) and `meta.description` (long-form detailed guidance).
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
+- **Termination & Thresholding**: Configure exactly how and when an experiment ends:
+  - **`reversals`**: Stop after $N$ reversals (standard for staircase).
+  - **`maxTrials`**: A safety limit to end the experiment regardless of performance.
+  - **`discardReversals`**: Automatically ignore the first $N$ reversals (default 4) to ensure threshold averaging only uses stable performance data.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to both `multi_component` and `noise` generators (via frequency-domain magnitude shaping) to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth) based on the adaptive staircase value.
 - **Data Export**: Download detailed trial history as both **JSON** and **CSV** files. The JSON export contains the full experimental configuration and high-precision history, while the CSV format is optimized for direct import into the Python analysis pipeline. Both include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.

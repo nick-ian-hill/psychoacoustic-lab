@@ -763,7 +763,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     }
 
     // 2. Adaptive staircase reversal count check
-    const reversalCount = config.adaptive?.reversals ?? config.termination?.reversals ?? 0;
+    const reversalCount = config.termination?.reversals ?? 0;
     if (config.adaptive && reversalCount < 10) {
       warnings.push(`STABILITY WARNING: Adaptive staircase reversals (${reversalCount}) are below 10. Threshold estimate may be unreliable. Recommend ≥12 reversals.`);
     }

@@ -177,7 +177,6 @@ export const AdaptiveConfigSchema = z.object({
   stepSizeInterval: z.number().int().default(1).optional(),
   minValue: z.number(),
   maxValue: z.number(),
-  reversals: z.number().optional().describe("Deprecated: use termination.reversals instead. Kept for MCP validator compatibility."),
   unit: z.string().optional().describe("The unit of the adaptive parameter (e.g., 'Hz', 'dB', '%', '°')."),
 });
 
