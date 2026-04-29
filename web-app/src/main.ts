@@ -57,9 +57,16 @@ async function prepareTrial() {
 
   // Use seeded RNG so trial order is reproducible from meta.seed
   if (currentConfig.paradigm.randomizeOrder) {
-    for (let i = intervalsConfig.length - 1; i > 0; i--) {
+    // Only shuffle intervals that are not marked as 'fixed'
+    const dynamicIndices = intervalsConfig
+      .map((item, index) => item.fixed ? -1 : index)
+      .filter(index => index !== -1);
+
+    for (let i = dynamicIndices.length - 1; i > 0; i--) {
       const j = Math.floor(trialRng() * (i + 1));
-      [intervalsConfig[i], intervalsConfig[j]] = [intervalsConfig[j], intervalsConfig[i]];
+      const idxI = dynamicIndices[i];
+      const idxJ = dynamicIndices[j];
+      [intervalsConfig[idxI], intervalsConfig[idxJ]] = [intervalsConfig[idxJ], intervalsConfig[idxI]];
     }
   }
 
@@ -539,7 +546,12 @@ function highlightIntervals(lengths: number[], audioStartTime: number) {
       if (wallClockTimeout && now < enableButtonsAt) {
         console.warn("[highlightIntervals] AudioContext clock appears frozen. Forcing button enablement via wall-clock.");
       }
-      responseButtons.forEach(btn => btn.disabled = false);
+      responseButtons.forEach((btn, i) => {
+        const intervalConfig = currentConfig.paradigm.intervals[i];
+        // Enable button only if the interval was eligible to contain the target
+        const isEligible = !intervalConfig.fixed || intervalConfig.condition === 'target';
+        btn.disabled = !isEligible;
+      });
       buttonsEnabled = true;
     }
 

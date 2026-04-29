@@ -89,6 +89,7 @@ The project is split into three main components:
 - **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
 - **Fully Reproducible Experiments**: `meta.seed` controls the FFT noise RNG, trial-order randomization, and all dynamic perturbation randomizations (roving levels, phase), ensuring every run is exactly reproducible.
+- **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from the randomization process. This enables standard professional paradigms like **4I2AFC** (4-interval 2-alternative forced choice), where intervals 1 and 4 are fixed references and the target only shuffles between 2 and 3.
 - **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `targetFrequency` on any perturbation to apply it globally to all components in the stimulus:
   - **Level**: via `gain` (global) or `spectral_profile` (per-component).
   - **Frequency**: via `mistuning` (supports global pitch roving).

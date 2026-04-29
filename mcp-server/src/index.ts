@@ -120,7 +120,7 @@ class PsychoacousticServer {
         },
         {
           name: "calc_itd",
-          description: "[Tier 3: Primitive] Convert an Interaural Time Difference (ITD) in microseconds to the onsetDelayMs value needed by the engine, and compute the equivalent Interaural Phase Difference (IPD). GUARDRAIL: Essential for BMLD and lateralisation experiments. Pay attention to phase ambiguity: humans cannot resolve fine-structure ITD/IPD above ~1000-1400 Hz due to a loss of phase-locking.",
+          description: "[Tier 3: Primitive] Convert an Interaural Time Difference (ITD) in microseconds to the onsetDelayMs and phase values needed by the engine. Positive values always represent a DELAY (lag), which shifts the sound AWAY from the targeted ear. GUARDRAIL: Essential for BMLD and lateralisation experiments. Pay attention to phase ambiguity: humans cannot resolve fine-structure ITD/IPD above ~1000-1400 Hz.",
           inputSchema: {
             type: "object",
             properties: {
@@ -446,14 +446,14 @@ By default, perturbations apply only to the 'target' interval.
 - deltaDepth: value
 
 #### itd
-- deltaMicroseconds: value
+- deltaMicroseconds: value (Positive = Delay/Lag; shifts sound AWAY from targeted ear)
 - mode: "fine_structure" | "envelope" | "both" (default "both")
-- ear: "left" | "right" (default "right")
+- ear: "left" | "right" (default "right") — The ear to be delayed.
 - targetFrequency?: number — (Optional) target a specific component.
 
 ## paradigm (required)
 - type: "2AFC" | "3AFC" | "Probe-Signal"
-- intervals: Array<{ condition: "reference" | "target" | "probe" }>
+- intervals: Array<{ condition: "reference" | "target" | "probe", fixed?: boolean }> — Set 'fixed: true' to lock an interval's position during randomization. This enables paradigms like 4I2AFC (4-interval 2-alternative forced choice) with lead-in/lead-out cues.
 - randomizeOrder: boolean — uses meta.seed for reproducibility
 - timing:
   - isiMs: number — inter-stimulus interval
@@ -656,7 +656,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       onsetDelayMs: parseFloat(itdMs.toFixed(4)),
       samplesAt44100: Math.round((itdMicroseconds / 1e6) * 44100),
       ...(sampleRate !== 44100 ? { [`samplesAt${sampleRate}`]: itdSamples } : {}),
-      usage: "Set onsetDelayMs on the LAGGING ear's component. The leading ear's component should have onsetDelayMs: 0.",
+      usage: "In a perturbation of type 'itd', set deltaMicroseconds to this value and target the LAGGING ear. The leading ear remains at 0.",
     };
 
     if (ipdDegrees !== null) {

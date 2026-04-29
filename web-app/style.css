@@ -435,9 +435,10 @@ textarea:focus {
 }
 
 .response-btn:disabled {
-  color: var(--text-muted);
-  opacity: 0.4;
+  opacity: 0.2;
   cursor: not-allowed;
+  border-color: var(--border);
+  transform: none !important;
 }
 
 .hidden {

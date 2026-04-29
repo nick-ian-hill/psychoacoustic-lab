@@ -135,8 +135,8 @@ export const itdDiscrimConfig: ExperimentConfig = {
     version: "2.0.0",
     seed: 888,
     rationale: "Assesses sensitivity to Temporal Fine Structure (TFS) using the high-level 'itd' perturbation.",
-    summary: "Select the interval in which the tone was shiftd right.",
-    description: "Listen using headphones. In one interval the tone is centered; in the other the tone is shifted to the right. In which interval was the tone shifted right?",
+    summary: "Select the interval in which the tone was shifted right.",
+    description: "Listen using headphones. Three sounds will play in sequence. Two are centered, and one is shifted slightly to the right. Which interval (1, 2, or 3) contained the RIGHT-shifted tone?",
     literature_references: ["Klumpp & Eady (1956)", "Moore (2014)"]
   },
   stimuli: [{
@@ -151,13 +151,13 @@ export const itdDiscrimConfig: ExperimentConfig = {
     {
       type: "itd",
       mode: "fine_structure", // Only shift phase (IPD)
-      ear: "left", // Delay the right ear
+      ear: "left", // Delay the left ear to move the sound RIGHT
       deltaMicroseconds: { adaptive: true }
     }
   ],
   paradigm: {
-    type: "2AFC",
-    intervals: [{ condition: "reference" }, { condition: "target" }],
+    type: "3AFC",
+    intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
     randomizeOrder: true,
     timing: { isiMs: 500, itiMs: 1000 }
   },

@@ -166,7 +166,7 @@ export function synthesizeMultiComponent(
             if (mode === "fine_structure" || mode === "both") {
                // ΔPhase = 360 * f * Δt
                const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
-               phase += deltaPhaseDeg * Math.PI / 180;
+               phase -= deltaPhaseDeg * Math.PI / 180;
             }
             if (mode === "envelope" || mode === "both") {
                onsetOffsetMs += itdUs / 1000;

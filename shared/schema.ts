@@ -148,6 +148,7 @@ export const ParadigmSchema = z.object({
   type: z.enum(["2AFC", "3AFC", "Probe-Signal"]),
   intervals: z.array(z.object({
     condition: z.enum(["reference", "target", "probe"]),
+    fixed: z.boolean().optional().describe("If true, this interval's position is never randomized, even if randomizeOrder is true. Use for lead-in/lead-out cues."),
   })),
   randomizeOrder: z.boolean(),
   timing: z.object({
