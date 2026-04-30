@@ -210,7 +210,11 @@ class PsychoacousticServer {
           inputSchema: {
             type: "object",
             properties: {
-              templateName: { type: "string", enum: ["intensityDiscrimination", "frequencyDiscrimination", "itdDiscrimination", "amDetection", "profileAnalysis", "toneInNoise"], description: "The base paradigm to use." },
+              templateName: {
+                type: "string",
+                enum: ["pitchDiscrimination", "intensityDiscrimination", "itdDiscrimination", "amDetection", "profileAnalysis", "toneInNoise"],
+                description: "The base paradigm to use."
+              },
               parameters: {
                 type: "object",
                 properties: {

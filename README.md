@@ -89,7 +89,10 @@ The project is split into three main components:
 - **Configurable Focus Period**: Explicitly control the delay between clicking "Start" and the first stimulus onset via `readyDelayMs` (default 500ms), ensuring participants have time to focus before audio begins.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
 - **Graceful Cancellation**: Support for `Escape` key experiment cancellation with a design-system compliant confirmation modal. The cancellation logic is intelligently gated to only be active during the response phase to prevent accidental interruptions during stimulus playback.
-- **Fully Reproducible Experiments**: `meta.seed` controls the FFT noise RNG, trial-order randomization, and all dynamic perturbation randomizations (roving levels, phase), ensuring every run is exactly reproducible.
+- **Flexible Seeding & Reproducibility**: Support for optional experiment-level and block-level seeds:
+  - **Optional**: Omit the seed for random-by-default sessions (perfect for onboarding).
+  - **Block-Level**: Assign specific seeds to individual blocks (e.g., for a fixed practice phase).
+  - **Deterministic**: Providing a seed ensures the FFT noise, trial order, and all perturbations are exactly reproducible. The actual seed used is always recorded in the results metadata.
 - **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from randomization. Combined with `"selectable": false`, you can create standard professional paradigms like **4I2AFC**, where intervals 1 and 4 are fixed non-responsive anchors. The UI always displays interval numbers on all buttons (including non-selectable ones) to maintain clear spatial orientation for the participant.
 - **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `targetFrequency` on any perturbation to apply it globally to all components in the stimulus:
   - **Level**: via `gain` (global) or `spectral_profile` (per-component).
@@ -114,6 +117,14 @@ The project is split into three main components:
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
 - **Data Export**: Download detailed trial history as a **JSON** file. The format include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis (e.g., Berg 1990).
+
+## Integration & Embedding
+
+The Psychoacoustic Lab is designed to be highly portable. You can build the web-app as a standalone **Web Component** and embed it into any website or CMS (like WordPress or a personal blog) with a single script tag.
+
+See the [Integration Guide](integration_guide.md) for full instructions on building and embedding the portable components:
+- `<psychoacoustic-runner>`: Minimal, logic-only runner for custom portals.
+- `<psychoacoustic-app>`: Complete lab UI with experiment selection and all built-in examples.
 
 ## Technical Implementation
 
@@ -179,7 +190,7 @@ All examples include participant-facing metadata displayed in the UI.
 
 | Example | Key Paradigm | Sensory Target |
 |---------|-------------|-----------|
-| **1. Frequency Discrimination** | Onboarding / 2AFC | "Higher Pitch" |
+| **1. Pitch Discrimination** | Onboarding / 2AFC | "Higher Pitch" |
 | **2. Intensity Discrimination** | 4I2AFC (Anchored) | "Louder Tone" |
 | **3. Tone in Noise** | 3AFC Masking | "Beep in Noise" |
 | **4. AM Detection** | 3AFC Modulation | "Wobbly Sound" |

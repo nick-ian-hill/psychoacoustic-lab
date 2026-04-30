@@ -58,7 +58,7 @@ Copy the generated `.js` file to your target website and include it using a scri
             meta: { 
                 name: "Tone Detection", 
                 version: "1.0", 
-                seed: 123, 
+                // seed: 123, // Omit for a random session every time
                 summary: "Select the tone." 
             },
             blocks: [
@@ -84,9 +84,9 @@ Copy the generated `.js` file to your target website and include it using a scri
         // 4. Handle results
         runner.addEventListener('experiment-complete', (e) => {
             console.log("Experiment Finished!", e.detail);
-            const { threshold, results } = e.detail;
+            const { threshold, results, actualSeed } = e.detail;
             
-            // 'results' is an array of data for each block
+            console.log("Reproducible Seed:", actualSeed);
             console.log("Full Session Data:", results);
             
             // Send data to your server here
@@ -120,24 +120,39 @@ psychoacoustic-runner {
 }
 ```
 
+
+
 ## 5. Automation & Synchronization
-The modular approach is designed for ease of maintenance. Because I have updated your GitHub Actions workflow (`deploy.yml`), the build and deployment process is fully automated.
+The modular architecture ensures that the portable components stay in sync with the core experiment logic. The repository includes a GitHub Actions workflow (`deploy.yml`) that automatically builds and deploys the library on every push to the `main` branch.
 
 ### Single Source of Truth
-All core audio logic and experiment orchestration live in `web-app/src`. When you fix a bug or add a feature there, it is automatically updated in both the standalone site and the portable component.
+All core audio synthesis and experiment orchestration logic live in `web-app/src`. Any improvements or bug fixes made there are automatically propagated to both the standalone laboratory and the portable Web Components.
 
-### Zero-Maintenance Automation
-By utilizing your GitHub Actions workflow (`deploy.yml`), both the standalone site and the portable library are updated on every push.
-
-This means you can use the **Permanent Live Link** in your external websites:
+### Permanent Live Links
+By leveraging GitHub Pages, you can use a "permanent" link to ensure your embedded experiments always run the latest stable version:
 
 ```html
-<!-- This script always stays up-to-date with your latest push to main -->
+<!-- This script always stays up-to-date with the latest deployment -->
 <script type="module" src="https://nick-ian-hill.github.io/psychoacoustic-lab/psychoacoustic-runner.js"></script>
 ```
 
-**Workflow for making changes:**
-1. Edit code in `web-app/src` or `shared/schema.ts`.
-2. Push to GitHub.
-3. Wait 2 minutes for the "Deploy to GitHub Pages" action to finish.
-4. **Done!** Every website using the link above is now running the updated code.
+**Workflow for updates:**
+1. Modify code in `web-app/src` or `shared/schema.ts`.
+2. Push changes to GitHub.
+3. The automated deployment finishes in ~2 minutes.
+4. **All embedded instances** are now running the latest version automatically.
+
+## 6. Seeding & Reproducibility
+The `seed` property in the configuration is **optional**.
+- **Omitted**: The runner generates a random session seed.
+- **Provided**: The runner uses your seed for a deterministic, reproducible session.
+
+In both cases, the final `experiment-complete` event includes the `actualSeed` used:
+
+```javascript
+runner.addEventListener('experiment-complete', (e) => {
+    // This is the seed you can use to re-run the exact same session
+    const seedUsed = e.detail.actualSeed; 
+    console.log("Session Seed:", seedUsed);
+});
+```

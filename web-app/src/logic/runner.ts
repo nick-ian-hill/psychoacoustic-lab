@@ -7,6 +7,7 @@ import seedrandom from "seedrandom";
 export class ExperimentRunner {
   private engine: AudioEngine;
   private staircase: StaircaseController | null = null;
+  private activeSeed: number | undefined;
   private currentConfig: ExperimentConfig | null = null;
   private currentBlockIndex = 0;
   private currentBlock: BlockConfig | null = null;
@@ -160,8 +161,10 @@ export class ExperimentRunner {
     }
     
     // Initialize engine and RNG with the experiment's master seed
-    this.engine = new AudioEngine(config.meta.seed);
-    this.trialRng = seedrandom(config.meta.seed.toString());
+    // If no seed is provided in the config, generate a random one for this session.
+    this.activeSeed = config.meta.seed ?? Math.floor(Math.random() * 1000000);
+    this.engine = new AudioEngine(this.activeSeed);
+    this.trialRng = seedrandom(this.activeSeed.toString());
     await this.startBlock(0);
   }
 
@@ -169,6 +172,14 @@ export class ExperimentRunner {
     if (!this.currentConfig) return;
     this.currentBlockIndex = index;
     this.currentBlock = this.currentConfig.blocks[index];
+    
+    // Derive block-specific seed to ensure independent and reproducible blocks.
+    // If a block provides its own seed (e.g. for a fixed practice block), use it.
+    // Otherwise, offset the session seed by the block index.
+    const blockSeed = this.currentBlock.meta?.seed ?? (this.activeSeed! + index);
+    this.engine.setBaseSeed(blockSeed);
+    this.trialRng = seedrandom(blockSeed.toString());
+
     this.staircase = new StaircaseController(this.currentBlock.adaptive);
     this.isInputEnabled = false;
 
@@ -418,6 +429,7 @@ export class ExperimentRunner {
         experiment: this.currentConfig?.meta.name,
         threshold: finalThreshold,
         results: this.sessionResults, // Send all blocks
+        actualSeed: this.activeSeed,
         config: this.currentConfig
       },
       bubbles: true,
@@ -430,7 +442,7 @@ export class ExperimentRunner {
     const data = {
       timestamp: new Date().toISOString(),
       experimentName: this.currentConfig.meta.name,
-      seed: this.currentConfig.meta.seed,
+      actualSeed: this.activeSeed,
       results: this.sessionResults // Send all blocks
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

@@ -4,11 +4,10 @@ import type { ExperimentConfigInput } from "../shared/schema.js";
  * 1. Practice & Test (Onboarding)
  * 2AFC, 5 Trials
  */
-export const frequencyDiscriminationConfig: ExperimentConfigInput = {
+export const pitchDiscriminationConfig: ExperimentConfigInput = {
   meta: {
     name: "Pitch sensitivity",
     version: "2.2.0",
-    seed: 777,
     summary: "Select the HIGHER pitched tone.",
     description: "Welcome! We will start with a quick training phase to help you get used to the sounds. Identify the interval with the higher pitch."
   },
@@ -20,6 +19,7 @@ export const frequencyDiscriminationConfig: ExperimentConfigInput = {
       id: "practice",
       feedback: true,
       meta: {
+        "seed": 777,
         summary: "PRACTICE PHASE:\nSelect the interval with the higher pitch tone.\nGet 5 correct to advance."
       },
       ui: {
@@ -95,7 +95,6 @@ export const intensityDiscriminationConfig: ExperimentConfigInput = {
   meta: {
     name: "Intensity Discrimination",
     version: "2.2.0",
-    seed: 123,
     summary: "Select the LOUDER tone.",
     description: "Four tones will play. The first and last are markers. Which of the middle two (2 or 3) was LOUDER?"
   },
@@ -150,7 +149,6 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
   meta: {
     name: "Tone in Noise",
     version: "2.2.0",
-    seed: 555,
     summary: "Select the interval containing the TONE.",
     description: "Two intervals contain only noise; one has a hidden tone. Can you hear the beep inside the noise?"
   },
@@ -213,7 +211,6 @@ export const amDetectionConfig: ExperimentConfigInput = {
   meta: {
     name: "AM Detection",
     version: "2.2.0",
-    seed: 654,
     summary: "Select the FLUCTUATING (wobbly) sound.",
     description: "Listen for the pulsed fluctuation. Two sounds are steady noise; one is 'wobbly' or pulsing."
   },
@@ -268,7 +265,6 @@ export const itdDiscriminationConfig: ExperimentConfigInput = {
   meta: {
     name: "ITD Discrimination",
     version: "2.2.0",
-    seed: 888,
     summary: "Select the sound shifted to the RIGHT.",
     description: "Two sounds are centered; one is shifted toward your right ear. Select the sound shifted to the right."
   },
@@ -320,7 +316,6 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
   meta: {
     name: "Profile Analysis",
     version: "2.2.0",
-    seed: 101,
     summary: "Select the interval with the DIFFERENT spectral shape.",
     description: "A complex task comparing spectral patterns. Identify the interval where the 'color' of the sound is slightly different."
   },

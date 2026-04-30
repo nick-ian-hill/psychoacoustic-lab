@@ -224,6 +224,7 @@ export const BlockSchema = z.object({
   meta: z.object({
     summary: z.string().optional(),
     description: z.string().optional(),
+    seed: z.number().int().optional(),
   }).optional(),
   paradigm: ParadigmSchema,
   stimuli: z.array(StimulusGeneratorSchema),
@@ -273,7 +274,7 @@ export const ExperimentConfigSchema = z.object({
   meta: z.object({
     name: z.string(),
     version: z.string(),
-    seed: z.number().int(),
+    seed: z.number().int().optional(),
     rationale: z.string().optional(),
     summary: z.string().describe("A short summary (max 150 chars) shown during the experiment.").refine(s => s.length <= 150, "Summary must be 150 characters or less."),
     description: z.string().describe("A detailed description shown on the selection screen and in the help popup."),

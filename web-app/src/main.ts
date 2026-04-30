@@ -1,6 +1,6 @@
 import { ExperimentRunner } from "./logic/runner.js";
 import {
-  frequencyDiscriminationConfig,
+  pitchDiscriminationConfig,
   intensityDiscriminationConfig,
   toneInNoiseConfig,
   amDetectionConfig,
@@ -9,7 +9,7 @@ import {
 } from "../../examples/examples.js";
 
 const examples = {
-  frequencyDiscrimination: frequencyDiscriminationConfig,
+  pitchDiscrimination: pitchDiscriminationConfig,
   intensityDiscrimination: intensityDiscriminationConfig,
   toneInNoise: toneInNoiseConfig,
   amDetection: amDetectionConfig,
