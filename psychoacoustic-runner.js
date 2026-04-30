@@ -807,10 +807,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				maxValue: 20,
 				unit: "dB"
 			},
-			termination: {
-				trials: 2,
-				reversals: 8
-			}
+			termination: { reversals: 8 }
 		}]
 	},
 	toneInNoise: {
