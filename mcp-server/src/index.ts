@@ -134,8 +134,8 @@ class PsychoacousticServer {
             properties: {
               ildDb: { type: "number", minimum: -40, maximum: 40, description: "Desired ILD in dB. Positive values shift the sound to the right (Right > Left)." },
               baseLevelDb: { type: "number", minimum: 0, maximum: 100, description: "The reference level in dB SPL. Defaults to 70." },
-              strategy: { 
-                type: "string", 
+              strategy: {
+                type: "string",
                 enum: ["center", "left_fixed", "right_fixed"],
                 description: "center: distributes ILD around baseLevel; left_fixed: keeps left at baseLevel; right_fixed: keeps right at baseLevel."
               }
@@ -744,15 +744,15 @@ Partial object. All fields are optional and fall back to defaults if omitted.
         applyTo: "target"
       });
     } else if (preset === "NuSpi") {
-        (noiseGen as any).ear = "left";
-        stimuli.push({ ...noiseGen, ear: "right" });
-        perturbations.push({
-            type: "phase_shift",
-            targetFrequency: signalFreq,
-            ear: "right",
-            deltaDegrees: 180,
-            applyTo: "target"
-        });
+      (noiseGen as any).ear = "left";
+      stimuli.push({ ...noiseGen, ear: "right" });
+      perturbations.push({
+        type: "phase_shift",
+        targetFrequency: signalFreq,
+        ear: "right",
+        deltaDegrees: 180,
+        applyTo: "target"
+      });
     }
 
     return {
@@ -834,7 +834,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       const calculatePeakPower = (condition: "target" | "reference") => {
         let totalPowerL = 0;
         let totalPowerR = 0;
-        
+
         const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
           let maxDb = 0;
           if (!block.perturbations) return 0;
@@ -907,7 +907,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
         if (gen.type === 'multi_component') {
           gen.components.forEach(comp => {
             if (comp.frequency >= sampleRate / 2) {
-              warnings.push(`Block ${blockIdx} (${block.id}): NYQUIST VIOLATION: Frequency ${comp.frequency}Hz exceeds ${sampleRate/2}Hz.`);
+              warnings.push(`Block ${blockIdx} (${block.id}): NYQUIST VIOLATION: Frequency ${comp.frequency}Hz exceeds ${sampleRate / 2}Hz.`);
             }
           });
         }
@@ -934,7 +934,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       const examples = await import("../../examples/examples.js");
       // Try both raw name and name + "Config"
       const config = (examples as any)[name] || (examples as any)[`${name}Config`];
-      
+
       if (!config) {
         throw new Error(`Example '${name}' not found. Available: intensityDiscrim, practiceTest, itdDiscrim, amDetection, profileAnalysis, toneInNoise`);
       }
@@ -991,8 +991,8 @@ Partial object. All fields are optional and fall back to defaults if omitted.
 
       if (parameters.levelDb !== undefined) {
         block.stimuli.forEach((s: any) => {
-            s.levelDb = parameters.levelDb;
-            if (s.components) s.components.forEach((c: any) => c.levelDb = parameters.levelDb);
+          s.levelDb = parameters.levelDb;
+          if (s.components) s.components.forEach((c: any) => c.levelDb = parameters.levelDb);
         });
       }
 
@@ -1062,7 +1062,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       });
       summary += `### Logic\n`;
       summary += `**Adaptive**: ${block.adaptive ? `Yes (${block.adaptive.rule.correctDown}-down/1-up on ${block.adaptive.parameter})` : "No"}\n`;
-      summary += `**Termination**: ${block.termination?.reversals ? `${block.termination.reversals} reversals` : `${block.termination?.maxTrials} trials`}\n\n`;
+      summary += `**Termination**: ${block.termination?.reversals ? `${block.termination.reversals} reversals` : `${block.termination?.trials} trials`}\n\n`;
     });
 
     return { content: [{ type: "text", text: summary }] };

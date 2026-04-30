@@ -212,7 +212,6 @@ export type CalibrationProfile = z.infer<typeof CalibrationProfileSchema>;
  */
 export const BlockSchema = z.object({
   id: z.string(),
-  trials: z.number().int().optional().describe("Deprecated: use termination.maxTrials. Kept for back-compat."),
   feedback: z.boolean().default(true),
   meta: z.object({
     summary: z.string().optional(),
@@ -230,10 +229,10 @@ export const BlockSchema = z.object({
     showAverageThreshold: z.boolean().default(false),
   }).partial().optional(),
   termination: z.object({
-    maxTrials: z.number().int().optional(),
-    reversals: z.number().int().optional(),
-    correctTrials: z.number().int().optional().describe("Number of correct trials required to terminate the block."),
-    discardReversals: z.number().int().optional().describe("Number of initial reversals to discard when calculating the final threshold. Defaults to 4."),
+    trials: z.number().int().optional().describe("Stop the block after exactly N trials (or as a ceiling for adaptive tasks)."),
+    reversals: z.number().int().optional().describe("Stop the block after N reversals in the adaptive staircase."),
+    correctTrials: z.number().int().optional().describe("Stop the block after N correct trials (useful for practice/onboarding)."),
+    discardReversals: z.number().int().optional().describe("Number of initial reversals to discard when calculating threshold. Defaults to 4."),
   }).optional(),
 }).superRefine((data, ctx) => {
   const hasAdaptivePerturbation = data.perturbations?.some(p => {

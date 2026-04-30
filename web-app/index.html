@@ -19,29 +19,29 @@
           <label>Experiment Configuration</label>
           <div class="custom-select" id="custom-dropdown">
             <div class="select-trigger" id="dropdown-trigger">
-              <span id="selected-text">Intensity Discrimination</span>
+              <span id="selected-text">Practice & Test</span>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
             <div class="select-options hidden" id="dropdown-options">
-              <div class="option selected" data-value="intensityDiscrim">Intensity Discrimination</div>
-              <div class="option" data-value="practiceTest">Practice & Test Demo</div>
-              <div class="option" data-value="itdDiscrim">ITD Discrimination</div>
-              <div class="option" data-value="amDetection">AM Detection</div>
-              <div class="option" data-value="profileAnalysis">Profile Analysis</div>
+              <div class="option selected" data-value="practiceTest">Practice & Test</div>
+              <div class="option" data-value="intensityDiscrim">Intensity Discrimination</div>
               <div class="option" data-value="toneInNoise">Tone in Noise</div>
+              <div class="option" data-value="amDetection">AM Detection</div>
+              <div class="option" data-value="itdDiscrim">ITD Discrimination</div>
+              <div class="option" data-value="profileAnalysis">Profile Analysis</div>
               <div class="option" data-value="custom">Upload Custom JSON Configuration</div>
             </div>
           </div>
           <!-- Keep hidden select for compatibility with existing JS -->
           <select id="config-select" class="hidden">
+            <option value="practiceTest">Practice & Test</option>
             <option value="intensityDiscrim">Intensity Discrimination</option>
-            <option value="practiceTest">Practice & Test Demo</option>
-            <option value="itdDiscrim">ITD Discrimination</option>
-            <option value="amDetection">AM Detection</option>
-            <option value="profileAnalysis">Profile Analysis</option>
             <option value="toneInNoise">Tone in Noise</option>
+            <option value="amDetection">AM Detection</option>
+            <option value="itdDiscrim">ITD Discrimination</option>
+            <option value="profileAnalysis">Profile Analysis</option>
             <option value="custom">Upload Custom JSON Configuration</option>
           </select>
 

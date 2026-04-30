@@ -1,73 +1,30 @@
 import type { ExperimentConfig } from "../shared/schema.js";
 
 /**
- * 1. Intensity Discrimination
- */
-export const intensityDiscrimConfig: ExperimentConfig = {
-  meta: {
-    name: "Intensity Discrimination",
-    version: "1.0.0",
-    seed: 123,
-    summary: "Select the LOUDER tone.",
-    description: "Two tones will play in sequence. Which was LOUDER? Press 1 or 2."
-  },
-  ui: {
-    showCurrentValue: true,
-    showTrialNumber: true,
-  },
-  blocks: [{
-    id: "test",
-    trials: 40,
-    feedback: true,
-    paradigm: {
-      type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "target" }],
-      randomizeOrder: true,
-      timing: { isiMs: 400, itiMs: 1000 }
-    },
-    stimuli: [{
-      type: "multi_component",
-      components: [{ frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" }],
-      durationMs: 300,
-      globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
-    }],
-    perturbations: [{
-      type: "gain",
-      deltaDb: { adaptive: true }
-    }],
-    adaptive: {
-      type: "staircase",
-      parameter: "perturbations[0].deltaDb",
-      initialValue: 6,
-      stepType: "geometric",
-      stepSizes: [2, 1.5, 1.2],
-      stepSizeInterval: 2,
-      rule: { correctDown: 2 },
-      minValue: 0,
-      maxValue: 20,
-      unit: "dB"
-    },
-    termination: { reversals: 12 }
-  }]
-};
-
-/**
- * 2. Practice then Test (Multi-Block Demo)
+ * 1. Practice & Test (Onboarding)
+ * 2AFC, 5 Trials
  */
 export const practiceTestConfig: ExperimentConfig = {
   meta: {
-    name: "Practice & Test Demo",
-    version: "2.0.0",
+    name: "Practice & Test",
+    version: "2.2.0",
     seed: 777,
     summary: "Select the HIGHER pitched tone.",
-    description: "Identify the interval with the higher pitch. This demo includes a fixed-level practice stage followed by an adaptive test."
+    description: "Welcome! No prior knowledge is needed. We will start with a quick training phase to help you get used to the sounds. Identify the interval with the higher pitch."
+  },
+  ui: {
+    showCurrentValue: true,
   },
   blocks: [
     {
       id: "practice",
-      trials: 5,
       feedback: true,
-      meta: { summary: "PRACTICE: Level is FIXED. Get 5 correct to advance." },
+      meta: {
+        summary: "PRACTICE PHASE: Get 5 correct to advance."
+      },
+      ui: {
+        showTrialNumber: true // Show trial number only for practice
+      },
       paradigm: {
         type: "m-AFC",
         intervals: [{ condition: "reference" }, { condition: "target" }],
@@ -83,15 +40,19 @@ export const practiceTestConfig: ExperimentConfig = {
       perturbations: [{
         type: "mistuning",
         targetFrequency: 1000,
-        deltaPercent: 10
+        deltaPercent: 15
       }],
       termination: { correctTrials: 5 }
     },
     {
       id: "test",
-      trials: 50,
       feedback: true,
-      meta: { summary: "TEST: Level is now ADAPTIVE. Good luck!" },
+      meta: {
+        summary: "Great! You're ready for the real test. Identify the HIGHER pitch."
+      },
+      ui: {
+        showTrialNumber: false // Hide for adaptive staircase
+      },
       paradigm: {
         type: "m-AFC",
         intervals: [{ condition: "reference" }, { condition: "target" }],
@@ -112,10 +73,9 @@ export const practiceTestConfig: ExperimentConfig = {
       adaptive: {
         type: "staircase",
         parameter: "perturbations[0].deltaPercent",
-        initialValue: 5,
+        initialValue: 8,
         stepType: "geometric",
-        stepSizes: [2, 1.414, 1.189],
-        stepSizeInterval: 2,
+        stepSizes: [1.414, 1.189],
         rule: { correctDown: 2 },
         minValue: 0,
         maxValue: 50,
@@ -127,29 +87,206 @@ export const practiceTestConfig: ExperimentConfig = {
 };
 
 /**
- * 3. ITD Discrimination
+ * 2. Intensity Discrimination (Easy Mode)
+ * 4I2AFC, 8 Reversals
  */
-export const itdDiscrimConfig: ExperimentConfig = {
+export const intensityDiscrimConfig: ExperimentConfig = {
   meta: {
-    name: "ITD Discrimination",
-    version: "2.0.0",
-    seed: 888,
-    summary: "Select the interval shifted to the RIGHT.",
-    description: "Listen for the sound shifting toward your right ear. Two intervals are centered; one is shifted by delaying the LEFT ear."
+    name: "Intensity Discrimination",
+    version: "2.2.0",
+    seed: 123,
+    summary: "Select the LOUDER tone.",
+    description: "Four tones will play. The first and last are markers. Which of the middle two (2 or 3) was LOUDER?"
+  },
+  ui: {
+    showTrialNumber: false, // Hide for adaptive staircase
+    showCurrentValue: true,
   },
   blocks: [{
     id: "test",
-    trials: 40,
+    feedback: true,
+    paradigm: {
+      type: "m-AFC",
+      intervals: [
+        { condition: "reference", fixed: true },
+        { condition: "reference" },
+        { condition: "target" },
+        { condition: "reference", fixed: true }
+      ],
+      randomizeOrder: true,
+      timing: { isiMs: 300, itiMs: 1000 }
+    },
+    stimuli: [{
+      type: "multi_component",
+      components: [{ frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" }],
+      durationMs: 250,
+      globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
+    }],
+    perturbations: [{
+      type: "gain",
+      deltaDb: { adaptive: true }
+    }],
+    adaptive: {
+      type: "staircase",
+      parameter: "perturbations[0].deltaDb",
+      initialValue: 8,
+      stepType: "linear",
+      stepSizes: [4, 2],
+      rule: { correctDown: 2 },
+      minValue: 0,
+      maxValue: 20,
+      unit: "dB"
+    },
+    termination: { reversals: 8 }
+  }]
+};
+
+/**
+ * 3. Tone in Noise (Detection)
+ * 3AFC, 8 Reversals
+ */
+export const toneInNoiseConfig: ExperimentConfig = {
+  meta: {
+    name: "Tone in Noise",
+    version: "2.2.0",
+    seed: 555,
+    summary: "Select the interval containing the TONE.",
+    description: "Two intervals contain only noise; one has a hidden tone. Can you hear the beep inside the noise?"
+  },
+  ui: {
+    showTrialNumber: false,
+    showCurrentValue: true,
+  },
+  blocks: [{
+    id: "test",
     feedback: true,
     paradigm: {
       type: "m-AFC",
       intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
       randomizeOrder: true,
-      timing: { isiMs: 500, itiMs: 1000 }
+      timing: { isiMs: 400, itiMs: 1000 }
+    },
+    stimuli: [
+      {
+        type: "noise",
+        noiseType: "white",
+        levelDb: 50,
+        durationMs: 400,
+        envelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
+        ear: "both",
+        applyTo: "all"
+      },
+      {
+        type: "multi_component",
+        components: [{ frequency: 1000, levelDb: 40, phaseDegrees: 0, ear: "both" }],
+        durationMs: 400,
+        globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
+        applyTo: "target"
+      }
+    ],
+    perturbations: [{
+      type: "gain",
+      targetGeneratorIndex: 1, 
+      deltaDb: { adaptive: true }
+    }],
+    adaptive: {
+      type: "staircase",
+      parameter: "perturbations[0].deltaDb",
+      initialValue: 10,
+      stepType: "linear",
+      stepSizes: [4, 2],
+      rule: { correctDown: 2 },
+      minValue: -20,
+      maxValue: 40,
+      unit: "dB"
+    },
+    termination: { reversals: 8 }
+  }]
+};
+
+/**
+ * 4. AM Detection (Temporal)
+ * 3AFC, 8 Reversals
+ */
+export const amDetectionConfig: ExperimentConfig = {
+  meta: {
+    name: "AM Detection",
+    version: "2.2.0",
+    seed: 654,
+    summary: "Select the FLUCTUATING (wobbly) sound.",
+    description: "Listen for the pulsed fluctuation. Two sounds are steady noise; one is 'wobbly' or pulsing."
+  },
+  ui: {
+    showTrialNumber: false,
+    showCurrentValue: true,
+  },
+  blocks: [{
+    id: "test",
+    feedback: true,
+    paradigm: {
+      type: "m-AFC",
+      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
+      randomizeOrder: true,
+      timing: { isiMs: 400, itiMs: 1000 }
+    },
+    stimuli: [
+      {
+        type: "noise",
+        noiseType: "white",
+        levelDb: 60,
+        durationMs: 400,
+        envelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
+        ear: "both",
+        modulators: [{ type: "AM", depth: 0, sharedEnvelopeId: "mod1" }]
+      }
+    ],
+    perturbations: [{
+      type: "am_depth",
+      deltaDepth: { adaptive: true }
+    }],
+    adaptive: {
+      type: "staircase",
+      parameter: "perturbations[0].deltaDepth",
+      initialValue: 0.5,
+      stepType: "geometric",
+      stepSizes: [1.414, 1.2],
+      rule: { correctDown: 2 },
+      minValue: 0,
+      maxValue: 1,
+      unit: "depth"
+    },
+    termination: { reversals: 8 }
+  }]
+};
+
+/**
+ * 5. ITD Discrimination (Binaural)
+ * 3AFC, 12 Reversals
+ */
+export const itdDiscrimConfig: ExperimentConfig = {
+  meta: {
+    name: "ITD Discrimination",
+    version: "2.2.0",
+    seed: 888,
+    summary: "Select the sound shifted to the RIGHT.",
+    description: "Two sounds are centered; one is shifted toward your right ear. Can you detect the tiny spatial shift?"
+  },
+  ui: {
+    showTrialNumber: false,
+    showCurrentValue: true,
+  },
+  blocks: [{
+    id: "test",
+    feedback: true,
+    paradigm: {
+      type: "m-AFC",
+      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
+      randomizeOrder: true,
+      timing: { isiMs: 400, itiMs: 1000 }
     },
     stimuli: [{
       type: "multi_component",
-      components: [{ frequency: 500, levelDb: 70, phaseDegrees: 0, ear: "both" }],
+      components: [{ frequency: 500, levelDb: 65, phaseDegrees: 0, ear: "both" }],
       durationMs: 400,
       globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
     }],
@@ -164,8 +301,7 @@ export const itdDiscrimConfig: ExperimentConfig = {
       parameter: "perturbations[0].deltaMicroseconds",
       initialValue: 700,
       stepType: "geometric",
-      stepSizes: [1.2, 1.189],
-      stepSizeInterval: 2,
+      stepSizes: [1.414, 1.2],
       rule: { correctDown: 2 },
       minValue: 0,
       maxValue: 1000,
@@ -176,74 +312,27 @@ export const itdDiscrimConfig: ExperimentConfig = {
 };
 
 /**
- * 4. AM Detection (Shared Envelopes Demo)
- */
-export const amDetectionConfig: ExperimentConfig = {
-  meta: {
-    name: "AM Detection",
-    version: "2.0.0",
-    seed: 654,
-    summary: "Select the FLUCTUATING interval.",
-    description: "Listen for a 'wah-wah' pulsing sound. One interval is steady; the other fluctuates."
-  },
-  blocks: [{
-    id: "test",
-    trials: 40,
-    feedback: true,
-    paradigm: {
-      type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "target" }],
-      randomizeOrder: true,
-      timing: { isiMs: 500, itiMs: 1000 }
-    },
-    stimuli: [
-      {
-        type: "noise",
-        noiseType: "white",
-        levelDb: 60,
-        durationMs: 500,
-        envelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
-        ear: "both",
-        modulators: [{ type: "AM", depth: 0, sharedEnvelopeId: "mod1" }]
-      }
-    ],
-    perturbations: [{
-      type: "am_depth",
-      deltaDepth: { adaptive: true }
-    }],
-    adaptive: {
-      type: "staircase",
-      parameter: "perturbations[0].deltaDepth",
-      initialValue: 0.3,
-      stepType: "geometric",
-      stepSizes: [1.414, 1.122, 1.059],
-      rule: { correctDown: 2 },
-      minValue: 0,
-      maxValue: 1,
-      unit: "depth"
-    },
-    termination: { reversals: 12 }
-  }]
-};
-
-/**
- * 5. Profile Analysis (Spectral Shape & Level Roving)
+ * 6. Profile Analysis (Spectral Complexity)
+ * 3AFC, 12 Reversals
  */
 export const profileAnalysisConfig: ExperimentConfig = {
   meta: {
     name: "Profile Analysis",
-    version: "2.0.0",
+    version: "2.2.0",
     seed: 101,
     summary: "Select the interval with the DIFFERENT spectral shape.",
-    description: "A complex of 11 tones. In the target, the center tone (1000 Hz) is increased in level. All tones are roved together in level to ensure you can't use absolute loudness cues."
+    description: "A complex task comparing spectral patterns. Identify the interval where the 'color' of the sound is slightly different."
+  },
+  ui: {
+    showTrialNumber: false,
+    showCurrentValue: true,
   },
   blocks: [{
     id: "test",
-    trials: 50,
     feedback: true,
     paradigm: {
       type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "target" }],
+      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
       randomizeOrder: true,
       timing: { isiMs: 400, itiMs: 1000 }
     },
@@ -254,7 +343,7 @@ export const profileAnalysisConfig: ExperimentConfig = {
         { frequency: 330, levelDb: 60, phaseDegrees: 0, ear: "both" },
         { frequency: 544, levelDb: 60, phaseDegrees: 0, ear: "both" },
         { frequency: 898, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" }, // Target component
+        { frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" },
         { frequency: 1481, levelDb: 60, phaseDegrees: 0, ear: "both" },
         { frequency: 2442, levelDb: 60, phaseDegrees: 0, ear: "both" },
         { frequency: 4030, levelDb: 60, phaseDegrees: 0, ear: "both" }
@@ -267,13 +356,13 @@ export const profileAnalysisConfig: ExperimentConfig = {
         type: "gain",
         targetGeneratorIndex: 0,
         applyTo: "all",
-        deltaDb: { type: "uniform", min: -10, max: 10 } // Global Rove
+        deltaDb: { type: "uniform", min: -8, max: 8 } // Level Rove
       },
       {
         type: "gain",
         targetGeneratorIndex: 0,
         applyTo: "target",
-        deltaDb: { adaptive: true } // Increment target component level
+        deltaDb: { adaptive: true } 
       }
     ],
     adaptive: {
@@ -281,68 +370,9 @@ export const profileAnalysisConfig: ExperimentConfig = {
       parameter: "perturbations[1].deltaDb",
       initialValue: 12,
       stepType: "linear",
-      stepSizes: [4, 2, 1],
+      stepSizes: [4, 2],
       rule: { correctDown: 2 },
       minValue: 0,
-      maxValue: 40,
-      unit: "dB"
-    },
-    termination: { reversals: 12 }
-  }]
-};
-
-/**
- * 6. Tone in Noise (Detection Threshold)
- */
-export const toneInNoiseConfig: ExperimentConfig = {
-  meta: {
-    name: "Tone in Noise",
-    version: "2.0.0",
-    seed: 555,
-    summary: "Select the interval containing the TONE.",
-    description: "A 1000 Hz tone is hidden inside white noise. Can you hear it?"
-  },
-  blocks: [{
-    id: "test",
-    trials: 40,
-    feedback: true,
-    paradigm: {
-      type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "target" }],
-      randomizeOrder: true,
-      timing: { isiMs: 500, itiMs: 1000 }
-    },
-    stimuli: [
-      {
-        type: "noise",
-        noiseType: "white",
-        levelDb: 50,
-        durationMs: 500,
-        envelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
-        ear: "both",
-        applyTo: "all"
-      },
-      {
-        type: "multi_component",
-        components: [{ frequency: 1000, levelDb: 40, phaseDegrees: 0, ear: "both" }],
-        durationMs: 500,
-        globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
-        applyTo: "target"
-      }
-    ],
-    perturbations: [{
-      type: "gain",
-      targetGeneratorIndex: 1, // Target the tone generator
-      deltaDb: { adaptive: true }
-    }],
-    adaptive: {
-      type: "staircase",
-      parameter: "perturbations[0].deltaDb",
-      initialValue: 10,
-      stepType: "linear",
-      stepSizes: [4, 2, 1],
-      rule: { correctDown: 2 },
-      minValue: -20,
       maxValue: 40,
       unit: "dB"
     },

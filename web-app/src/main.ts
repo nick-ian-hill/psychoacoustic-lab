@@ -559,7 +559,10 @@ function clearFeedback() {
 
 function updateStatus() {
   if (!currentBlock) return;
-  const ui = currentBlock.ui || (currentConfig as any).ui;
+  const ui = {
+    ...(currentConfig.ui || {}),
+    ...(currentBlock.ui || {})
+  };
   const showTrialNumber = ui?.showTrialNumber ?? true;
   const showReversals = ui?.showReversals ?? false;
   const showCurrentValue = ui?.showCurrentValue ?? false;

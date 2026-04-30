@@ -112,10 +112,10 @@ export class StaircaseController {
     }
   }
 
-  isFinished(termination?: { maxTrials?: number; reversals?: number; correctTrials?: number }): boolean {
+  isFinished(termination?: { trials?: number; reversals?: number; correctTrials?: number }): boolean {
     if (!termination) return false;
     if (termination.reversals && this.reversalCount >= termination.reversals) return true;
-    if (termination.maxTrials && this.history.length >= termination.maxTrials) return true;
+    if (termination.trials && this.history.length >= termination.trials) return true;
     if (termination.correctTrials) {
       const correctCount = this.history.filter(h => h.correct).length;
       if (correctCount >= termination.correctTrials) return true;
