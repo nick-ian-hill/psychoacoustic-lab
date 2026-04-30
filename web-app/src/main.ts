@@ -313,7 +313,7 @@ async function startBlock(index: number) {
 
   // Set dynamic instructions from block/config
   const instructionEl = document.getElementById('instruction-text') as HTMLDivElement;
-  
+
   if (instructionEl) {
     const summary = currentBlock.meta?.summary || currentConfig.meta.summary || "Select the target.";
     instructionEl.textContent = summary;
@@ -394,12 +394,15 @@ playBtn.addEventListener('click', async () => {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
 
-  await playNextTrial(); 
+  await playNextTrial();
 });
 
 function handleResponse(responseIndex: number) {
   if (isProcessingResponse) return;
   isProcessingResponse = true;
+
+  // Refresh audio lock within this user gesture
+  if (engine) engine.resume().catch(() => { });
 
   responseButtons.forEach(b => b.disabled = true);
 
@@ -655,5 +658,13 @@ function triggerDownload(content: string, mimeType: string, filename: string) {
 
 restartBtn.addEventListener('click', () => {
   window.location.reload();
+});
+
+// Auto-resume AudioContext when the tab becomes visible.
+// This handles cases where the mobile OS suspends the context while the tab is in the background.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && engine) {
+    engine.resume().catch(err => console.warn("[Main] Auto-resume failed (likely needs user gesture):", err));
+  }
 });
 

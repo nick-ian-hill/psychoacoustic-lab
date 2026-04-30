@@ -13,10 +13,6 @@ export class AudioEngine {
     this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     this.seed = seed;
 
-    this.ctx.onstatechange = () => {
-      console.log(`[AudioEngine] AudioContext state changed to: ${this.ctx.state}`);
-    };
-
     // Initialize the Web Worker
     this.worker = new Worker(new URL('./worker.ts', import.meta.url), {
       type: 'module'
@@ -73,21 +69,12 @@ export class AudioEngine {
   }
 
   async resume() {
-    if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
-      console.log(`[AudioEngine] Attempting to resume context from ${this.ctx.state}...`);
-
-      // On some mobile devices, resume() can hang indefinitely if called outside
-      // a user-gesture context. We race it against a 2-second timeout so the
-      // caller always gets a settled promise and can show a user-visible error.
-      const resumePromise = this.ctx.resume();
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("AudioContext resume timed out — try tapping the Play button again")), 2000)
-      );
-
-      // Allow the rejection to propagate so playBuffer's caller can alert the user.
-      await Promise.race([resumePromise, timeoutPromise]);
-      console.log(`[AudioEngine] Resume successful. New state: ${this.ctx.state}`);
-    }
+    const resumePromise = this.ctx.resume();
+    const timeoutPromise = new Promise<void>(resolve => setTimeout(resolve, 500));
+    
+    // Race them: if resume hangs, we still continue after 500ms.
+    // This handles the Safari "infinite promise" bug on mobile.
+    await Promise.race([resumePromise, timeoutPromise]);
   }
 
   async playBuffer(
