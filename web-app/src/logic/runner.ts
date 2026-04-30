@@ -260,10 +260,29 @@ export class ExperimentRunner {
 
     // 2. Map this to the structure the AudioEngine expects
     const intervals = this.currentBlock.paradigm.intervals.map((_, idx) => {
+      const isTarget = idx === targetIndex;
+      
+      // Filter generators for this interval
+      const generators = this.currentBlock!.stimuli.filter(gen => {
+        const applyTo = (gen as any).applyTo || "all";
+        if (applyTo === "all") return true;
+        if (isTarget && applyTo === "target") return true;
+        if (!isTarget && applyTo === "reference") return true;
+        return false;
+      });
+
+      // Filter block-level perturbations for this interval
+      const perturbations = (this.currentBlock!.perturbations || []).filter(p => {
+        const applyTo = (p as any).applyTo || "target";
+        if (applyTo === "all") return true;
+        if (isTarget && applyTo === "target") return true;
+        return false;
+      });
+
       return {
-        generators: this.currentBlock!.stimuli,
+        generators,
         perturbations: [
-          ...(this.currentBlock!.perturbations || []),
+          ...perturbations,
           ...intervalPerturbations[idx]
         ]
       };
