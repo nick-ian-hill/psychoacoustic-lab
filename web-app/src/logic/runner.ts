@@ -55,8 +55,7 @@ export class ExperimentRunner {
         // Only trigger if we have a config AND the experiment screen is visible AND results are NOT visible
         const isExperimentActive = this.currentConfig && 
                                   !this.elements.experimentArea.classList.contains("hidden") && 
-                                  this.elements.resultsArea.classList.contains("hidden") &&
-                                  this.isInputEnabled;
+                                  this.elements.resultsArea.classList.contains("hidden");
         
         if (isExperimentActive) {
           this.showModal(
@@ -86,7 +85,7 @@ export class ExperimentRunner {
   private setupListeners() {
     this.elements.playBtn.addEventListener("click", () => this.handlePlayClick());
     this.elements.downloadBtn.addEventListener("click", () => this.handleDownload());
-    window.addEventListener("keydown", this.keyDownHandler);
+    document.addEventListener("keydown", this.keyDownHandler);
   }
 
   public close() {
@@ -111,9 +110,13 @@ export class ExperimentRunner {
 
     this.currentConfig = null;
     this.currentBlock = null;
+    this.isInputEnabled = false;
   }
 
   private showModal(title: string, message: string, confirmText: string, onConfirm: () => void) {
+    const wasInputEnabled = this.isInputEnabled;
+    this.isInputEnabled = false;
+
     const modal = document.createElement("div");
     modal.className = "modal";
     modal.innerHTML = `
@@ -136,6 +139,7 @@ export class ExperimentRunner {
     this.container.appendChild(modal);
 
     const close = () => {
+      this.isInputEnabled = wasInputEnabled;
       this.container.removeChild(modal);
     };
 
@@ -166,6 +170,7 @@ export class ExperimentRunner {
     this.currentBlockIndex = index;
     this.currentBlock = this.currentConfig.blocks[index];
     this.staircase = new StaircaseController(this.currentBlock.adaptive);
+    this.isInputEnabled = false;
 
     // Update Instructions
     const summary = this.currentBlock.meta?.summary || this.currentConfig.meta.summary || "Select the target.";
