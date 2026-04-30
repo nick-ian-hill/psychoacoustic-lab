@@ -30,6 +30,9 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			}
 		};
 	}
+	setBaseSeed(e) {
+		this.seed = e, this.renderCount = 0;
+	}
 	async renderTrial(e, t, n, r, i, a = 1e4) {
 		let o = Math.random().toString(36).substring(7), s = this.seed + this.renderCount++;
 		return new Promise((c, l) => {
@@ -436,6 +439,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 })))(), 1), x = class {
 	engine;
 	staircase = null;
+	activeSeed;
 	currentConfig = null;
 	currentBlockIndex = 0;
 	currentBlock = null;
@@ -512,15 +516,17 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		});
 	}
 	async loadConfig(e) {
-		this.currentConfig = e, this.sessionResults = [], this.engine && await this.engine.close(), this.engine = new l(e.meta.seed), this.trialRng = (0, b.default)(e.meta.seed.toString()), await this.startBlock(0);
+		this.currentConfig = e, this.sessionResults = [], this.engine && await this.engine.close(), this.activeSeed = e.meta.seed ?? Math.floor(Math.random() * 1e6), this.engine = new l(this.activeSeed), this.trialRng = (0, b.default)(this.activeSeed.toString()), await this.startBlock(0);
 	}
 	async startBlock(e) {
 		if (!this.currentConfig) return;
-		this.currentBlockIndex = e, this.currentBlock = this.currentConfig.blocks[e], this.staircase = new u(this.currentBlock.adaptive), this.isInputEnabled = !1;
-		let t = this.currentBlock.meta?.summary || this.currentConfig.meta.summary || "Select the target.";
-		this.elements.instructionText.textContent = t;
-		let n = this.currentBlock.ui?.showInstructions ?? !0;
-		this.elements.instructionText.classList.toggle("hidden", !n), this.elements.responseButtonsContainer.innerHTML = "", this.responseButtons = [], this.currentBlock.paradigm.intervals.forEach((e, t) => {
+		this.currentBlockIndex = e, this.currentBlock = this.currentConfig.blocks[e];
+		let t = this.currentBlock.meta?.seed ?? this.activeSeed + e;
+		this.engine.setBaseSeed(t), this.trialRng = (0, b.default)(t.toString()), this.staircase = new u(this.currentBlock.adaptive), this.isInputEnabled = !1;
+		let n = this.currentBlock.meta?.summary || this.currentConfig.meta.summary || "Select the target.";
+		this.elements.instructionText.textContent = n;
+		let r = this.currentBlock.ui?.showInstructions ?? !0;
+		this.elements.instructionText.classList.toggle("hidden", !r), this.elements.responseButtonsContainer.innerHTML = "", this.responseButtons = [], this.currentBlock.paradigm.intervals.forEach((e, t) => {
 			let n = document.createElement("button");
 			n.className = "response-btn", n.textContent = `${t + 1}`, e.selectable === !1 ? n.classList.add("non-selectable") : n.addEventListener("click", () => this.handleResponse(t)), n.disabled = !0, this.elements.responseButtonsContainer.appendChild(n), this.responseButtons.push(n);
 		}), this.elements.playBtnContainer.classList.remove("hidden"), this.elements.playBtn.disabled = !1, this.elements.playBtn.classList.remove("playing"), this.elements.playBtn.textContent = e === 0 ? "Start Experiment" : `Start Block: ${this.currentBlock.id}`, this.elements.resultsArea.classList.add("hidden"), this.updateStatus(), await this.engine.resume();
@@ -618,6 +624,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				experiment: this.currentConfig?.meta.name,
 				threshold: e,
 				results: this.sessionResults,
+				actualSeed: this.activeSeed,
 				config: this.currentConfig
 			},
 			bubbles: !0,
@@ -629,17 +636,16 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		let e = {
 			timestamp: (/* @__PURE__ */ new Date()).toISOString(),
 			experimentName: this.currentConfig.meta.name,
-			seed: this.currentConfig.meta.seed,
+			actualSeed: this.activeSeed,
 			results: this.sessionResults
 		}, t = new Blob([JSON.stringify(e, null, 2)], { type: "application/json" }), n = URL.createObjectURL(t), r = document.createElement("a");
 		r.href = n, r.download = `results_${this.currentConfig.meta.name.replace(/\s+/g, "_")}_${Date.now()}.json`, r.click(), URL.revokeObjectURL(n);
 	}
 }, S = ":root{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;--psycho-bg:#0f172a;--psycho-panel-bg:#1e293b;--psycho-text:#f8fafc;--psycho-text-muted:#94a3b8;--psycho-accent:#38bdf8;--psycho-accent-secondary:#f472b6;--psycho-success:#10b981;--psycho-error:#ef4444;--psycho-border:#94a3b81a;--psycho-radius:4px}option{background-color:var(--psycho-panel-bg);color:var(--psycho-text)}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}body{background-color:var(--psycho-bg);color:var(--psycho-text);scrollbar-gutter:stable;-webkit-font-smoothing:antialiased;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;font-family:Inter,-apple-system,sans-serif;line-height:1.5;display:flex}.container{background:var(--psycho-panel-bg);border-radius:var(--psycho-radius);border:1px solid var(--psycho-border);width:100%;max-width:600px;padding:2rem;position:relative;box-shadow:0 10px 15px -3px #0000004d}header{text-align:center;margin-bottom:2rem}h1{letter-spacing:-.025em;color:var(--psycho-text);margin-bottom:.5rem;font-size:1.75rem;font-weight:800}h1 span{color:var(--psycho-accent)}p.subtitle{color:var(--psycho-text-muted);font-size:.875rem}.control-group{flex-direction:column;gap:.5rem;margin-bottom:1.5rem;display:flex}label{color:var(--psycho-text-muted);font-size:.95rem;font-weight:500;display:block}.custom-select{-webkit-user-select:none;user-select:none;width:100%;position:relative}.select-trigger{background:var(--psycho-bg);border:1px solid var(--psycho-border);width:100%;color:var(--psycho-text);border-radius:var(--psycho-radius);cursor:pointer;justify-content:space-between;align-items:center;padding:.75rem 1rem;font-size:1rem;transition:all .2s;display:flex}.select-trigger:hover{border-color:var(--psycho-accent)}.select-trigger svg{width:1.25rem;height:1.25rem;color:var(--psycho-text-muted);transition:transform .2s}.custom-select.open .select-trigger svg{transform:rotate(180deg)}.select-options{background:var(--psycho-panel-bg);border:1px solid var(--psycho-border);border-radius:var(--psycho-radius);z-index:100;max-height:35vh;animation:.2s ease-out slideDown;position:absolute;top:calc(100% + 4px);left:0;right:0;overflow-y:auto;box-shadow:0 10px 15px -3px #00000080}@keyframes slideDown{0%{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}.option{cursor:pointer;padding:.75rem 1rem;font-size:.9375rem;transition:background .2s}.option:hover,.option.highlighted{color:var(--psycho-accent);background:#3b82f61a}.option.selected{color:var(--psycho-accent);background:#3b82f633;font-weight:600}textarea{background:var(--psycho-bg);border:1px solid var(--psycho-border);width:100%;color:var(--psycho-text);border-radius:var(--psycho-radius);resize:vertical;min-height:120px;padding:.75rem;font-family:monospace;font-size:.875rem;line-height:1.6}textarea:focus{border-color:var(--psycho-accent);outline:none}.btn{background:var(--psycho-accent);color:var(--psycho-bg);border-radius:var(--psycho-radius);cursor:pointer;letter-spacing:.01em;text-align:center;border:1px solid #0000;justify-content:center;align-items:center;padding:1rem 2rem;font-size:1rem;font-weight:600;line-height:1.2;text-decoration:none;transition:all .2s;display:inline-flex}.btn:disabled{opacity:.5;cursor:not-allowed}.btn-full{width:100%}.btn-secondary{border:1px solid var(--psycho-text-muted);color:var(--psycho-text);background:0 0}.btn-secondary:hover:not(:disabled){border-color:var(--psycho-accent-secondary);color:var(--psycho-accent-secondary);background:#f472b60d}.results-actions{justify-content:center;gap:1rem;width:100%;margin-top:1.5rem;display:flex}.results-actions .btn{flex:1;min-height:64px}.results-area{text-align:center;width:100%;margin-top:.5rem;animation:.4s ease-out fadeIn}.results-area h2{color:var(--psycho-success);margin-bottom:1rem;font-size:1.5rem}.results-area p{color:var(--psycho-text);margin-bottom:1.5rem;font-size:1.125rem;font-weight:500}.experiment-area{border-top:1px solid var(--psycho-border);flex-direction:column;align-items:center;gap:1.5rem;margin-top:1.5rem;padding-top:1.5rem;display:flex}.selection-description{border-left:3px solid var(--psycho-accent);color:var(--psycho-text-muted);scrollbar-width:thin;background:#94a3b80d;border-radius:0;max-height:150px;margin-top:1.5rem;padding:1rem;font-size:.875rem;line-height:1.6;overflow-y:auto}.experiment-info{flex-direction:column;justify-content:center;align-items:center;gap:1.5rem;width:100%;display:flex}.status-container{align-items:center;gap:.5rem;display:flex;position:relative}.instruction-line{justify-content:center;align-items:center;gap:.5rem;width:100%;display:flex}#instruction-text{text-align:center;color:var(--psycho-text-muted);white-space:pre-wrap;margin:0;font-size:.875rem;line-height:1.4}.experiment-main{place-items:center;width:100%;display:grid;position:relative}.play-btn-container,.response-buttons{grid-area:1/1;justify-content:center;align-items:center;gap:1rem;width:100%;transition:opacity .2s;display:flex}.play-btn-container:not(.hidden)~.response-buttons{opacity:0;pointer-events:none;visibility:hidden}.play-btn-container .btn{pointer-events:auto}.status-badge{color:var(--psycho-accent);text-align:center;background:#38bdf81a;border-radius:999px;width:fit-content;max-width:100%;margin:0 auto;padding:.5rem 1.25rem;font-size:.875rem;font-weight:600;line-height:1.4;display:block}.response-buttons{gap:1rem;width:100%;display:flex}.response-btn{background:var(--psycho-bg);border:2px solid var(--psycho-border);color:#fff;border-radius:var(--psycho-radius);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;flex:1;padding:1.5rem;font-size:1.5rem;font-weight:800;outline:none!important}.response-btn:focus,.response-btn:active,.response-btn:focus-visible{border-color:var(--psycho-border);box-shadow:none!important;outline:none!important;transform:none!important}.response-btn.non-selectable{cursor:default;pointer-events:none;opacity:.15;flex:.4;padding:.5rem}.response-btn.active{border-color:var(--psycho-accent);background:#38bdf81a;box-shadow:0 0 20px #38bdf866;opacity:1!important}.response-btn.correct{color:#22c55e;background:#22c55e1a;border-color:#22c55e;opacity:1!important}.response-btn.incorrect{color:#ef4444;background:#ef44441a;border-color:#ef4444;opacity:1!important}.response-btn.non-selectable.active{opacity:1}@media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){background:#7dd3fc}.response-btn:hover:not(:disabled){border-color:var(--psycho-accent);box-shadow:0 0 15px #38bdf833}}.response-btn:disabled{opacity:.2;cursor:not-allowed;border-color:var(--psycho-border);transform:none!important}.hidden{display:none!important}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}to{transform:scale(1)}}.playing{opacity:.5}.response-btn.active{border-color:var(--psycho-accent);color:#fff;opacity:1;background:#38bdf81f;box-shadow:0 0 20px #38bdf873,inset 0 0 12px #38bdf81a}.response-btn.correct,.response-btn.correct:disabled{border-color:var(--psycho-success);color:var(--psycho-success);opacity:1;background:#10b98126}.response-btn.incorrect,.response-btn.incorrect:disabled{border-color:var(--psycho-error);color:var(--psycho-error);opacity:1;background:#ef444426}.modal{z-index:1000;justify-content:center;align-items:center;width:100%;height:100%;animation:.2s ease-out fadeIn;display:flex;position:fixed;top:0;left:0}.modal-overlay{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:#000000b3;width:100%;height:100%;position:absolute;top:0;left:0}.modal-content{background:var(--psycho-panel-bg);border-radius:var(--psycho-radius);border:1px solid var(--psycho-border);flex-direction:column;width:90%;max-width:500px;max-height:80vh;display:flex;position:relative;overflow:hidden;box-shadow:0 25px 50px -12px #00000080}.modal-header{border-bottom:1px solid var(--psycho-border);background:#ffffff05;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;display:flex}.modal-header h2{color:var(--psycho-accent);margin:0;font-size:1.1rem}.modal-close{color:var(--psycho-text-muted);cursor:pointer;background:0 0;border:none;padding:0 .5rem;font-size:1.75rem;line-height:1;transition:color .2s}.modal-close:hover{color:var(--psycho-text)}.modal-body{color:var(--psycho-text);padding:1.5rem;font-size:.9375rem;line-height:1.6;overflow-y:auto}@keyframes fadeIn{0%{opacity:0}to{opacity:1}}@media (width<=640px){body{justify-content:center;padding:1rem}.container{flex-direction:column;width:100%;max-width:none;min-height:480px;margin:0;padding:1.5rem;display:flex}header{margin-bottom:1.5rem}h1{font-size:1.5rem}.experiment-area{gap:1rem;margin-top:1rem;padding-top:1.5rem}.experiment-info{min-height:80px}.selection-description{max-height:120px}.modal-content{width:95%;max-height:90vh}.experiment-main{min-height:140px}.response-btn{padding:1.25rem .75rem;font-size:1.1rem}}@media (height<=500px){body{justify-content:center;padding:.5rem}.container{min-height:auto;padding:1rem}header{margin-bottom:1rem}.experiment-area{gap:.5rem;margin-top:.5rem;padding-top:.5rem}}", C = {
-	frequencyDiscrimination: {
+	pitchDiscrimination: {
 		meta: {
 			name: "Pitch sensitivity",
 			version: "2.2.0",
-			seed: 777,
 			summary: "Select the HIGHER pitched tone.",
 			description: "Welcome! We will start with a quick training phase to help you get used to the sounds. Identify the interval with the higher pitch."
 		},
@@ -647,7 +653,10 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		blocks: [{
 			id: "practice",
 			feedback: !0,
-			meta: { summary: "PRACTICE PHASE:\nSelect the interval with the higher pitch tone.\nGet 5 correct to advance." },
+			meta: {
+				seed: 777,
+				summary: "PRACTICE PHASE:\nSelect the interval with the higher pitch tone.\nGet 5 correct to advance."
+			},
 			ui: {
 				showTrialNumber: !0,
 				showCurrentValue: !1
@@ -734,7 +743,6 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "Intensity Discrimination",
 			version: "2.2.0",
-			seed: 123,
 			summary: "Select the LOUDER tone.",
 			description: "Four tones will play. The first and last are markers. Which of the middle two (2 or 3) was LOUDER?"
 		},
@@ -804,7 +812,6 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "Tone in Noise",
 			version: "2.2.0",
-			seed: 555,
 			summary: "Select the interval containing the TONE.",
 			description: "Two intervals contain only noise; one has a hidden tone. Can you hear the beep inside the noise?"
 		},
@@ -879,7 +886,6 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "AM Detection",
 			version: "2.2.0",
-			seed: 654,
 			summary: "Select the FLUCTUATING (wobbly) sound.",
 			description: "Listen for the pulsed fluctuation. Two sounds are steady noise; one is 'wobbly' or pulsing."
 		},
@@ -942,7 +948,6 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "ITD Discrimination",
 			version: "2.2.0",
-			seed: 888,
 			summary: "Select the sound shifted to the RIGHT.",
 			description: "Two sounds are centered; one is shifted toward your right ear. Select the sound shifted to the right."
 		},
@@ -1005,7 +1010,6 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "Profile Analysis",
 			version: "2.2.0",
-			seed: 101,
 			summary: "Select the interval with the DIFFERENT spectral shape.",
 			description: "A complex task comparing spectral patterns. Identify the interval where the 'color' of the sound is slightly different."
 		},
@@ -1208,7 +1212,7 @@ var T = class extends HTMLElement {
           <div class="control-group">
             <label>Experiment Configuration</label>
             <select id="experiment-select" class="btn" style="width: 100%; text-align: left; background: var(--psycho-card-bg); border: 1px solid var(--psycho-border); padding: 1rem; color: var(--psycho-text); cursor: pointer;">
-              <option value="frequencyDiscrimination">Pitch Discrimination</option>
+              <option value="pitchDiscrimination">Pitch Discrimination</option>
               <option value="intensityDiscrimination">Intensity Discrimination</option>
               <option value="toneInNoise">Tone in Noise</option>
               <option value="amDetection">AM Detection</option>
