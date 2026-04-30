@@ -548,10 +548,19 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		if (!this.currentBlock || !this.currentConfig || !this.trialRng) throw Error("Runner not ready");
 		let { targetIndex: e, intervalPerturbations: t } = d(this.currentBlock, this.trialRng);
 		this.currentTargetIndex = e;
-		let n = this.staircase?.getCurrentValue(), r = this.currentBlock.paradigm.intervals.map((e, n) => ({
-			generators: this.currentBlock.stimuli,
-			perturbations: [...this.currentBlock.perturbations || [], ...t[n]]
-		}));
+		let n = this.staircase?.getCurrentValue(), r = this.currentBlock.paradigm.intervals.map((n, r) => {
+			let i = r === e;
+			return {
+				generators: this.currentBlock.stimuli.filter((e) => {
+					let t = e.applyTo || "all";
+					return !!(t === "all" || i && t === "target" || !i && t === "reference");
+				}),
+				perturbations: [...(this.currentBlock.perturbations || []).filter((e) => {
+					let t = e.applyTo || "target";
+					return !!(t === "all" || i && t === "target");
+				}), ...t[r]]
+			};
+		});
 		return await this.engine.renderTrial(r, this.currentBlock.paradigm.timing.isiMs, n, this.currentConfig.calibration, this.currentConfig.globalLevelDb);
 	}
 	highlightIntervals(e, t) {
