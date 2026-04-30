@@ -159,6 +159,11 @@ export class ExperimentRunner {
     if (this.engine) {
       await this.engine.close();
     }
+
+    // Reset UI state
+    this.elements.resultsArea.classList.add("hidden");
+    this.elements.playBtnContainer.classList.remove("hidden");
+    this.elements.instructionText.classList.remove("hidden");
     
     // Initialize engine and RNG with the experiment's master seed
     // If no seed is provided in the config, generate a random one for this session.
@@ -413,6 +418,8 @@ export class ExperimentRunner {
   private showResults() {
     this.elements.playBtnContainer.classList.add("hidden");
     this.elements.responseButtonsContainer.innerHTML = "";
+    this.elements.statusBadge.classList.add("hidden");
+    this.elements.instructionText.classList.add("hidden");
     this.elements.resultsArea.classList.remove("hidden");
     
     // For UI display, we'll just show the threshold of the final block (or 0 if none)
@@ -421,7 +428,7 @@ export class ExperimentRunner {
       : 0;
       
     const unit = this.currentBlock?.adaptive?.unit || "";
-    this.elements.resultsText.textContent = `Experiment Complete. Estimated Threshold: ${finalThreshold.toFixed(2)}${unit ? " " + unit : ""}`;
+    this.elements.resultsText.textContent = `Estimated Threshold: ${finalThreshold.toFixed(2)}${unit ? " " + unit : ""}`;
 
     // Dispatch custom event for host integration, providing ALL block results
     this.container.dispatchEvent(new CustomEvent('experiment-complete', {
