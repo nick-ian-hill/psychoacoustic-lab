@@ -137,7 +137,7 @@ export const intensityDiscriminationConfig: ExperimentConfigInput = {
       maxValue: 20,
       unit: "dB"
     },
-    termination: { trials: 2, reversals: 8 }
+    termination: { reversals: 8 }
   }]
 };
 
