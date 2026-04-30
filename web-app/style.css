@@ -51,7 +51,7 @@ body {
 
 header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 h1 {
@@ -248,7 +248,7 @@ textarea:focus {
  .results-area {
    width: 100%;
    text-align: center;
-   margin-top: 0.5rem;
+   margin-top: 0;
    animation: fadeIn 0.4s ease-out;
  }
 
@@ -266,8 +266,8 @@ textarea:focus {
  }
 
 .experiment-area {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--psycho-border);
   display: flex;
   flex-direction: column;

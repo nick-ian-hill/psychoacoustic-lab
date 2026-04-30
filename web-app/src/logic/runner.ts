@@ -26,6 +26,8 @@ export class ExperimentRunner {
     statusBadge: HTMLElement;
     downloadBtn: HTMLButtonElement;
     experimentArea: HTMLElement;
+    infoArea: HTMLElement;
+    mainArea: HTMLElement;
   };
   
   private isInputEnabled: boolean = false;
@@ -49,6 +51,8 @@ export class ExperimentRunner {
       statusBadge: this.findSafe("status-badge"),
       downloadBtn: this.findSafe("download-results-btn") as HTMLButtonElement,
       experimentArea: this.findSafe("experiment-screen"),
+      infoArea: this.findSafe("experiment-info"),
+      mainArea: this.findSafe("experiment-main"),
     };
 
     this.keyDownHandler = (e: KeyboardEvent) => {
@@ -164,6 +168,8 @@ export class ExperimentRunner {
     this.elements.resultsArea.classList.add("hidden");
     this.elements.playBtnContainer.classList.remove("hidden");
     this.elements.instructionText.classList.remove("hidden");
+    this.elements.infoArea.classList.remove("hidden");
+    this.elements.mainArea.classList.remove("hidden");
     
     // Initialize engine and RNG with the experiment's master seed
     // If no seed is provided in the config, generate a random one for this session.
@@ -420,6 +426,8 @@ export class ExperimentRunner {
     this.elements.responseButtonsContainer.innerHTML = "";
     this.elements.statusBadge.classList.add("hidden");
     this.elements.instructionText.classList.add("hidden");
+    this.elements.infoArea.classList.add("hidden");
+    this.elements.mainArea.classList.add("hidden");
     this.elements.resultsArea.classList.remove("hidden");
     
     // For UI display, we'll just show the threshold of the final block (or 0 if none)

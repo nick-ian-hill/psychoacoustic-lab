@@ -59,17 +59,22 @@ class PsychoacousticRunner extends HTMLElement {
             <p class="subtitle">Research Edition</p>
           </header>
 
-          <div id="status-badge" class="status-badge hidden"></div>
-
-          <div class="main-content">
-            <div id="instruction-text" class="instruction-text">Select the target.</div>
-            
-            <div id="play-btn-container" class="play-btn-container">
-              <button id="play-btn" class="btn">Start Experiment</button>
+          <div id="experiment-screen" class="experiment-area">
+            <div class="experiment-info">
+              <div class="status-container">
+                <div id="status-badge" class="status-badge hidden"></div>
+              </div>
+              <div id="instruction-text" class="instruction-text">Select the target.</div>
             </div>
+            
+            <div class="experiment-main">
+              <div id="play-btn-container" class="play-btn-container">
+                <button id="play-btn" class="btn">Start Experiment</button>
+              </div>
 
-            <div id="response-buttons" class="response-buttons">
-              <!-- Dynamic buttons generated here -->
+              <div id="response-buttons" class="response-buttons">
+                <!-- Dynamic buttons generated here -->
+              </div>
             </div>
 
             <div id="results-area" class="results-area hidden">

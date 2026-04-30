@@ -130,14 +130,14 @@ export const intensityDiscriminationConfig: ExperimentConfigInput = {
       type: "staircase",
       parameter: "perturbations[0].deltaDb",
       initialValue: 8,
-      stepType: "linear",
-      stepSizes: [4, 2],
+      stepType: "geometric",
+      stepSizes: [1.414, 1.2],
       rule: { correctDown: 2 },
       minValue: 0,
       maxValue: 20,
       unit: "dB"
     },
-    termination: { reversals: 8 }
+    termination: { trials: 2, reversals: 8 }
   }]
 };
 
@@ -195,7 +195,7 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
       stepType: "linear",
       stepSizes: [4, 2],
       rule: { correctDown: 2 },
-      minValue: -20,
+      minValue: -30,
       maxValue: 40,
       unit: "dB"
     },
