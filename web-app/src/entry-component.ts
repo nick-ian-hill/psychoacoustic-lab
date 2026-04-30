@@ -1,7 +1,7 @@
 import { ExperimentRunner } from "./logic/runner.js";
 import styles from "../style.css?inline";
 import {
-  frequencyDiscriminationConfig,
+  pitchDiscriminationConfig,
   intensityDiscriminationConfig,
   toneInNoiseConfig,
   amDetectionConfig,
@@ -10,7 +10,7 @@ import {
 } from "../../examples/examples.js";
 
 const examples = {
-  frequencyDiscrimination: frequencyDiscriminationConfig,
+  pitchDiscrimination: pitchDiscriminationConfig,
   intensityDiscrimination: intensityDiscriminationConfig,
   toneInNoise: toneInNoiseConfig,
   amDetection: amDetectionConfig,
@@ -130,7 +130,7 @@ class PsychoacousticApp extends HTMLElement {
           <div class="control-group">
             <label>Experiment Configuration</label>
             <select id="experiment-select" class="btn" style="width: 100%; text-align: left; background: var(--psycho-card-bg); border: 1px solid var(--psycho-border); padding: 1rem; color: var(--psycho-text); cursor: pointer;">
-              <option value="frequencyDiscrimination">Pitch Discrimination</option>
+              <option value="pitchDiscrimination">Pitch Discrimination</option>
               <option value="intensityDiscrimination">Intensity Discrimination</option>
               <option value="toneInNoise">Tone in Noise</option>
               <option value="amDetection">AM Detection</option>
