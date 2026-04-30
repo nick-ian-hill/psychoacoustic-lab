@@ -460,7 +460,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			downloadBtn: this.findSafe("download-results-btn"),
 			experimentArea: this.findSafe("experiment-screen")
 		}, this.keyDownHandler = (e) => {
-			e.key === "Escape" && this.currentConfig && !this.elements.experimentArea.classList.contains("hidden") && this.elements.resultsArea.classList.contains("hidden") && this.isInputEnabled && this.showModal("Cancel Experiment?", "Are you sure you want to stop the current experiment? All progress in this session will be lost.", "Stop Experiment", () => this.cancel());
+			e.key === "Escape" && this.currentConfig && !this.elements.experimentArea.classList.contains("hidden") && this.elements.resultsArea.classList.contains("hidden") && this.showModal("Cancel Experiment?", "Are you sure you want to stop the current experiment? All progress in this session will be lost.", "Stop Experiment", () => this.cancel());
 		}, this.setupListeners();
 	}
 	findSafe(e) {
@@ -473,7 +473,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		return t;
 	}
 	setupListeners() {
-		this.elements.playBtn.addEventListener("click", () => this.handlePlayClick()), this.elements.downloadBtn.addEventListener("click", () => this.handleDownload()), window.addEventListener("keydown", this.keyDownHandler);
+		this.elements.playBtn.addEventListener("click", () => this.handlePlayClick()), this.elements.downloadBtn.addEventListener("click", () => this.handleDownload()), document.addEventListener("keydown", this.keyDownHandler);
 	}
 	close() {
 		this.engine &&= (this.engine.close(), null);
@@ -482,11 +482,13 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		this.close(), this.elements.resultsArea.classList.add("hidden"), this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.statusBadge.classList.add("hidden"), this.elements.instructionText.classList.add("hidden"), this.container.dispatchEvent(new CustomEvent("experiment-cancelled", {
 			bubbles: !0,
 			composed: !0
-		})), this.currentConfig = null, this.currentBlock = null;
+		})), this.currentConfig = null, this.currentBlock = null, this.isInputEnabled = !1;
 	}
 	showModal(e, t, n, r) {
-		let i = document.createElement("div");
-		i.className = "modal", i.innerHTML = `
+		let i = this.isInputEnabled;
+		this.isInputEnabled = !1;
+		let a = document.createElement("div");
+		a.className = "modal", a.innerHTML = `
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
@@ -501,12 +503,12 @@ var f = /* @__PURE__ */ o(((e, t) => {
           </div>
         </div>
       </div>
-    `, this.container.appendChild(i);
-		let a = () => {
-			this.container.removeChild(i);
+    `, this.container.appendChild(a);
+		let o = () => {
+			this.isInputEnabled = i, this.container.removeChild(a);
 		};
-		i.querySelector(".modal-close")?.addEventListener("click", a), i.querySelector("#modal-cancel")?.addEventListener("click", a), i.querySelector("#modal-confirm")?.addEventListener("click", () => {
-			a(), r();
+		a.querySelector(".modal-close")?.addEventListener("click", o), a.querySelector("#modal-cancel")?.addEventListener("click", o), a.querySelector("#modal-confirm")?.addEventListener("click", () => {
+			o(), r();
 		});
 	}
 	async loadConfig(e) {
@@ -514,7 +516,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	}
 	async startBlock(e) {
 		if (!this.currentConfig) return;
-		this.currentBlockIndex = e, this.currentBlock = this.currentConfig.blocks[e], this.staircase = new u(this.currentBlock.adaptive);
+		this.currentBlockIndex = e, this.currentBlock = this.currentConfig.blocks[e], this.staircase = new u(this.currentBlock.adaptive), this.isInputEnabled = !1;
 		let t = this.currentBlock.meta?.summary || this.currentConfig.meta.summary || "Select the target.";
 		this.elements.instructionText.textContent = t;
 		let n = this.currentBlock.ui?.showInstructions ?? !0;
