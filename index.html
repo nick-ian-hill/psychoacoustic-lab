@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Psychoacoustic Lab</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/psychoacoustic-lab/assets/index-BZbAtj0J.js"></script>
-    <link rel="stylesheet" crossorigin href="/psychoacoustic-lab/assets/index-BzFDyCn7.css">
+    <script type="module" crossorigin src="./assets/index-g-2iQ_tI.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-5ma1GXgp.css">
   </head>
   <body>
     <div class="container">
@@ -15,7 +15,7 @@
         <h1><span>Psychoacoustic</span> Lab</h1>
       </header>
 
-      <div id="setup-area">
+      <div id="selection-screen">
         <div class="control-group">
           <label>Experiment Configuration</label>
           <div class="custom-select" id="custom-dropdown">
@@ -35,8 +35,8 @@
               <div class="option" data-value="custom">Upload Custom JSON Configuration</div>
             </div>
           </div>
-          <!-- Keep hidden select for compatibility with existing JS -->
-          <select id="config-select" class="hidden">
+          <!-- Keep select for logic -->
+          <select id="experiment-select" class="hidden">
             <option value="practiceTest">Practice & Test</option>
             <option value="intensityDiscrim">Intensity Discrimination</option>
             <option value="toneInNoise">Tone in Noise</option>
@@ -55,13 +55,13 @@
 
         <div id="selection-description" class="selection-description hidden"></div>
 
-        <div style="display: flex; justify-content: center; margin-top: 1rem;">
-          <button id="start-btn" class="btn">Confirm Selection</button>
+        <div style="display: flex; justify-content: center; margin-top: 1.5rem;">
+          <button id="load-experiment-btn" class="btn">Confirm Selection</button>
         </div>
 
       </div>
 
-      <div id="experiment-area" class="experiment-area hidden">
+      <div id="experiment-screen" class="experiment-area hidden">
         <div class="experiment-info">
           <div class="status-container">
             <div id="status-badge" class="status-badge">Trial 1</div>
@@ -71,21 +71,18 @@
           </div>
         </div>
 
-
-
         <div class="experiment-main">
           <div id="play-btn-container" class="play-btn-container">
             <button id="play-btn" class="btn">Start Experiment</button>
           </div>
 
-          <div class="response-buttons" id="response-buttons-container">
+          <div class="response-buttons" id="response-buttons">
           </div>
         </div>
-
         
         <div id="results-area" class="results-area hidden">
           <h2>Experiment Complete!</h2>
-          <p id="final-threshold"></p>
+          <p id="results-text"></p>
           <div class="results-actions">
             <button id="download-results-btn" class="btn secondary">Download JSON</button>
             <button id="restart-btn" class="btn">New Experiment</button>
