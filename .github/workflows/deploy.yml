@@ -15,10 +15,10 @@ jobs:
       - name: Install and Build 🔧
         run: |
           npm install
-          cd web-app && npm install
+          npm install --prefix web-app
           rm -rf web-app/dist
-          cd web-app && npm run build -- --mode library
-          cd web-app && npm run build
+          npm run build --prefix web-app -- --mode library
+          npm run build --prefix web-app
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
