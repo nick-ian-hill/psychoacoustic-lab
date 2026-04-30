@@ -28,9 +28,23 @@ The **MCP Server** (this agent's tools) is "smart"—it handles the math, spacin
 ## Seminal References
 
 Use these citations as grounding for methodological logic:
-- **Levitt, H. (1971):** Transformed up-down methods in psychoacoustics. (n-down/1-up rules).
-- **Fletcher, H. (1940):** Auditory Patterns. (Critical Bands and tone-in-noise masking).
-- **Klumpp, R. G., & Eady, H. R. (1956):** Interaural Time Difference Thresholds. (~10 µs ITD limit).
-- **Watson, C. S., & Fitzhugh, R. J. (1990):** The method of constant stimuli is inefficient. (Adaptive rationale).
-- **Moore, B. C. J. (2012):** An Introduction to the Psychology of Hearing. (General thresholds, ERB, masking).
-- **Viemeister, N. F. (1979):** Temporal modulation transfer function. (AM detection/temporal resolution).
+
+### Foundations & Adaptive Logic
+- **Levitt, H. (1971):** Transformed up-down methods in psychoacoustics. *JASA*. (Foundational staircase logic).
+- **Watson, C. S., & Fitzhugh, R. J. (1990):** The method of constant stimuli is inefficient. *JASA*. (Adaptive rationale).
+- **Jesteadt, W. (1980):** An adaptive procedure for subjective assessment. *JASA*. (Modern adaptive refinements).
+
+### Frequency & Intensity
+- **Fletcher, H. (1940):** Auditory Patterns. *Rev. Mod. Phys*. (Critical Bands and tone-in-noise masking).
+- **Jesteadt, W., Wier, C. C., & Green, D. M. (1977):** Intensity discrimination as a function of frequency and sensation level. *JASA*. (The "near-miss" to Weber's Law).
+- **Wier, C. C., Jesteadt, W., & Green, D. M. (1977):** Frequency discrimination as a function of frequency and sensation level. *JASA*. (Classic DLF datasets).
+
+### Binaural & Spatial
+- **Klumpp, R. G., & Eady, H. R. (1956):** Some measurements of interaural time difference thresholds. *JASA*. (~10 µs ITD limit).
+- **Mills, A. W. (1958):** On the minimum audible angle. *JASA*. (ITD/ILD crossover and spatial precision).
+- **Durlach, N. I. (1963):** Equalization and cancellation theory of binaural masking-level differences. *JASA*. (EC Model for BMLD).
+
+### Temporal & Spectral Profile
+- **Viemeister, N. F. (1979):** Temporal modulation transfer function. *JASA*. (AM detection/temporal resolution).
+- **Green, D. M. (1988):** *Profile Analysis: Auditory Intensity Discrimination*. Oxford Univ. Press. (Spectral shape perception).
+- **Moore, B. C. J., et al. (1988):** The shape of the ear's temporal window. *JASA*. (Temporal integration models).
