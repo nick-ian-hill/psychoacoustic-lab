@@ -153,10 +153,7 @@ export function synthesizeMultiComponent(
         for (const p of perturbations) {
           const pAny = p as any;
           
-          // 1. Check Generator Targeting
           if (pAny.targetGeneratorIndex !== undefined && pAny.targetGeneratorIndex !== genIndex) continue;
-
-          // 2. Check Frequency Targeting
           const matchesFrequency = !pAny.targetFrequency || pAny.targetFrequency === comp.frequency;
           if (!matchesFrequency) continue;
 
@@ -164,29 +161,37 @@ export function synthesizeMultiComponent(
           const earMatch = pEar === "both" || pEar === targetEar;
           if (!earMatch) continue;
 
-          if (p.type === "spectral_profile") {
-            ampOffsetDb += resolveValue(p.deltaDb, adaptiveValue, rng);
+          if (p.type === "spectral_profile" || p.type === "gain") {
+            ampOffsetDb += resolveValue((p as any).deltaDb, adaptiveValue, rng);
           } else if (p.type === "mistuning") {
             const delta = resolveValue(p.deltaPercent, adaptiveValue, rng);
             freq *= (1 + delta / 100);
           } else if (p.type === "phase_shift") {
             const delta = resolveValue(p.deltaDegrees, adaptiveValue, rng);
             phase += delta * Math.PI / 180;
-          } else if (p.type === "gain") {
-            ampOffsetDb += resolveValue(p.deltaDb, adaptiveValue, rng);
           } else if (p.type === "onset_asynchrony") {
             onsetOffsetMs += resolveValue(p.delayMs, adaptiveValue, rng);
           } else if (p.type === "itd") {
             const mode = pAny.mode || "both";
             const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
             
-             if (mode === "fine_structure" || mode === "both") {
-                // ΔPhase = 360 * f * Δt
-                const deltaPhaseDeg = 360 * freq * (itdUs / 1000000);
-                phase -= deltaPhaseDeg * Math.PI / 180;
-             }
-             if (mode === "envelope" || mode === "both") {
-                onsetOffsetMs += itdUs / 1000;
+            // Quantize the temporal delay to samples immediately to avoid phase drift
+            const itdSamples = Math.floor(itdUs / 1000000 * sampleRate);
+            const quantizedItdMs = itdSamples / sampleRate * 1000;
+            const deltaPhaseRad = 2 * Math.PI * freq * (itdSamples / sampleRate);
+
+             if (mode === "fine_structure") {
+                // Ongoing ITD: Phase shift based on continuous value is standard, 
+                // but we use the microsecond value for high precision.
+                const continuousPhaseRad = 2 * Math.PI * freq * (itdUs / 1000000);
+                phase -= continuousPhaseRad;
+             } else if (mode === "envelope") {
+                // Envelope ITD: Onset shift (quantized) + Phase compensation (quantized)
+                onsetOffsetMs += quantizedItdMs;
+                phase += deltaPhaseRad;
+             } else if (mode === "both") {
+                // True ITD: Onset shift (quantized). Carrier follows naturally.
+                onsetOffsetMs += quantizedItdMs;
              }
           }
         }
@@ -214,7 +219,6 @@ export function synthesizeMultiComponent(
     let leftPhase = leftState.phase;
     let rightPhase = rightState.phase;
 
-    // Optimization: find the overall range covered by this component across both ears
     const startI = Math.max(0, Math.min(leftOnsetSamples, rightOnsetSamples));
     const endI = Math.min(globalDurationSamples, Math.max(leftOnsetSamples, rightOnsetSamples) + durationSamples + 1);
 
