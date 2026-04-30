@@ -1,19 +1,19 @@
 import { ExperimentRunner } from "./logic/runner.js";
-import { 
-  practiceTestConfig, 
-  intensityDiscrimConfig, 
-  toneInNoiseConfig, 
+import {
+  frequencyDiscriminationConfig,
+  intensityDiscriminationConfig,
+  toneInNoiseConfig,
   amDetectionConfig,
-  itdDiscrimConfig,
-  profileAnalysisConfig 
+  itdDiscriminationConfig,
+  profileAnalysisConfig
 } from "../../examples/examples.js";
 
 const examples = {
-  practiceTest: practiceTestConfig,
-  intensityDiscrim: intensityDiscrimConfig,
+  frequencyDiscrimination: frequencyDiscriminationConfig,
+  intensityDiscrimination: intensityDiscriminationConfig,
   toneInNoise: toneInNoiseConfig,
   amDetection: amDetectionConfig,
-  itdDiscrim: itdDiscrimConfig,
+  itdDiscrimination: itdDiscriminationConfig,
   profileAnalysis: profileAnalysisConfig
 };
 
@@ -45,18 +45,18 @@ dropdownOptions.querySelectorAll('.option').forEach(option => {
   option.addEventListener('click', () => {
     const value = option.getAttribute('data-value') || '';
     const text = option.textContent || '';
-    
+
     // Update hidden select
     experimentSelect.value = value;
     selectedText.textContent = text;
-    
+
     // Update active state
     dropdownOptions.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
     option.classList.add('selected');
-    
+
     // Handle custom JSON visibility
     customJsonGroup.classList.toggle('hidden', value !== 'custom');
-    
+
     // Show description if available
     const config = (examples as any)[value];
     if (config?.meta?.description) {
@@ -105,7 +105,7 @@ loadBtn.addEventListener('click', async () => {
   if (experimentSelect.value === 'custom') {
     config = customConfig;
   }
-  
+
   if (!config) {
     alert("Please select an experiment.");
     return;
@@ -114,7 +114,7 @@ loadBtn.addEventListener('click', async () => {
   try {
     selectionScreen.classList.add('hidden');
     experimentScreen.classList.remove('hidden');
-    
+
     // Load and start the experiment via the modular runner
     await runner.loadConfig(config);
   } catch (e: any) {

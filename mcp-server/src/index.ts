@@ -210,7 +210,7 @@ class PsychoacousticServer {
           inputSchema: {
             type: "object",
             properties: {
-              templateName: { type: "string", enum: ["intensityDiscrim", "practiceTest", "itdDiscrim", "amDetection", "profileAnalysis", "toneInNoise"], description: "The base paradigm to use." },
+              templateName: { type: "string", enum: ["intensityDiscrimination", "frequencyDiscrimination", "itdDiscrimination", "amDetection", "profileAnalysis", "toneInNoise"], description: "The base paradigm to use." },
               parameters: {
                 type: "object",
                 properties: {
@@ -314,7 +314,7 @@ class PsychoacousticServer {
             content: [{
               type: "text",
               // MAINTENANCE NOTE: Update this list whenever a new export is added to examples/examples.ts
-              text: "Available Examples: intensityDiscrim, practiceTest, itdDiscrim, amDetection, profileAnalysis, toneInNoise"
+              text: "Available Examples: intensityDiscrimination, frequencyDiscrimination, itdDiscrimination, amDetection, profileAnalysis, toneInNoise"
             }]
           };
 
@@ -938,7 +938,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       const config = (examples as any)[name] || (examples as any)[`${name}Config`];
 
       if (!config) {
-        throw new Error(`Example '${name}' not found. Available: intensityDiscrim, practiceTest, itdDiscrim, amDetection, profileAnalysis, toneInNoise`);
+        throw new Error(`Example '${name}' not found. Available: intensityDiscrimination, frequencyDiscrimination, itdDiscrimination, amDetection, profileAnalysis, toneInNoise`);
       }
       return { content: [{ type: "text", text: JSON.stringify(config, null, 2) }] };
     } catch (e: any) {

@@ -4,7 +4,7 @@ import type { ExperimentConfigInput } from "../shared/schema.js";
  * 1. Practice & Test (Onboarding)
  * 2AFC, 5 Trials
  */
-export const practiceTestConfig: ExperimentConfigInput = {
+export const frequencyDiscriminationConfig: ExperimentConfigInput = {
   meta: {
     name: "Pitch sensitivity",
     version: "2.2.0",
@@ -91,7 +91,7 @@ export const practiceTestConfig: ExperimentConfigInput = {
  * 2. Intensity Discrimination (Easy Mode)
  * 4I2AFC, 8 Reversals
  */
-export const intensityDiscrimConfig: ExperimentConfigInput = {
+export const intensityDiscriminationConfig: ExperimentConfigInput = {
   meta: {
     name: "Intensity Discrimination",
     version: "2.2.0",
@@ -264,7 +264,7 @@ export const amDetectionConfig: ExperimentConfigInput = {
  * 5. ITD Discrimination (Binaural)
  * 3AFC, 12 Reversals
  */
-export const itdDiscrimConfig: ExperimentConfigInput = {
+export const itdDiscriminationConfig: ExperimentConfigInput = {
   meta: {
     name: "ITD Discrimination",
     version: "2.2.0",

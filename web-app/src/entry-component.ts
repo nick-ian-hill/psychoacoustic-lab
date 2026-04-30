@@ -1,20 +1,20 @@
 import { ExperimentRunner } from "./logic/runner.js";
 import styles from "../style.css?inline";
-import { 
-  practiceTestConfig, 
-  intensityDiscrimConfig, 
-  toneInNoiseConfig, 
+import {
+  frequencyDiscriminationConfig,
+  intensityDiscriminationConfig,
+  toneInNoiseConfig,
   amDetectionConfig,
-  itdDiscrimConfig,
-  profileAnalysisConfig 
+  itdDiscriminationConfig,
+  profileAnalysisConfig
 } from "../../examples/examples.js";
 
 const examples = {
-  practiceTest: practiceTestConfig,
-  intensityDiscrim: intensityDiscrimConfig,
+  frequencyDiscrimination: frequencyDiscriminationConfig,
+  intensityDiscrimination: intensityDiscriminationConfig,
   toneInNoise: toneInNoiseConfig,
   amDetection: amDetectionConfig,
-  itdDiscrim: itdDiscrimConfig,
+  itdDiscrimination: itdDiscriminationConfig,
   profileAnalysis: profileAnalysisConfig
 };
 
@@ -30,7 +30,7 @@ class PsychoacousticRunner extends HTMLElement {
     this.render();
     const container = this.shadowRoot!.querySelector(".psycho-runner-container") as HTMLElement;
     this.runner = new ExperimentRunner(container);
-    
+
     // Auto-load config if provided via attribute
     const configName = this.getAttribute("config");
     if (configName) {
@@ -130,11 +130,11 @@ class PsychoacousticApp extends HTMLElement {
           <div class="control-group">
             <label>Experiment Configuration</label>
             <select id="experiment-select" class="btn" style="width: 100%; text-align: left; background: var(--psycho-card-bg); border: 1px solid var(--psycho-border); padding: 1rem; color: var(--psycho-text); cursor: pointer;">
-              <option value="practiceTest">Practice & Test</option>
-              <option value="intensityDiscrim">Intensity Discrimination</option>
+              <option value="frequencyDiscrimination">Pitch Discrimination</option>
+              <option value="intensityDiscrimination">Intensity Discrimination</option>
               <option value="toneInNoise">Tone in Noise</option>
               <option value="amDetection">AM Detection</option>
-              <option value="itdDiscrim">ITD Discrimination</option>
+              <option value="itdDiscrimination">ITD Discrimination</option>
               <option value="profileAnalysis">Profile Analysis</option>
             </select>
           </div>

@@ -179,11 +179,11 @@ All examples include participant-facing metadata displayed in the UI.
 
 | Example | Key Paradigm | Sensory Target |
 |---------|-------------|-----------|
-| **1. Practice & Test** | Onboarding / 2AFC | "Higher Pitch" |
-| **2. Intensity Discrim.** | 4I2AFC (Anchored) | "Louder Tone" |
+| **1. Frequency Discrimination** | Onboarding / 2AFC | "Higher Pitch" |
+| **2. Intensity Discrimination** | 4I2AFC (Anchored) | "Louder Tone" |
 | **3. Tone in Noise** | 3AFC Masking | "Beep in Noise" |
 | **4. AM Detection** | 3AFC Modulation | "Wobbly Sound" |
-| **5. ITD Discrim.** | Binaural (Microseconds) | "Shifted Right" |
+| **5. ITD Discrimination** | Binaural (Microseconds) | "Shifted Right" |
 | **6. Profile Analysis** | Spectral Shape Roving | "Different Color" |
 
 ## Limitations & Future Work
