@@ -56,6 +56,11 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 *   **Temporal Window:** The ear integrates power over a sliding window (roughly 10-20ms). (Moore et al., 1988; Plack & Moore, 1990).
 *   **TMTF:** Measure AM detection thresholds across rates to map temporal resolution. (Viemeister, 1979).
 
+### Advanced Detection & Molecular Analysis
+*   **Probe-Signal Paradigm:** Use the `probe` condition to present occasional unexpected signals. The engine tags these in the results, allowing researchers to measure the "attentional filter" (detection of expected vs. unexpected frequencies). (Green & Swets, 1966).
+*   **Perceptual Anchors & Distractors:** Use `selectable: false` to provide anchors (fixed reference tones) that help the target "stand out" by grounding the participant's internal reference. This is also useful for adding distractors that influence the decision process but aren't valid response alternatives.
+*   **Data Recording:** Every trial's JSON export includes the `trialState` for **all** intervals. This includes the exact resolved dB offsets of every jittered component (even in non-selectable intervals), enabling reverse-correlation analysis to see how "decision noise" correlates with participant responses (Berg, 1990).
+
 ## Verification & Finalization
 
 1.  **Sensory Instructions:** Every experiment requires `meta.summary` (sensory focus, e.g., "Select the higher pitch") and `meta.description` (welcoming, non-technical). Avoid jargon like "mistuning" or "AM depth" in participant-facing text.
