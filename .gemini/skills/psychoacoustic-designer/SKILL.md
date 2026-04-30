@@ -40,7 +40,7 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 *   **Targeting:** 2-down/1-up targets the 70.7% point; 3-down/1-up targets the 79.4% point. (Levitt, 1971).
 *   **Efficiency:** Adaptive methods are significantly more efficient than constant stimuli for threshold estimation. (Watson & Fitzhugh, 1990).
 *   **Step Sizes:** Start large and systematically decrease (e.g., use `stepSizeInterval`) to balance speed and precision. (Jesteadt, 1980).
-*   **Anchored Paradigms (4I2AFC):** For beginners, use fixed "anchor" intervals at the start and end of a sequence (e.g., `fixed: true`). By setting `selectable: false`, these intervals become non-clickable perceptual references, forcing the participant to choose between the valid middle alternatives.
+*   **Anchored Paradigms (4I2AFC):** Useful for training, but also for experiments where the detection cue is complex or difficult to articulate. By setting the first and last intervals as fixed (`fixed: true`) and non-selectable (`selectable: false`), you provide stable perceptual "anchors" that help the participant maintain a consistent internal reference. The UI always displays interval numbers (1, 2, 3, 4) to maintain clear spatial orientation, even if some intervals are not selectable.
 
 ### Binaural & Spatial Hearing
 *   **BMLD:** Use phase inversion (SπN0) to measure Binaural Masking Level Differences. (Durlach, 1963).
@@ -64,5 +64,6 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 ## Verification & Finalization
 
 1.  **Sensory Instructions:** Every experiment requires `meta.summary` (sensory focus, e.g., "Select the higher pitch") and `meta.description` (welcoming, non-technical). Avoid jargon like "mistuning" or "AM depth" in participant-facing text.
-2.  **Clipping Check:** Always run `evaluate_and_finalize_experiment` to check for peak-level clipping.
-3.  **Termination:** Use `reversals: 12` for adaptive tasks and `trials: N` for fixed-length tasks.
+2.  **Timing Precision:** Use `readyDelayMs` (default 500ms) to provide a focus period after clicking "Start". For expert listeners, a short and consistent `itiMs` (e.g., 800-1000ms) helps maintain a high testing throughput and a stable "attentional state" throughout the block.
+3.  **Clipping Check:** Always run `evaluate_and_finalize_experiment` to check for peak-level clipping.
+4.  **Termination:** Use `reversals: 12` for adaptive tasks and `trials: N` for fixed-length tasks. Note that these can be combined (e.g., `reversals: 12` and `trials: 60`) to prevent extremely long sessions if a participant fails to converge. If used, the exclusion of such "timeout" blocks from the final analysis should be decided upfront to prevent selection bias.

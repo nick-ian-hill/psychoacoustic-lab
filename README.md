@@ -86,9 +86,11 @@ The project is split into three main components:
 
 - **Raised Cosine Ramps**: Support for both Linear and Raised Cosine (Hann) onset/offset ramps. Raised Cosine ramps provide the cleanest possible spectrum by ensuring a zero-slope transition at the start and end of the sound.
 - **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
+- **Configurable Focus Period**: Explicitly control the delay between clicking "Start" and the first stimulus onset via `readyDelayMs` (default 500ms), ensuring participants have time to focus before audio begins.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
+- **Graceful Cancellation**: Support for `Escape` key experiment cancellation with a design-system compliant confirmation modal. The cancellation logic is intelligently gated to only be active during the response phase to prevent accidental interruptions during stimulus playback.
 - **Fully Reproducible Experiments**: `meta.seed` controls the FFT noise RNG, trial-order randomization, and all dynamic perturbation randomizations (roving levels, phase), ensuring every run is exactly reproducible.
-- **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from randomization. Combined with `"selectable": false`, you can create standard professional paradigms like **4I2AFC**, where intervals 1 and 4 are fixed non-responsive anchors, forcing the participant to choose only between 2 and 3.
+- **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from randomization. Combined with `"selectable": false`, you can create standard professional paradigms like **4I2AFC**, where intervals 1 and 4 are fixed non-responsive anchors. The UI always displays interval numbers on all buttons (including non-selectable ones) to maintain clear spatial orientation for the participant.
 - **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `targetFrequency` on any perturbation to apply it globally to all components in the stimulus:
   - **Level**: via `gain` (global) or `spectral_profile` (per-component).
   - **Frequency**: via `mistuning` for global pitch roving.

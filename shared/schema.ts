@@ -158,21 +158,28 @@ export const PerturbationSchema = z.union([
 /**
  * Paradigm
  */
+export const IntervalSchema = z.object({
+  condition: z.enum(["reference", "target", "probe"]),
+  fixed: z.boolean().optional().describe("If true, this interval's position is never randomized, even if randomizeOrder is true. Use for lead-in/lead-out cues."),
+  selectable: z.boolean().optional().default(true).describe("If false, this interval acts only as a marker/cue and cannot be selected as a response. The UI will disable or hide the corresponding button."),
+  perturbations: z.array(PerturbationSchema).optional().describe("Interval-specific perturbations (e.g. fixed pedestal shift)."),
+});
+
+export type Interval = z.infer<typeof IntervalSchema>;
+
 export const ParadigmSchema = z.object({
   type: z.enum(["2AFC", "3AFC", "m-AFC", "Probe-Signal"]),
-  intervals: z.array(z.object({
-    condition: z.enum(["reference", "target", "probe"]),
-    fixed: z.boolean().optional().describe("If true, this interval's position is never randomized, even if randomizeOrder is true. Use for lead-in/lead-out cues."),
-    selectable: z.boolean().optional().default(true).describe("If false, this interval acts only as a marker/cue and cannot be selected as a response. The UI will disable or hide the corresponding button."),
-  })),
+  intervals: z.array(IntervalSchema),
+  targetPerturbation: PerturbationSchema.optional().describe("The perturbation that distinguishes the target interval from references."),
   randomizeOrder: z.boolean(),
-  timing: z.object({
-    isiMs: z.number(),
-    itiMs: z.number().min(50).default(1000).describe("Inter-trial interval in milliseconds (min 50ms). The next trial always starts automatically after this interval."),
-    feedbackDurationMs: z.number().default(400).optional().describe("Duration in milliseconds for which the feedback (correct/incorrect) is displayed after a response."),
-    responseDelayMs: z.number().min(0).default(250).optional().describe("Delay between the end of stimulus presentation and enabling the response buttons."),
-    allowReplay: z.boolean().optional().describe("If true, the user can replay the stimulus before responding."),
-  }),
+    timing: z.object({
+      isiMs: z.number(),
+      itiMs: z.number().min(50).default(1000).describe("Inter-trial interval in milliseconds (min 50ms). The next trial always starts automatically after this interval."),
+      feedbackDurationMs: z.number().default(400).optional().describe("Duration in milliseconds for which the feedback (correct/incorrect) is displayed after a response."),
+      responseDelayMs: z.number().min(0).default(250).optional().describe("Delay between the end of stimulus presentation and enabling the response buttons."),
+      readyDelayMs: z.number().min(0).default(500).optional().describe("Delay between clicking 'Start' and the first stimulus onset."),
+      allowReplay: z.boolean().optional().describe("If true, the user can replay the stimulus before responding."),
+    }),
 });
 
 /**

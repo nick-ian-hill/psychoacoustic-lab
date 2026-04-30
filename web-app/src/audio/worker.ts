@@ -1,6 +1,6 @@
 import seedrandom from "seedrandom";
-import { synthesizeMultiComponent, synthesizeNoise, synthesizeFilteredNoise, normalizeStereo } from "./synthesis";
-import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema";
+import { synthesizeMultiComponent, synthesizeNoise, synthesizeFilteredNoise, normalizeStereo } from "./synthesis.js";
+import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema.js";
 
 interface RenderTrialMessage {
   id: string;

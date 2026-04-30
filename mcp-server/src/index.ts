@@ -456,6 +456,7 @@ By default, perturbations apply only to the 'target' interval.
   - itiMs: number — inter-trial interval (default 1000ms); next trial always starts automatically after this interval
   - feedbackDurationMs: number — duration for which correct/incorrect feedback is displayed (default 400ms)
   - responseDelayMs: number — delay between end of stimulus and enabling response buttons (default 250ms)
+  - readyDelayMs: number — delay between clicking 'Start' and the first stimulus onset (default 500ms)
   - allowReplay?: boolean — if true, participant can re-listen before responding
 
 ## adaptive? (optional)

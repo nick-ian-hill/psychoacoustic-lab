@@ -1,5 +1,5 @@
-import type { Perturbation, CalibrationProfile } from "../../../shared/schema";
-import { generateFFTNoise } from "./fft";
+import type { Perturbation, CalibrationProfile } from "../../../shared/schema.js";
+import { generateFFTNoise } from "./fft.js";
 
 export interface SynthesisResult {
   left: Float32Array;

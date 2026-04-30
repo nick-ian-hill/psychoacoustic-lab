@@ -10,7 +10,7 @@ export const practiceTestConfig: ExperimentConfigInput = {
     version: "2.2.0",
     seed: 777,
     summary: "Select the HIGHER pitched tone.",
-    description: "Welcome! No prior knowledge is needed. We will start with a quick training phase to help you get used to the sounds. Identify the interval with the higher pitch."
+    description: "Welcome! We will start with a quick training phase to help you get used to the sounds. Identify the interval with the higher pitch."
   },
   ui: {
     showCurrentValue: true,
@@ -20,10 +20,11 @@ export const practiceTestConfig: ExperimentConfigInput = {
       id: "practice",
       feedback: true,
       meta: {
-        summary: "PRACTICE PHASE: Get 5 correct to advance."
+        summary: "PRACTICE PHASE:\nSelect the interval with the higher pitch tone.\nGet 5 correct to advance."
       },
       ui: {
-        showTrialNumber: true // Show trial number only for practice
+        showTrialNumber: true,
+        showCurrentValue: false
       },
       paradigm: {
         type: "m-AFC",
@@ -186,7 +187,7 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
     ],
     perturbations: [{
       type: "gain",
-      targetGeneratorIndex: 1, 
+      targetGeneratorIndex: 1,
       deltaDb: { adaptive: true }
     }],
     adaptive: {
@@ -269,7 +270,7 @@ export const itdDiscrimConfig: ExperimentConfigInput = {
     version: "2.2.0",
     seed: 888,
     summary: "Select the sound shifted to the RIGHT.",
-    description: "Two sounds are centered; one is shifted toward your right ear. Can you detect the tiny spatial shift?"
+    description: "Two sounds are centered; one is shifted toward your right ear. Select the sound shifted to the right."
   },
   ui: {
     showTrialNumber: false,
@@ -362,7 +363,7 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
         type: "gain",
         targetGeneratorIndex: 0,
         applyTo: "target",
-        deltaDb: { adaptive: true } 
+        deltaDb: { adaptive: true }
       }
     ],
     adaptive: {

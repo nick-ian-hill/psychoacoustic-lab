@@ -1,4 +1,4 @@
-import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema";
+import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema.js";
 
 export class AudioEngine {
   private ctx: AudioContext;
@@ -26,7 +26,10 @@ export class AudioEngine {
         buffer.copyToChannel(left, 0);
         buffer.copyToChannel(right, 1);
         this.pendingRequests.delete(id);
-        resolve({ buffer, intervalLengths });
+        
+        // Convert samples to seconds for UI timing
+        const lengthsInSeconds = intervalLengths.map((samples: number) => samples / this.ctx.sampleRate);
+        resolve({ buffer, intervalLengths: lengthsInSeconds });
       }
     };
   }
@@ -102,7 +105,9 @@ export class AudioEngine {
   }
 
   async close() {
-    await this.ctx.close();
+    if (this.ctx.state !== 'closed') {
+      await this.ctx.close();
+    }
     this.worker.terminate();
   }
 

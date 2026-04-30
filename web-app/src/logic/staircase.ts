@@ -1,4 +1,4 @@
-import type { AdaptiveConfig } from "../../../shared/schema";
+import type { AdaptiveConfig } from "../../../shared/schema.js";
 
 export type TrialResult = {
   trialIndex: number;
