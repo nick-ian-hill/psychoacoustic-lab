@@ -12,10 +12,12 @@ Always prefer higher-level abstractions to ensure schema compliance and mathemat
 
 ## Architecture & Binaural Precision
 
-*   **IPD (Interaural Phase Difference):** Use the high-level `itd` perturbation with `mode: 'fine_structure'`. This handles frequency-to-phase conversion automatically.
-*   **True ITD (Interaural Time Difference):** Use the high-level `itd` perturbation with `mode: 'both'` or `'envelope'`.
-*   **Adaptive Linking:** If you use `{ "adaptive": true }` in any perturbation, you MUST define an `adaptive` configuration block. Conversely, if an `adaptive` block is defined, at least one perturbation MUST be set to `{ "adaptive": true }`.
-*   **Binaural Alignment:** The engine automatically manages buffer padding and sample-accurate offsets to keep stimuli phase-aligned, even when applying differential delays.
+*   **Temporal Convention (ITD & Asynchrony):** The platform follows a unified **Positive = Delay** convention. 
+    *   **ITD:** A positive `deltaMicroseconds` delays the targeted ear (Lag), shifting the perceived image AWAY from that ear.
+    *   **Asynchrony:** A positive `delayMs` in `onset_asynchrony` delays the start of the targeted component relative to others.
+*   **IPD (Interaural Phase Difference):** Use `mode: 'fine_structure'`. The engine subtracts phase for positive values to maintain consistency with the delay model.
+*   **Adaptive Linking:** If you use `{ "adaptive": true }` in any perturbation, you MUST define an `adaptive` configuration block.
+*   **Precise Gain Logic:** All `gain` perturbations (roving + target) are summed into a single dB offset before synthesis. This eliminates double-counting while ensuring that roving levels do not "leak" between sound sources if `targetGeneratorIndex` is used.
 
 ## Human Auditory Thresholds (Empirical Yardsticks)
 
@@ -41,8 +43,8 @@ Base initial values and boundaries on these human limits to prevent unrealistic 
     *   **Geometric:** Use for variables bounded by zero (e.g., percentage mistuning, AM depth, ITD in µs).
 
 ### Roving & Confounds
-*   **Loudness Roving:** To prevent participants from using absolute energy cues, apply a uniform random `gain` perturbation (e.g., ±5 dB) across ALL intervals.
-*   **Pitch Roving:** If testing spectral shape, rove the base frequency of all components to force reliance on the relative spectral profile.
+*   **Global Level Roving:** To prevent absolute loudness cues while keeping Signal-to-Masker (SMR) ratios constant, apply the `gain` rove without a `targetGeneratorIndex`. This shifts the entire interval's level.
+*   **Independent Jitter & Molecular Psychophysics:** By applying independent random `gain` perturbations to multiple components, researchers can estimate the **perceptual weight** of each component in the decision process (Berg, 1990). The platform's JSON export records these resolved offsets within the `trialState` metadata for every interval, enabling reverse-correlation or regression-based analysis of observer efficiency in external tools like Python or R.
 
 ## Verification & Finalization
 

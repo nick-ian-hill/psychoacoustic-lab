@@ -210,7 +210,7 @@ class PsychoacousticServer {
           inputSchema: {
             type: "object",
             properties: {
-              templateName: { type: "string", enum: ["freqDiscrim", "itdDiscrim", "amDetection", "profileAnalysis", "tenTest", "srim"], description: "The base paradigm to use." },
+              templateName: { type: "string", enum: ["intensityDiscrim", "practiceTest", "itdDiscrim", "amDetection", "profileAnalysis", "toneInNoise"], description: "The base paradigm to use." },
               parameters: {
                 type: "object",
                 properties: {
@@ -314,7 +314,7 @@ class PsychoacousticServer {
             content: [{
               type: "text",
               // MAINTENANCE NOTE: Update this list whenever a new export is added to examples/examples.ts
-              text: "Available Examples: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis, gapDetection"
+              text: "Available Examples: intensityDiscrim, practiceTest, itdDiscrim, amDetection, profileAnalysis, toneInNoise"
             }]
           };
 
@@ -932,8 +932,12 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     const { name } = args;
     try {
       const examples = await import("../../examples/examples.js");
-      const config = (examples as any)[`${name}Config`];
-      if (!config) throw new Error(`Example '${name}Config' not found. Available: freqDiscrim, auditoryGrouping, itdDiscrim, srim, tenTest, amDetection, profileAnalysis, gapDetection`);
+      // Try both raw name and name + "Config"
+      const config = (examples as any)[name] || (examples as any)[`${name}Config`];
+      
+      if (!config) {
+        throw new Error(`Example '${name}' not found. Available: intensityDiscrim, practiceTest, itdDiscrim, amDetection, profileAnalysis, toneInNoise`);
+      }
       return { content: [{ type: "text", text: JSON.stringify(config, null, 2) }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: `Error loading example: ${e.message}` }], isError: true };
@@ -957,7 +961,7 @@ Partial object. All fields are optional and fall back to defaults if omitted.
     const { templateName, parameters = {} } = args;
     try {
       const examples = await import("../../examples/examples.js");
-      const baseConfig = (examples as any)[`${templateName}Config`];
+      const baseConfig = (examples as any)[templateName] || (examples as any)[`${templateName}Config`];
       if (!baseConfig) throw new Error(`Template '${templateName}' not found.`);
 
       let config = JSON.parse(JSON.stringify(baseConfig));

@@ -94,7 +94,8 @@ export function synthesizeMultiComponent(
   perturbations?: Perturbation[],
   adaptiveValue?: number,
   calibration?: CalibrationProfile,
-  sharedEnvelopes?: Map<string, Float32Array>
+  sharedEnvelopes?: Map<string, Float32Array>,
+  genIndex: number = 0
 ): SynthesisResult {
   // 1. Pre-resolve onsets to determine the required buffer range and normalization offset.
   // This ensures that lead-asynchrony (negative onsetMs) doesn't cause clicks by starting at index 0 without a ramp.
@@ -125,17 +126,6 @@ export function synthesizeMultiComponent(
     maxOnsetMs = Math.max(maxOnsetMs, onset);
   });
 
-  // Calculate Global Gain for this interval (e.g., for roving)
-  let intervalGainDb = 0;
-  if (perturbations) {
-    perturbations.forEach(p => {
-      if (p.type === "gain") {
-        intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
-      }
-    });
-  }
-  const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
-
   // Normalize all onsets relative to the earliest one starting at 0ms.
   // The total span of the buffer must cover the stimulus duration PLUS the spread of the component onsets.
   // We add +1 sample to ensure we include the point at t=durationSec where the envelope is exactly 0.
@@ -162,6 +152,11 @@ export function synthesizeMultiComponent(
       if (perturbations) {
         for (const p of perturbations) {
           const pAny = p as any;
+          
+          // 1. Check Generator Targeting
+          if (pAny.targetGeneratorIndex !== undefined && pAny.targetGeneratorIndex !== genIndex) continue;
+
+          // 2. Check Frequency Targeting
           const matchesFrequency = !pAny.targetFrequency || pAny.targetFrequency === comp.frequency;
           if (!matchesFrequency) continue;
 
@@ -198,7 +193,7 @@ export function synthesizeMultiComponent(
       }
 
       const calibrationOffset = getCalibrationOffset(freq, calibration);
-      const finalAmp = Math.pow(10, (comp.levelDb + ampOffsetDb + calibrationOffset) / 20) * intervalGainAmp;
+      const finalAmp = Math.pow(10, (comp.levelDb + ampOffsetDb + calibrationOffset) / 20);
 
       return { freq, phase, amp: finalAmp, onsetMs: (comp.onsetDelayMs || 0) + onsetOffsetMs };
     };
@@ -289,7 +284,8 @@ export function synthesizeNoise(
   perturbations?: Perturbation[],
   adaptiveValue?: number,
   calibration?: CalibrationProfile,
-  sharedEnvelopes?: Map<string, Float32Array>
+  sharedEnvelopes?: Map<string, Float32Array>,
+  genIndex: number = 0
 ): SynthesisResult {
   const duration = gen.durationMs / 1000;
   // Add +1 sample to include the point at t=duration where the envelope is exactly 0.
@@ -298,17 +294,6 @@ export function synthesizeNoise(
   const right = new Float32Array(targetSamples);
   const baseAmp = Math.pow(10, gen.levelDb / 20);
   const ear = gen.ear || "both";
-
-  // Calculate Global Gain for this interval (e.g., for roving)
-  let intervalGainDb = 0;
-  if (perturbations) {
-    perturbations.forEach(p => {
-      if (p.type === "gain") {
-        intervalGainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
-      }
-    });
-  }
-  const intervalGainAmp = Math.pow(10, intervalGainDb / 20);
 
   const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
 
@@ -320,6 +305,11 @@ export function synthesizeNoise(
     if (perturbations) {
       for (const p of perturbations) {
         const pAny = p as any;
+        
+        // 1. Check Generator Targeting
+        if (pAny.targetGeneratorIndex !== undefined && pAny.targetGeneratorIndex !== genIndex) continue;
+
+        // 2. Check Ear Match
         const pEar = pAny.ear || "both";
         const earMatch = pEar === "both" || pEar === targetEar;
         if (!earMatch) continue;
@@ -332,7 +322,7 @@ export function synthesizeNoise(
       }
     }
 
-    const totalGainAmp = Math.pow(10, gainDb / 20) * intervalGainAmp;
+    const totalGainAmp = Math.pow(10, gainDb / 20);
     const amMod = gen.modulators?.find((m: any) => m.type === "AM");
     const finalAmDepth = amMod 
       ? Math.max(0, Math.min(1, (amMod.depth || 0) + amDepthOffset))
@@ -394,7 +384,8 @@ export function synthesizeFilteredNoise(
   perturbations?: Perturbation[],
   adaptiveValue?: number,
   calibration?: CalibrationProfile,
-  sharedEnvelopes?: Map<string, Float32Array>
+  sharedEnvelopes?: Map<string, Float32Array>,
+  genIndex: number = 0
 ): SynthesisResult {
   // Filtered noise is synthesized as white noise then filtered by FIR
   const noiseGen = {
@@ -404,7 +395,7 @@ export function synthesizeFilteredNoise(
     bandLimit: undefined // We filter manually
   };
   
-  const noiseResult = synthesizeNoise(noiseGen, sampleRate, rng, perturbations, adaptiveValue, calibration, sharedEnvelopes);
+  const noiseResult = synthesizeNoise(noiseGen, sampleRate, rng, perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
   
   return {
     left: applyFIR(noiseResult.left, gen.firCoefficients),

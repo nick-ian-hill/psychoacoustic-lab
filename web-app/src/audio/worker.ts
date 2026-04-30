@@ -82,21 +82,21 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     const layers: { left: Float32Array; right: Float32Array }[] = [];
     let maxLength = 0;
 
-    for (const gen of interval.generators) {
+    interval.generators.forEach((gen, genIndex) => {
       let result;
       if (gen.type === "multi_component") {
-        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes);
+        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
       } else if (gen.type === "noise") {
-        result = synthesizeNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes);
+        result = synthesizeNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
       } else if (gen.type === "filtered_noise") {
-        result = synthesizeFilteredNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes);
+        result = synthesizeFilteredNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
       }
       
       if (result) {
         layers.push(result);
         maxLength = Math.max(maxLength, result.left.length);
       }
-    }
+    });
 
     const intervalLeft = new Float32Array(maxLength);
     const intervalRight = new Float32Array(maxLength);

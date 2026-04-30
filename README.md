@@ -101,7 +101,7 @@ The project is split into three main components:
 - **Block-Based Architecture**: Group multiple experiment stages into a single session. Each block can have its own paradigm, stimuli, adaptive rules, and termination criteria (e.g., a fixed-level practice block followed by an adaptive test block).
 - **Shared-Envelope Modulation**: Support for `sharedEnvelopeId` on noise modulators. This allows multiple noise bands to share a single, perfectly correlated modulation envelope, which is essential for studying Comodulation Masking Release (CMR).
 - **FIR Filtered Noise**: A `filtered_noise` generator that accepts custom FIR coefficients. This allows for high-precision masking paradigms like **Notched Noise** masking to measure auditory filter shapes.
-- **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing buffer padding to prevent sample clipping. The `ear` field on `phase_shift` perturbations ensures only the target channel is shifted, creating a genuine interaural phase difference.
+- **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing buffer padding to prevent sample clipping. The engine follows a unified **Delay-based Convention**: positive values for both ITD and Onset Asynchrony represent a **Temporal Delay (Lag)**. For ITD, this shifts the sound AWAY from the targeted ear; for asynchrony, it delays the start of the targeted component.
 - **Global Level Control**: Apply a master trim gain (`globalLevelDb`) to the entire trial stimulus. This occurs after per-generator synthesis but before final normalization, providing a clean way to adjust overall presentation levels while maintaining calibrated relative component ratios.
 - **Interval-Specific Stimuli**: Use the `applyTo` field on any stimulus generator (`"target"`, `"reference"`, or `"all"`) to define complex scenes where sounds only play in specific intervals (e.g., adding a target tone to a noise masker only in the signal interval).
 - **Multi-Layer Masking**: Stack an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval. Combined with `applyTo`, this enables clean, explicit modeling of Signal-in-Noise paradigms without architectural hacks.
@@ -111,7 +111,7 @@ The project is split into three main components:
 - **Termination & Thresholding**: Configure exactly how and when an experiment ends (e.g., stopping after $N$ reversals or $M$ trials).
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
-- **Data Export**: Download detailed trial history as both **JSON** and **CSV** files. Both formats include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability.
+- **Data Export**: Download detailed trial history as a **JSON** file. The format include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis (e.g., Berg 1990).
 
 ## Technical Implementation
 
@@ -177,10 +177,12 @@ All examples include participant-facing metadata displayed in the UI.
 
 | Example | Key Paradigm | Literature |
 |---------|-------------|-----------|
-| **Frequency Discrimination** | 3-down/1-up mistuning threshold | Classic psychophysics |
+| **Intensity Discrimination** | Geometric staircase (dB) | Weber's Law |
 | **Practice & Test Demo** | Multi-block sequential stages | Modern study design |
-| **ITD/IPD Discrimination** | Binaural phase shift threshold (TFS) | Moore (2014) |
-| **AM Detection (Shared)** | Correlated noise modulation (CMR) | Hall et al. (1984) |
+| **ITD Discrimination** | Binaural delay threshold (Scientific Model) | Moore (2012) |
+| **AM Detection** | Temporal modulation transfer (TMTF) | Viemeister (1979) |
+| **Profile Analysis** | Level-roving spectral shape task | Green (1988) |
+| **Tone in Noise** | Masking detection threshold | Fletcher (1940) |
 
 ## Limitations & Future Work
 
