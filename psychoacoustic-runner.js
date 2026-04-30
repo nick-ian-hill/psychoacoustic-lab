@@ -516,7 +516,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		});
 	}
 	async loadConfig(e) {
-		this.currentConfig = e, this.sessionResults = [], this.engine && await this.engine.close(), this.activeSeed = e.meta.seed ?? Math.floor(Math.random() * 1e6), this.engine = new l(this.activeSeed), this.trialRng = (0, b.default)(this.activeSeed.toString()), await this.startBlock(0);
+		this.currentConfig = e, this.sessionResults = [], this.engine && await this.engine.close(), this.elements.resultsArea.classList.add("hidden"), this.elements.playBtnContainer.classList.remove("hidden"), this.elements.instructionText.classList.remove("hidden"), this.activeSeed = e.meta.seed ?? Math.floor(Math.random() * 1e6), this.engine = new l(this.activeSeed), this.trialRng = (0, b.default)(this.activeSeed.toString()), await this.startBlock(0);
 	}
 	async startBlock(e) {
 		if (!this.currentConfig) return;
@@ -617,9 +617,9 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		this.elements.statusBadge.textContent = c, this.elements.statusBadge.classList.toggle("hidden", !c);
 	}
 	showResults() {
-		this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.resultsArea.classList.remove("hidden");
+		this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.statusBadge.classList.add("hidden"), this.elements.instructionText.classList.add("hidden"), this.elements.resultsArea.classList.remove("hidden");
 		let e = this.sessionResults.length > 0 ? this.sessionResults[this.sessionResults.length - 1].threshold : 0, t = this.currentBlock?.adaptive?.unit || "";
-		this.elements.resultsText.textContent = `Experiment Complete. Estimated Threshold: ${e.toFixed(2)}${t ? " " + t : ""}`, this.container.dispatchEvent(new CustomEvent("experiment-complete", {
+		this.elements.resultsText.textContent = `Estimated Threshold: ${e.toFixed(2)}${t ? " " + t : ""}`, this.container.dispatchEvent(new CustomEvent("experiment-complete", {
 			detail: {
 				experiment: this.currentConfig?.meta.name,
 				threshold: e,
