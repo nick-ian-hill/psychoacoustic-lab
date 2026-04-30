@@ -6,7 +6,7 @@ import type { ExperimentConfigInput } from "../shared/schema.js";
  */
 export const practiceTestConfig: ExperimentConfigInput = {
   meta: {
-    name: "Practice & Test",
+    name: "Pitch sensitivity",
     version: "2.2.0",
     seed: 777,
     summary: "Select the HIGHER pitched tone.",
