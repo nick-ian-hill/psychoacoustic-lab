@@ -40,6 +40,7 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 *   **Targeting:** 2-down/1-up targets the 70.7% point; 3-down/1-up targets the 79.4% point. (Levitt, 1971).
 *   **Efficiency:** Adaptive methods are significantly more efficient than constant stimuli for threshold estimation. (Watson & Fitzhugh, 1990).
 *   **Step Sizes:** Start large and systematically decrease (e.g., use `stepSizeInterval`) to balance speed and precision. (Jesteadt, 1980).
+*   **Anchored Paradigms (4I2AFC):** For beginners, use fixed "anchor" intervals at the start and end of a sequence (e.g., `fixed: true`). By setting `selectable: false`, these intervals become non-clickable perceptual references, forcing the participant to choose between the valid middle alternatives.
 
 ### Binaural & Spatial Hearing
 *   **BMLD:** Use phase inversion (SπN0) to measure Binaural Masking Level Differences. (Durlach, 1963).
@@ -57,6 +58,6 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 
 ## Verification & Finalization
 
-1.  **User Instructions:** Every experiment requires `meta.summary` (short, trial-time) and `meta.description` (long, help-time).
-2.  **Clipping Check:** Always run `evaluate_and_finalize_experiment` to check for peak-level clipping when multiple components or positive gain perturbations are used.
-3.  **Reversal Count:** Ensure at least 8-12 reversals are targeted for stable threshold estimation.
+1.  **Sensory Instructions:** Every experiment requires `meta.summary` (sensory focus, e.g., "Select the higher pitch") and `meta.description` (welcoming, non-technical). Avoid jargon like "mistuning" or "AM depth" in participant-facing text.
+2.  **Clipping Check:** Always run `evaluate_and_finalize_experiment` to check for peak-level clipping.
+3.  **Termination:** Use `reversals: 12` for adaptive tasks and `trials: N` for fixed-length tasks.

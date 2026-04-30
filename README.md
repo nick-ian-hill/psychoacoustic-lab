@@ -88,7 +88,7 @@ The project is split into three main components:
 - **Automatic Trial Advancement**: Support for configurable Inter-Trial Intervals (`itiMs`), allowing for high-throughput, automated experiment runs without manual clicking.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
 - **Fully Reproducible Experiments**: `meta.seed` controls the FFT noise RNG, trial-order randomization, and all dynamic perturbation randomizations (roving levels, phase), ensuring every run is exactly reproducible.
-- **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from the randomization process. This enables standard professional paradigms like **4I2AFC** (4-interval 2-alternative forced choice), where intervals 1 and 4 are fixed references and the target only shuffles between 2 and 3.
+- **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from randomization. Combined with `"selectable": false`, you can create standard professional paradigms like **4I2AFC**, where intervals 1 and 4 are fixed non-responsive anchors, forcing the participant to choose only between 2 and 3.
 - **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `targetFrequency` on any perturbation to apply it globally to all components in the stimulus:
   - **Level**: via `gain` (global) or `spectral_profile` (per-component).
   - **Frequency**: via `mistuning` for global pitch roving.
@@ -105,7 +105,7 @@ The project is split into three main components:
 - **Global Level Control**: Apply a master trim gain (`globalLevelDb`) to the entire trial stimulus. This occurs after per-generator synthesis but before final normalization, providing a clean way to adjust overall presentation levels while maintaining calibrated relative component ratios.
 - **Interval-Specific Stimuli**: Use the `applyTo` field on any stimulus generator (`"target"`, `"reference"`, or `"all"`) to define complex scenes where sounds only play in specific intervals (e.g., adding a target tone to a noise masker only in the signal interval).
 - **Multi-Layer Masking**: Stack an arbitrary array of independent stimulus generators (e.g., noise maskers and multi-component targets) into a single composite interval. Combined with `applyTo`, this enables clean, explicit modeling of Signal-in-Noise paradigms without architectural hacks.
-- **Dynamic Participant Instructions**: Supply experiment-level and block-level metadata via `meta.summary` (concise task instructions) and `meta.description` (long-form detailed guidance). Block-level instructions automatically update the UI as the experiment progresses.
+- **Dynamic Participant Instructions**: Supply experiment-level and block-level metadata via `meta.summary` (sensory focus, e.g., "Select the higher pitch") and `meta.description` (welcoming guidance). Avoid technical jargon in participant-facing text.
 - **Global & Block UI Control**: Configure UI visibility (e.g., `showCurrentValue`, `showTrialNumber`) either globally for the experiment or override them per-block for different experimental phases.
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Termination & Thresholding**: Configure exactly how and when an experiment ends (e.g., stopping after $N$ reversals or $M$ trials).
@@ -175,14 +175,14 @@ A dedicated Python Streamlit application is included in the `analysis/` director
 
 All examples include participant-facing metadata displayed in the UI.
 
-| Example | Key Paradigm | Literature |
+| Example | Key Paradigm | Sensory Target |
 |---------|-------------|-----------|
-| **Intensity Discrimination** | Geometric staircase (dB) | Weber's Law |
-| **Practice & Test Demo** | Multi-block sequential stages | Modern study design |
-| **ITD Discrimination** | Binaural delay threshold (Scientific Model) | Moore (2012) |
-| **AM Detection** | Temporal modulation transfer (TMTF) | Viemeister (1979) |
-| **Profile Analysis** | Level-roving spectral shape task | Green (1988) |
-| **Tone in Noise** | Masking detection threshold | Fletcher (1940) |
+| **1. Practice & Test** | Onboarding / 2AFC | "Higher Pitch" |
+| **2. Intensity Discrim.** | 4I2AFC (Anchored) | "Louder Tone" |
+| **3. Tone in Noise** | 3AFC Masking | "Beep in Noise" |
+| **4. AM Detection** | 3AFC Modulation | "Wobbly Sound" |
+| **5. ITD Discrim.** | Binaural (Microseconds) | "Shifted Right" |
+| **6. Profile Analysis** | Spectral Shape Roving | "Different Color" |
 
 ## Limitations & Future Work
 

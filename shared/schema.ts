@@ -163,6 +163,7 @@ export const ParadigmSchema = z.object({
   intervals: z.array(z.object({
     condition: z.enum(["reference", "target", "probe"]),
     fixed: z.boolean().optional().describe("If true, this interval's position is never randomized, even if randomizeOrder is true. Use for lead-in/lead-out cues."),
+    selectable: z.boolean().optional().default(true).describe("If false, this interval acts only as a marker/cue and cannot be selected as a response. The UI will disable or hide the corresponding button."),
   })),
   randomizeOrder: z.boolean(),
   timing: z.object({
@@ -285,6 +286,7 @@ export const ExperimentConfigSchema = z.object({
 });
 
 export type ExperimentConfig = z.infer<typeof ExperimentConfigSchema>;
+export type ExperimentConfigInput = z.input<typeof ExperimentConfigSchema>;
 export type BlockConfig = z.infer<typeof BlockSchema>;
 export type StimulusGenerator = z.infer<typeof StimulusGeneratorSchema>;
 export type Perturbation = z.infer<typeof PerturbationSchema>;

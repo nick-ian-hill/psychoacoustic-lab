@@ -400,6 +400,18 @@ textarea:focus {
   border-color: var(--border);
 }
 
+.response-btn.non-selectable {
+  flex: 0.4;
+  padding: 0.5rem;
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+.response-btn.non-selectable.active {
+  opacity: 1;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .btn:hover:not(:disabled) {
     background: #7dd3fc;

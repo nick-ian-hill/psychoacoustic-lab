@@ -324,12 +324,19 @@ async function startBlock(index: number) {
   // Generate dynamic response buttons based on the paradigm intervals
   responseButtonsContainer.innerHTML = '';
   responseButtons = [];
-  currentBlock.paradigm.intervals.forEach((_: any, index: number) => {
+  currentBlock.paradigm.intervals.forEach((interval: any, index: number) => {
     const btn = document.createElement('button');
     btn.className = 'response-btn';
-    btn.textContent = `${index + 1}`;
+    
+    if (interval.selectable === false) {
+      btn.classList.add('non-selectable');
+      btn.textContent = ''; // No number for cues/anchors
+    } else {
+      btn.textContent = `${index + 1}`;
+      btn.addEventListener('click', () => handleResponse(index));
+    }
+    
     btn.disabled = true;
-    btn.addEventListener('click', () => handleResponse(index));
     responseButtonsContainer.appendChild(btn);
     responseButtons.push(btn);
   });

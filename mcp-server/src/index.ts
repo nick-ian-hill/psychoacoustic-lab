@@ -448,8 +448,8 @@ By default, perturbations apply only to the 'target' interval.
 - targetFrequency?: number — (Optional) target a specific component.
 
 ## paradigm (required)
-- type: "2AFC" | "3AFC" | "Probe-Signal"
-- intervals: Array<{ condition: "reference" | "target" | "probe", fixed?: boolean }> — Set 'fixed: true' to lock an interval's position during randomization. This enables paradigms like 4I2AFC (4-interval 2-alternative forced choice) with lead-in/lead-out cues.
+- type: "2AFC" | "3AFC" | "m-AFC" | "Probe-Signal"
+- intervals: Array<{ condition: "reference" | "target" | "probe", fixed?: boolean, selectable?: boolean }> — Set 'fixed: true' to lock an interval's position. Set 'selectable: false' (default true) to mark an interval as a non-clickable cue/anchor.
 - randomizeOrder: boolean — uses meta.seed for reproducibility
 - timing:
   - isiMs: number — inter-stimulus interval
@@ -481,14 +481,15 @@ A free-form object with 'reference' and/or 'target' keys. Currently used as a me
 Partial object. All fields are optional and fall back to defaults if omitted.
 - showInstructions: boolean — Default true.
 - showTrialNumber: boolean — Default true.
-- showReversals: boolean — Default true.
+- showReversals: boolean — Default false.
 - showCurrentValue: boolean — Default false.
 - showAverageThreshold: boolean — Default false.
 
 ## termination (required)
 - reversals?: number — stop after N reversals (threshold averaged from reversal values, discarding first 4 by default)
-- maxTrials?: number — stop after N trials regardless of reversals
-- discardReversals?: number — number of initial reversals to discard when calculating the final threshold. Defaults to 4.
+- trials?: number — stop after exactly N trials (or as a safety ceiling for adaptive tasks)
+- correctTrials?: number — stop after N correct trials (useful for onboarding/practice)
+- discardReversals?: number — number of initial reversals to discard when calculating threshold. Defaults to 4.
 `;
     return { content: [{ type: "text", text: reference }] };
   }

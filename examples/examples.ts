@@ -1,10 +1,10 @@
-import type { ExperimentConfig } from "../shared/schema.js";
+import type { ExperimentConfigInput } from "../shared/schema.js";
 
 /**
  * 1. Practice & Test (Onboarding)
  * 2AFC, 5 Trials
  */
-export const practiceTestConfig: ExperimentConfig = {
+export const practiceTestConfig: ExperimentConfigInput = {
   meta: {
     name: "Practice & Test",
     version: "2.2.0",
@@ -90,7 +90,7 @@ export const practiceTestConfig: ExperimentConfig = {
  * 2. Intensity Discrimination (Easy Mode)
  * 4I2AFC, 8 Reversals
  */
-export const intensityDiscrimConfig: ExperimentConfig = {
+export const intensityDiscrimConfig: ExperimentConfigInput = {
   meta: {
     name: "Intensity Discrimination",
     version: "2.2.0",
@@ -108,10 +108,10 @@ export const intensityDiscrimConfig: ExperimentConfig = {
     paradigm: {
       type: "m-AFC",
       intervals: [
-        { condition: "reference", fixed: true },
+        { condition: "reference", fixed: true, selectable: false },
         { condition: "reference" },
         { condition: "target" },
-        { condition: "reference", fixed: true }
+        { condition: "reference", fixed: true, selectable: false }
       ],
       randomizeOrder: true,
       timing: { isiMs: 300, itiMs: 1000 }
@@ -145,7 +145,7 @@ export const intensityDiscrimConfig: ExperimentConfig = {
  * 3. Tone in Noise (Detection)
  * 3AFC, 8 Reversals
  */
-export const toneInNoiseConfig: ExperimentConfig = {
+export const toneInNoiseConfig: ExperimentConfigInput = {
   meta: {
     name: "Tone in Noise",
     version: "2.2.0",
@@ -208,7 +208,7 @@ export const toneInNoiseConfig: ExperimentConfig = {
  * 4. AM Detection (Temporal)
  * 3AFC, 8 Reversals
  */
-export const amDetectionConfig: ExperimentConfig = {
+export const amDetectionConfig: ExperimentConfigInput = {
   meta: {
     name: "AM Detection",
     version: "2.2.0",
@@ -263,7 +263,7 @@ export const amDetectionConfig: ExperimentConfig = {
  * 5. ITD Discrimination (Binaural)
  * 3AFC, 12 Reversals
  */
-export const itdDiscrimConfig: ExperimentConfig = {
+export const itdDiscrimConfig: ExperimentConfigInput = {
   meta: {
     name: "ITD Discrimination",
     version: "2.2.0",
@@ -315,7 +315,7 @@ export const itdDiscrimConfig: ExperimentConfig = {
  * 6. Profile Analysis (Spectral Complexity)
  * 3AFC, 12 Reversals
  */
-export const profileAnalysisConfig: ExperimentConfig = {
+export const profileAnalysisConfig: ExperimentConfigInput = {
   meta: {
     name: "Profile Analysis",
     version: "2.2.0",
