@@ -1063,7 +1063,12 @@ Partial object. All fields are optional and fall back to defaults if omitted.
       });
       summary += `### Logic\n`;
       summary += `**Adaptive**: ${block.adaptive ? `Yes (${block.adaptive.rule.correctDown}-down/1-up on ${block.adaptive.parameter})` : "No"}\n`;
-      summary += `**Termination**: ${block.termination?.reversals ? `${block.termination.reversals} reversals` : `${block.termination?.trials} trials`}\n\n`;
+      const term = block.termination;
+      const termConditions = [];
+      if (term?.reversals) termConditions.push(`${term.reversals} reversals`);
+      if (term?.trials) termConditions.push(`${term.trials} trials`);
+      if (term?.correctTrials) termConditions.push(`${term.correctTrials} correct trials`);
+      summary += `**Termination**: ${termConditions.join(" OR ") || "N/A"}\n\n`;
     });
 
     return { content: [{ type: "text", text: summary }] };
