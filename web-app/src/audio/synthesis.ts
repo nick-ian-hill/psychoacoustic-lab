@@ -294,18 +294,17 @@ export function synthesizeNoise(
   const duration = gen.durationMs / 1000;
   // Add +1 sample to include the point at t=duration where the envelope is exactly 0.
   const targetSamples = Math.floor(duration * sampleRate) + 1;
-  const left = new Float32Array(targetSamples);
-  const right = new Float32Array(targetSamples);
   const baseAmp = Math.pow(10, gen.levelDb / 20);
   const ear = gen.ear || "both";
 
   const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));
 
   // 1. Resolve perturbations for each ear separately
-    const resolveEarState = (targetEar: "left" | "right") => {
-      let gainDb = 0;
-      let amDepthOffset = 0;
-
+  const resolveEarState = (targetEar: "left" | "right") => {
+    let gainDb = 0;
+    let amDepthOffset = 0;
+    let onsetOffsetMs = 0;
+      
     if (perturbations) {
       for (const p of perturbations) {
         const pAny = p as any;
@@ -322,6 +321,12 @@ export function synthesizeNoise(
           gainDb += resolveValue(p.deltaDb, adaptiveValue, rng);
         } else if (p.type === "am_depth") {
           amDepthOffset += resolveValue(p.deltaDepth, adaptiveValue, rng);
+        } else if (p.type === "onset_asynchrony") {
+          onsetOffsetMs += resolveValue(p.delayMs, adaptiveValue, rng);
+        } else if (p.type === "itd") {
+           const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
+           const itdSamples = Math.floor(itdUs / 1000000 * sampleRate);
+           onsetOffsetMs += (itdSamples / sampleRate * 1000);
         }
       }
     }
@@ -337,12 +342,24 @@ export function synthesizeNoise(
       amDepth: finalAmDepth, 
       amRate: amMod?.rateHz || 8, // Default rate if just applying depth
       amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180,
-      sharedEnvelopeId: amMod?.sharedEnvelopeId
+      sharedEnvelopeId: amMod?.sharedEnvelopeId,
+      onsetMs: (gen.onsetDelayMs || 0) + onsetOffsetMs
     };
   };
 
   const leftState = resolveEarState("left");
   const rightState = resolveEarState("right");
+
+  // Determine global buffer range to accommodate offsets
+  const leftOnsetSamples = Math.floor(leftState.onsetMs / 1000 * sampleRate);
+  const rightOnsetSamples = Math.floor(rightState.onsetMs / 1000 * sampleRate);
+  const minOnsetSamples = Math.min(0, leftOnsetSamples, rightOnsetSamples);
+  const maxOnsetSamples = Math.max(leftOnsetSamples, rightOnsetSamples);
+  
+  const globalDurationSamples = targetSamples + (maxOnsetSamples - minOnsetSamples);
+  const leftFinal = new Float32Array(globalDurationSamples);
+  const rightFinal = new Float32Array(globalDurationSamples);
+
   const durationSec = gen.durationMs / 1000;
 
   // 2. Optimized Sample Loop
@@ -360,8 +377,7 @@ export function synthesizeNoise(
       } else if (leftState.amDepth > 0) {
         currentAmp *= (1 + leftState.amDepth * Math.sin(2 * Math.PI * leftState.amRate * t + leftState.amPhase));
       }
-      let sample = noiseBase * currentAmp;
-      left[i] = sample;
+      leftFinal[i + leftOnsetSamples - minOnsetSamples] = noiseBase * currentAmp;
     }
 
     // Handle Right Ear
@@ -373,12 +389,11 @@ export function synthesizeNoise(
       } else if (rightState.amDepth > 0) {
         currentAmp *= (1 + rightState.amDepth * Math.sin(2 * Math.PI * rightState.amRate * t + rightState.amPhase));
       }
-      let sample = noiseBase * currentAmp;
-      right[i] = sample;
+      rightFinal[i + rightOnsetSamples - minOnsetSamples] = noiseBase * currentAmp;
     }
   }
 
-  return { left, right };
+  return { left: leftFinal, right: rightFinal };
 }
 
 export function synthesizeFilteredNoise(

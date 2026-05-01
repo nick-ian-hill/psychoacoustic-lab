@@ -118,6 +118,24 @@ The project is split into three main components:
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
 - **Data Export**: Download detailed trial history as a **JSON** file. Supports the modern **File System Access API** for professional "Save As" workflows, with automatic fallbacks for older browsers. The format includes the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis.
 
+## Scientific Validation & Testing
+
+The Psychoacoustic Lab includes a rigorous suite of **70+ automated scientific audits** to ensure experimental integrity. These tests verify the mathematical accuracy of the audio engine and the reliability of the adaptive logic.
+
+### 🧪 Key Validation Laboratories:
+- **Audio Synthesis**: Verified sample-accurate ITD, phase-accurate modulation (AM/FM), and spectral noise slopes (-3dB/-6dB).
+- **Adaptive Logic**: Verified staircase convergence, boundary enforcement, and reversal-point threshold averaging.
+- **Binaural Precision**: Verified Schroeder phase relationships, crest factors, and sub-sample temporal alignment.
+- **Hardware Independence**: Verified bit-identical output across 44.1kHz and 48kHz sample rates.
+- **Robot Observer**: Monte Carlo simulations using logistic psychometric functions to validate that the staircase correctly tracks simulated "human" thresholds.
+
+### 🚀 Running the Suite:
+```bash
+cd web-app
+npm run test       # Run all audits in headless mode
+npm run test:ui    # Open the interactive testing dashboard
+```
+
 ## Integration & Embedding
 
 The Psychoacoustic Lab is designed to be highly portable. You can build the web-app as a standalone **Web Component** and embed it into any website or CMS (like WordPress or a personal blog) with a single script tag.
