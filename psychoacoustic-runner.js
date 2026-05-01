@@ -17,7 +17,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	constructor(e) {
 		this.ctx = new (window.AudioContext || window.webkitAudioContext)(), this.seed = e, this.worker = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/worker-CW2RRdFa.js", import.meta.url).href,
+			"" + new URL("assets/worker-CiSK0UVK.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" }), this.worker.onmessage = (e) => {
 			let { id: t, left: n, right: r, intervalLengths: i } = e.data, a = this.pendingRequests.get(t);
@@ -676,7 +676,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				type: "multi_component",
 				components: [{
 					frequency: 1e3,
-					levelDb: 60,
+					levelDb: 55,
 					phaseDegrees: 0,
 					ear: "both"
 				}],
@@ -757,20 +757,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			feedback: !0,
 			paradigm: {
 				type: "m-AFC",
-				intervals: [
-					{
-						condition: "reference",
-						fixed: !0,
-						selectable: !1
-					},
-					{ condition: "reference" },
-					{ condition: "target" },
-					{
-						condition: "reference",
-						fixed: !0,
-						selectable: !1
-					}
-				],
+				intervals: [{ condition: "reference" }, { condition: "target" }],
 				randomizeOrder: !0,
 				timing: {
 					isiMs: 300,
@@ -799,9 +786,9 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			adaptive: {
 				type: "staircase",
 				parameter: "perturbations[0].deltaDb",
-				initialValue: 8,
+				initialValue: 4,
 				stepType: "geometric",
-				stepSizes: [1.414, 1.2],
+				stepSizes: [1.414],
 				rule: { correctDown: 2 },
 				minValue: 0,
 				maxValue: 20,
@@ -826,11 +813,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			feedback: !0,
 			paradigm: {
 				type: "m-AFC",
-				intervals: [
-					{ condition: "reference" },
-					{ condition: "reference" },
-					{ condition: "target" }
-				],
+				intervals: [{ condition: "reference" }, { condition: "target" }],
 				randomizeOrder: !0,
 				timing: {
 					isiMs: 400,
@@ -867,7 +850,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			}],
 			perturbations: [{
 				type: "gain",
-				targetGeneratorIndex: 1,
+				stimulusIndex: 1,
 				deltaDb: { adaptive: !0 }
 			}],
 			adaptive: {
@@ -900,11 +883,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			feedback: !0,
 			paradigm: {
 				type: "m-AFC",
-				intervals: [
-					{ condition: "reference" },
-					{ condition: "reference" },
-					{ condition: "target" }
-				],
+				intervals: [{ condition: "reference" }, { condition: "target" }],
 				randomizeOrder: !0,
 				timing: {
 					isiMs: 400,
@@ -963,9 +942,18 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			paradigm: {
 				type: "m-AFC",
 				intervals: [
+					{
+						condition: "reference",
+						fixed: !0,
+						selectable: !1
+					},
 					{ condition: "reference" },
-					{ condition: "reference" },
-					{ condition: "target" }
+					{ condition: "target" },
+					{
+						condition: "reference",
+						fixed: !0,
+						selectable: !1
+					}
 				],
 				randomizeOrder: !0,
 				timing: {
@@ -1025,9 +1013,18 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			paradigm: {
 				type: "m-AFC",
 				intervals: [
+					{
+						condition: "reference",
+						fixed: !0,
+						selectable: !1
+					},
 					{ condition: "reference" },
-					{ condition: "reference" },
-					{ condition: "target" }
+					{ condition: "target" },
+					{
+						condition: "reference",
+						fixed: !0,
+						selectable: !1
+					}
 				],
 				randomizeOrder: !0,
 				timing: {
@@ -1040,49 +1037,49 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				components: [
 					{
 						frequency: 200,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 330,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 544,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 898,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 1e3,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 1481,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 2442,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					},
 					{
 						frequency: 4030,
-						levelDb: 60,
+						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
 					}
@@ -1094,21 +1091,112 @@ var f = /* @__PURE__ */ o(((e, t) => {
 					type: "cosine"
 				}
 			}],
-			perturbations: [{
-				type: "gain",
-				targetGeneratorIndex: 0,
-				applyTo: "all",
-				deltaDb: {
-					type: "uniform",
-					min: -8,
-					max: 8
+			perturbations: [
+				{
+					type: "gain",
+					stimulusIndex: 0,
+					applyTo: "all",
+					deltaDb: {
+						type: "uniform",
+						min: -8,
+						max: 8
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 200,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 330,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 544,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 898,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 1e3,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 1481,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 2442,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "phase_shift",
+					stimulusIndex: 0,
+					targetFrequency: 4030,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "gain",
+					stimulusIndex: 0,
+					applyTo: "target",
+					deltaDb: { adaptive: !0 }
 				}
-			}, {
-				type: "gain",
-				targetGeneratorIndex: 0,
-				applyTo: "target",
-				deltaDb: { adaptive: !0 }
-			}],
+			],
 			adaptive: {
 				type: "staircase",
 				parameter: "perturbations[1].deltaDb",
