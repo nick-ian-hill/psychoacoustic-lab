@@ -51,6 +51,8 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 *   **Global Level Roving:** Omit `stimulusIndex` to shift all sound sources in the interval simultaneously, maintaining relative Signal-to-Masker (SMR) ratios while roving absolute levels.
 *   **Independent Jitter & Molecular Psychophysics:** By applying independent random `gain` perturbations to multiple components, researchers can estimate the **perceptual weight** of each component in the decision process (Berg, 1990). The platform's JSON export records these resolved offsets within the `trialState` metadata for every interval, enabling reverse-correlation or regression-based analysis.
 *   **Profile Cues:** Listeners compare levels across frequency channels rather than absolute levels. (Green, Mason & Kidd, 1984).
+*   **Frequency Roving:** Control absolute frequency cues in relative relationship tasks (harmonicity, spectral shape) by roving the fundamental frequency or center frequency across intervals.
+*   **Phase Roving:** Prevent temporal peak cues in harmonic complexes by randomizing starting phases. Use `calc_phases` with `random` type.
 
 ### Temporal Processing
 *   **Temporal Window:** The ear integrates power over a sliding window (roughly 10-20ms). (Moore et al., 1988; Plack & Moore, 1990).
