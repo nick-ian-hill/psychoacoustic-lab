@@ -116,15 +116,17 @@ The project is split into three main components:
 - **Termination & Thresholding**: Configure exactly how and when an experiment ends (e.g., stopping after $N$ reversals or $M$ trials).
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
-- **Data Export**: Download detailed trial history as a **JSON** file. The format include the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis (e.g., Berg 1990).
+- **Data Export**: Download detailed trial history as a **JSON** file. Supports the modern **File System Access API** for professional "Save As" workflows, with automatic fallbacks for older browsers. The format includes the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis.
 
 ## Integration & Embedding
 
 The Psychoacoustic Lab is designed to be highly portable. You can build the web-app as a standalone **Web Component** and embed it into any website or CMS (like WordPress or a personal blog) with a single script tag.
 
 See the [Integration Guide](integration_guide.md) for full instructions on building and embedding the portable components:
-- `<psychoacoustic-runner>`: Minimal, logic-only runner for custom portals.
-- `<psychoacoustic-app>`: Complete lab UI with experiment selection and all built-in examples.
+- `<psychoacoustic-runner>`: **The Researcher's Choice.** Minimal, logic-only runner for building custom experiment portals via JavaScript.
+- `<psychoacoustic-app>`: **Turnkey Lab & Demo.** A complete UI with built-in examples and support for uploading a custom configuration. Perfect for demos and teaching.
+
+Both components support **CSS Custom Properties (Variables)**, allowing you to seamlessly theme the lab (colors, fonts, radius) to match your host website.
 
 ## Technical Implementation
 

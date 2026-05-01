@@ -14,25 +14,57 @@ This will create a `dist/` folder containing `psychoacoustic-runner.js`.
 ## 2. Choose Your Component
 The library provides two components depending on your needs:
 
-- `<psychoacoustic-runner>`: A raw runner. You provide the JSON config via JavaScript. Best for custom-built experiment portals.
-- `<psychoacoustic-app>`: A complete lab. Includes the experiment selection dropdown and all built-in examples. Best for quick deployment or "all-in-one" pages.
+- `<psychoacoustic-runner>`: **The Researcher's Choice.** A logic-only runner that is fully controllable via JavaScript. It provides the UI for the experiment itself but leaves the selection and configuration logic to you. Ideal for building custom experiment portals.
+- `<psychoacoustic-app>`: **Turnkey Lab & Demo.** A complete "all-in-one" application with the premium selection UI and built-in standard examples. Perfect for demonstrations, teaching, or quickly testing custom configurations via the built-in "Upload JSON" feature.
 
 ## 3. Embed in Your Website
 Copy the generated `.js` file to your target website and include it using a script tag. 
 
-### All-in-One Example (with Selection UI)
+### All-in-One Example (Recommended)
+This uses the `<psychoacoustic-app>` which matches the look and feel of the official lab.
+
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Experiment Lab</title>
-    <script type="module" src="./psychoacoustic-runner.js"></script>
+  <meta charset="UTF-8">
+  <title>My Psychoacoustic Study</title>
+  <!-- Optional: Customize the look using CSS variables -->
+  <style>
+    psychoacoustic-app {
+      --psycho-accent: #3b82f6; /* Change brand color */
+      --psycho-radius: 12px;    /* Change corner rounding */
+    }
+  </style>
 </head>
 <body>
-    <!-- This tag includes the dropdown and all standard examples -->
-    <psychoacoustic-app></psychoacoustic-app>
+  <psychoacoustic-app></psychoacoustic-app>
+  
+  <script type="module" src="path/to/psychoacoustic-runner.js"></script>
 </body>
 </html>
+```
+
+## 4. Theming & Customization
+The components are encapsulated using Shadow DOM, but you can easily "theme" them from your parent website using **CSS Custom Properties (Variables)**.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `--psycho-accent` | `#38bdf8` | The primary brand/action color |
+| `--psycho-bg` | `#0f172a` | Main background color |
+| `--psycho-panel-bg` | `#1e293b` | Background for the experiment card |
+| `--psycho-text` | `#f8fafc` | Primary text color |
+| `--psycho-text-muted` | `#94a3b8` | Subtitles and labels |
+| `--psycho-radius` | `8px` | Global border radius |
+
+Simply apply these variables to the component tag in your site's CSS:
+
+```css
+psychoacoustic-app {
+  --psycho-accent: #ff4757;
+  --psycho-bg: #ffffff;
+  --psycho-text: #2f3542;
+}
 ```
 
 ### Minimal Example (Custom Config)
