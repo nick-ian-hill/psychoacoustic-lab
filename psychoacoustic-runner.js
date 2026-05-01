@@ -643,7 +643,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		}, t = new Blob([JSON.stringify(e, null, 2)], { type: "application/json" }), n = URL.createObjectURL(t), r = document.createElement("a");
 		r.href = n, r.download = `results_${this.currentConfig.meta.name.replace(/\s+/g, "_")}_${Date.now()}.json`, r.click(), URL.revokeObjectURL(n);
 	}
-}, S = ":root{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;--psycho-bg:#0f172a;--psycho-panel-bg:#1e293b;--psycho-text:#f8fafc;--psycho-text-muted:#94a3b8;--psycho-accent:#38bdf8;--psycho-accent-secondary:#f472b6;--psycho-success:#10b981;--psycho-error:#ef4444;--psycho-border:#94a3b81a;--psycho-radius:4px}option{background-color:var(--psycho-panel-bg);color:var(--psycho-text)}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}body{background-color:var(--psycho-bg);color:var(--psycho-text);scrollbar-gutter:stable;-webkit-font-smoothing:antialiased;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;font-family:Inter,-apple-system,sans-serif;line-height:1.5;display:flex}.container{background:var(--psycho-panel-bg);border-radius:var(--psycho-radius);border:1px solid var(--psycho-border);width:100%;max-width:600px;padding:2rem;position:relative;box-shadow:0 10px 15px -3px #0000004d}header{text-align:center;margin-bottom:1.5rem}h1{letter-spacing:-.025em;color:var(--psycho-text);margin-bottom:.5rem;font-size:1.75rem;font-weight:800}h1 span{color:var(--psycho-accent)}p.subtitle{color:var(--psycho-text-muted);font-size:.875rem}.control-group{flex-direction:column;gap:.5rem;margin-bottom:1.5rem;display:flex}label{color:var(--psycho-text-muted);font-size:.95rem;font-weight:500;display:block}.custom-select{-webkit-user-select:none;user-select:none;width:100%;position:relative}.select-trigger{background:var(--psycho-bg);border:1px solid var(--psycho-border);width:100%;color:var(--psycho-text);border-radius:var(--psycho-radius);cursor:pointer;justify-content:space-between;align-items:center;padding:.75rem 1rem;font-size:1rem;transition:all .2s;display:flex}.select-trigger:hover{border-color:var(--psycho-accent)}.select-trigger svg{width:1.25rem;height:1.25rem;color:var(--psycho-text-muted);transition:transform .2s}.custom-select.open .select-trigger svg{transform:rotate(180deg)}.select-options{background:var(--psycho-panel-bg);border:1px solid var(--psycho-border);border-radius:var(--psycho-radius);z-index:100;max-height:35vh;animation:.2s ease-out slideDown;position:absolute;top:calc(100% + 4px);left:0;right:0;overflow-y:auto;box-shadow:0 10px 15px -3px #00000080}@keyframes slideDown{0%{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}.option{cursor:pointer;padding:.75rem 1rem;font-size:.9375rem;transition:background .2s}.option:hover,.option.highlighted{color:var(--psycho-accent);background:#3b82f61a}.option.selected{color:var(--psycho-accent);background:#3b82f633;font-weight:600}textarea{background:var(--psycho-bg);border:1px solid var(--psycho-border);width:100%;color:var(--psycho-text);border-radius:var(--psycho-radius);resize:vertical;min-height:120px;padding:.75rem;font-family:monospace;font-size:.875rem;line-height:1.6}textarea:focus{border-color:var(--psycho-accent);outline:none}.btn{background:var(--psycho-accent);color:var(--psycho-bg);border-radius:var(--psycho-radius);cursor:pointer;letter-spacing:.01em;text-align:center;border:1px solid #0000;justify-content:center;align-items:center;padding:1rem 2rem;font-size:1rem;font-weight:600;line-height:1.2;text-decoration:none;transition:all .2s;display:inline-flex}.btn:disabled{opacity:.5;cursor:not-allowed}.btn-full{width:100%}.btn-secondary{border:1px solid var(--psycho-text-muted);color:var(--psycho-text);background:0 0}.btn-secondary:hover:not(:disabled){border-color:var(--psycho-accent-secondary);color:var(--psycho-accent-secondary);background:#f472b60d}.results-actions{justify-content:center;gap:1rem;width:100%;margin-top:1.5rem;display:flex}.results-actions .btn{flex:1;min-height:64px}.results-area{text-align:center;width:100%;margin-top:0;animation:.4s ease-out fadeIn}.results-area h2{color:var(--psycho-success);margin-bottom:1rem;font-size:1.5rem}.results-area p{color:var(--psycho-text);margin-bottom:1.5rem;font-size:1.125rem;font-weight:500}.experiment-area{border-top:1px solid var(--psycho-border);flex-direction:column;align-items:center;gap:1.5rem;margin-top:1rem;padding-top:1rem;display:flex}.selection-description{border-left:3px solid var(--psycho-accent);color:var(--psycho-text-muted);scrollbar-width:thin;background:#94a3b80d;border-radius:0;max-height:150px;margin-top:1.5rem;padding:1rem;font-size:1rem;line-height:1.6;overflow-y:auto}.experiment-info{flex-direction:column;justify-content:center;align-items:center;gap:1.5rem;width:100%;display:flex}.status-container{align-items:center;gap:.5rem;display:flex;position:relative}.instruction-line{justify-content:center;align-items:center;gap:.5rem;width:100%;display:flex}#instruction-text{text-align:center;color:var(--psycho-text-muted);white-space:pre-wrap;margin:0;font-size:.875rem;line-height:1.4}.experiment-main{place-items:center;width:100%;display:grid;position:relative}.play-btn-container,.response-buttons{grid-area:1/1;justify-content:center;align-items:center;gap:1rem;width:100%;transition:opacity .2s;display:flex}.play-btn-container:not(.hidden)~.response-buttons{opacity:0;pointer-events:none;visibility:hidden}.play-btn-container .btn{pointer-events:auto}.status-badge{color:var(--psycho-accent);text-align:center;background:#38bdf81a;border-radius:999px;width:fit-content;max-width:100%;margin:0 auto;padding:.5rem 1.25rem;font-size:.875rem;font-weight:600;line-height:1.4;display:block}.response-buttons{gap:1rem;width:100%;display:flex}.response-btn{background:var(--psycho-bg);border:2px solid var(--psycho-border);color:#fff;border-radius:var(--psycho-radius);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;flex:1;padding:1.5rem;font-size:1.5rem;font-weight:800;outline:none!important}.response-btn:focus,.response-btn:active,.response-btn:focus-visible{border-color:var(--psycho-border);box-shadow:none!important;outline:none!important;transform:none!important}.response-btn.non-selectable{cursor:default;pointer-events:none;opacity:.15;flex:.4;padding:.5rem}.response-btn.active{border-color:var(--psycho-accent);background:#38bdf81a;box-shadow:0 0 20px #38bdf866;opacity:1!important}.response-btn.correct{color:#22c55e;background:#22c55e1a;border-color:#22c55e;opacity:1!important}.response-btn.incorrect{color:#ef4444;background:#ef44441a;border-color:#ef4444;opacity:1!important}.response-btn.non-selectable.active{opacity:1}@media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){background:#7dd3fc}.response-btn:hover:not(:disabled){border-color:var(--psycho-accent);box-shadow:0 0 15px #38bdf833}}.response-btn:disabled{opacity:.2;cursor:not-allowed;border-color:var(--psycho-border);transform:none!important}.hidden{display:none!important}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}to{transform:scale(1)}}.playing{opacity:.5}.response-btn.active{border-color:var(--psycho-accent);color:#fff;opacity:1;background:#38bdf81f;box-shadow:0 0 20px #38bdf873,inset 0 0 12px #38bdf81a}.response-btn.correct,.response-btn.correct:disabled{border-color:var(--psycho-success);color:var(--psycho-success);opacity:1;background:#10b98126}.response-btn.incorrect,.response-btn.incorrect:disabled{border-color:var(--psycho-error);color:var(--psycho-error);opacity:1;background:#ef444426}.modal{z-index:1000;justify-content:center;align-items:center;width:100%;height:100%;animation:.2s ease-out fadeIn;display:flex;position:fixed;top:0;left:0}.modal-overlay{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:#000000b3;width:100%;height:100%;position:absolute;top:0;left:0}.modal-content{background:var(--psycho-panel-bg);border-radius:var(--psycho-radius);border:1px solid var(--psycho-border);flex-direction:column;width:90%;max-width:500px;max-height:80vh;display:flex;position:relative;overflow:hidden;box-shadow:0 25px 50px -12px #00000080}.modal-header{border-bottom:1px solid var(--psycho-border);background:#ffffff05;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;display:flex}.modal-header h2{color:var(--psycho-accent);margin:0;font-size:1.1rem}.modal-close{color:var(--psycho-text-muted);cursor:pointer;background:0 0;border:none;padding:0 .5rem;font-size:1.75rem;line-height:1;transition:color .2s}.modal-close:hover{color:var(--psycho-text)}.modal-body{color:var(--psycho-text);padding:1.5rem;font-size:.9375rem;line-height:1.6;overflow-y:auto}@keyframes fadeIn{0%{opacity:0}to{opacity:1}}@media (width<=640px){body{justify-content:center;padding:1rem}.container{flex-direction:column;width:100%;max-width:none;min-height:480px;margin:0;padding:1.5rem;display:flex}header{margin-bottom:1.5rem}h1{font-size:1.5rem}.experiment-area{gap:1rem;margin-top:1rem;padding-top:1.5rem}.experiment-info{min-height:80px}.selection-description{max-height:120px}.modal-content{width:95%;max-height:90vh}.experiment-main{min-height:140px}.response-btn{padding:1.25rem .75rem;font-size:1.1rem}}@media (height<=500px){body{justify-content:center;padding:.5rem}.container{min-height:auto;padding:1rem}header{margin-bottom:1rem}.experiment-area{gap:.5rem;margin-top:.5rem;padding-top:.5rem}}", C = {
+}, S = ":root{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;--psycho-bg:#0f172a;--psycho-panel-bg:#1e293b;--psycho-text:#f8fafc;--psycho-text-muted:#94a3b8;--psycho-accent:#38bdf8;--psycho-accent-secondary:#f472b6;--psycho-success:#10b981;--psycho-error:#ef4444;--psycho-border:#94a3b81a;--psycho-radius:4px}option{background-color:var(--psycho-panel-bg);color:var(--psycho-text)}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}body{background-color:var(--psycho-bg);color:var(--psycho-text);scrollbar-gutter:stable;-webkit-font-smoothing:antialiased;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;font-family:Inter,-apple-system,sans-serif;line-height:1.5;display:flex}.container{background:var(--psycho-panel-bg);border-radius:var(--psycho-radius);border:1px solid var(--psycho-border);width:100%;max-width:600px;margin:0 auto;padding:2rem;position:relative;box-shadow:0 10px 15px -3px #0000004d}header{text-align:center;margin-bottom:1.5rem}h1{letter-spacing:-.025em;color:var(--psycho-text);margin-bottom:.5rem;font-size:1.75rem;font-weight:800}h1 span{color:var(--psycho-accent)}p.subtitle{color:var(--psycho-text-muted);font-size:.875rem}.control-group{flex-direction:column;gap:.75rem;margin-bottom:1.5rem;display:flex}label{color:var(--psycho-text-muted);font-size:.95rem;font-weight:500;display:block}.custom-select{-webkit-user-select:none;user-select:none;width:100%;position:relative}.select-trigger{background:var(--psycho-bg);border:1px solid var(--psycho-border);width:100%;color:var(--psycho-text);border-radius:var(--psycho-radius);cursor:pointer;justify-content:space-between;align-items:center;padding:.75rem 1rem;font-size:1rem;transition:all .2s;display:flex}.select-trigger:hover{border-color:var(--psycho-accent)}.select-trigger svg{width:1.25rem;height:1.25rem;color:var(--psycho-text-muted);transition:transform .2s}.custom-select.open .select-trigger svg{transform:rotate(180deg)}.select-options{background:var(--psycho-panel-bg);border:1px solid var(--psycho-border);border-radius:var(--psycho-radius);z-index:100;scrollbar-width:thin;scrollbar-color:var(--psycho-text-muted) transparent;max-height:35vh;animation:.2s ease-out slideDown;position:absolute;top:calc(100% + 4px);left:0;right:0;overflow-y:auto;box-shadow:0 10px 15px -3px #00000080}@keyframes slideDown{0%{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}.option{cursor:pointer;color:var(--psycho-text);padding:.75rem 1rem;font-size:.9375rem;transition:background .2s}.option:hover,.option.highlighted{color:var(--psycho-accent);background:#3b82f61a}.option.selected{color:var(--psycho-accent);background:#3b82f633;font-weight:600}textarea{background:var(--psycho-bg);border:1px solid var(--psycho-border);width:100%;color:var(--psycho-text);border-radius:var(--psycho-radius);resize:vertical;min-height:120px;padding:.75rem;font-family:monospace;font-size:.875rem;line-height:1.6}textarea:focus{border-color:var(--psycho-accent);outline:none}.btn{background:var(--psycho-accent);color:var(--psycho-bg);border-radius:var(--psycho-radius);cursor:pointer;letter-spacing:.01em;text-align:center;border:1px solid #0000;justify-content:center;align-items:center;padding:1rem 2rem;font-size:1rem;font-weight:600;line-height:1.2;text-decoration:none;transition:all .2s;display:inline-flex}.btn:disabled{opacity:.5;cursor:not-allowed}.btn-full{width:100%}.btn-secondary{border:1px solid var(--psycho-text-muted);color:var(--psycho-text);background:0 0}.btn-secondary:hover:not(:disabled){border-color:var(--psycho-accent-secondary);color:var(--psycho-accent-secondary);background:#f472b60d}.results-actions{justify-content:center;gap:1rem;width:100%;margin-top:1.5rem;display:flex}.results-actions .btn{flex:1;min-height:64px}.results-area{text-align:center;width:100%;margin-top:0;animation:.4s ease-out fadeIn}.results-area h2{color:var(--psycho-success);margin-bottom:1rem;font-size:1.5rem}.results-area p{color:var(--psycho-text);margin-bottom:1.5rem;font-size:1.125rem;font-weight:500}.experiment-area{border-top:1px solid var(--psycho-border);flex-direction:column;align-items:center;gap:1.5rem;margin-top:1rem;padding-top:1rem;display:flex}.selection-description{border-left:3px solid var(--psycho-accent);color:var(--psycho-text-muted);scrollbar-width:thin;background:#94a3b80d;border-radius:0;max-height:150px;margin-top:1.5rem;padding:1rem;font-size:.9375rem;line-height:1.6;overflow-y:auto}.experiment-info{flex-direction:column;justify-content:center;align-items:center;gap:1.5rem;width:100%;display:flex}.status-container{align-items:center;gap:.5rem;display:flex;position:relative}.instruction-line{justify-content:center;align-items:center;gap:.5rem;width:100%;display:flex}#instruction-text{text-align:center;color:var(--psycho-text-muted);white-space:pre-wrap;margin:0;font-size:.875rem;line-height:1.4}.experiment-main{place-items:center;width:100%;display:grid;position:relative}.play-btn-container,.response-buttons{grid-area:1/1;justify-content:center;align-items:center;gap:1rem;width:100%;transition:opacity .2s;display:flex}.play-btn-container:not(.hidden)~.response-buttons{opacity:0;pointer-events:none;visibility:hidden}.play-btn-container .btn{pointer-events:auto}.status-badge{color:var(--psycho-accent);text-align:center;background:#38bdf81a;border-radius:999px;width:fit-content;max-width:100%;margin:0 auto;padding:.5rem 1.25rem;font-size:.875rem;font-weight:600;line-height:1.4;display:block}.response-buttons{gap:1rem;width:100%;display:flex}.response-btn{background:var(--psycho-bg);border:2px solid var(--psycho-border);color:#fff;border-radius:var(--psycho-radius);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;flex:1;padding:1.5rem;font-size:1.5rem;font-weight:800;outline:none!important}.response-btn:focus,.response-btn:active,.response-btn:focus-visible{border-color:var(--psycho-border);box-shadow:none!important;outline:none!important;transform:none!important}.response-btn.non-selectable{cursor:default;pointer-events:none;opacity:.15;flex:.4;padding:.5rem}.response-btn.active{border-color:var(--psycho-accent);background:#38bdf81a;box-shadow:0 0 20px #38bdf866;opacity:1!important}.response-btn.correct{color:#22c55e;background:#22c55e1a;border-color:#22c55e;opacity:1!important}.response-btn.incorrect{color:#ef4444;background:#ef44441a;border-color:#ef4444;opacity:1!important}.response-btn.non-selectable.active{opacity:1}@media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){background:#7dd3fc}.response-btn:hover:not(:disabled){border-color:var(--psycho-accent);box-shadow:0 0 15px #38bdf833}}.response-btn:disabled{opacity:.2;cursor:not-allowed;border-color:var(--psycho-border);transform:none!important}.hidden{display:none!important}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}to{transform:scale(1)}}.playing{opacity:.5}.response-btn.active{border-color:var(--psycho-accent);color:#fff;opacity:1;background:#38bdf81f;box-shadow:0 0 20px #38bdf873,inset 0 0 12px #38bdf81a}.response-btn.correct,.response-btn.correct:disabled{border-color:var(--psycho-success);color:var(--psycho-success);opacity:1;background:#10b98126}.response-btn.incorrect,.response-btn.incorrect:disabled{border-color:var(--psycho-error);color:var(--psycho-error);opacity:1;background:#ef444426}.modal{z-index:1000;justify-content:center;align-items:center;width:100%;height:100%;animation:.2s ease-out fadeIn;display:flex;position:fixed;top:0;left:0}.modal-overlay{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:#000000b3;width:100%;height:100%;position:absolute;top:0;left:0}.modal-content{background:var(--psycho-panel-bg);border-radius:var(--psycho-radius);border:1px solid var(--psycho-border);flex-direction:column;width:90%;max-width:500px;max-height:80vh;display:flex;position:relative;overflow:hidden;box-shadow:0 25px 50px -12px #00000080}.modal-header{border-bottom:1px solid var(--psycho-border);background:#ffffff05;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;display:flex}.modal-header h2{color:var(--psycho-accent);margin:0;font-size:1.1rem}.modal-close{color:var(--psycho-text-muted);cursor:pointer;background:0 0;border:none;padding:0 .5rem;font-size:1.75rem;line-height:1;transition:color .2s}.modal-close:hover{color:var(--psycho-text)}.modal-body{color:var(--psycho-text);padding:1.5rem;font-size:.9375rem;line-height:1.6;overflow-y:auto}@keyframes fadeIn{0%{opacity:0}to{opacity:1}}@media (width<=640px){body{justify-content:center;padding:1rem}.container{flex-direction:column;width:100%;max-width:none;min-height:480px;margin:0;padding:1.5rem;display:flex}header{margin-bottom:1.5rem}h1{font-size:1.5rem}.experiment-area{gap:1rem;margin-top:1rem;padding-top:1.5rem}.experiment-info{min-height:80px}.selection-description{max-height:120px}.modal-content{width:95%;max-height:90vh}.experiment-main{min-height:140px}.response-btn{padding:1.25rem .75rem;font-size:1.1rem}}@media (height<=500px){body{justify-content:center;padding:.5rem}.container{min-height:auto;padding:1rem}header{margin-bottom:1rem}.experiment-area{gap:.5rem;margin-top:.5rem;padding-top:.5rem}}", C = {
 	pitchDiscrimination: {
 		meta: {
 			name: "Pitch sensitivity",
@@ -1241,38 +1241,27 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			termination: { reversals: 12 }
 		}]
 	}
-}, w = class extends HTMLElement {
+}, w = () => "\n  <header>\n    <h1><span>Psychoacoustic</span> Lab</h1>\n  </header>\n", T = class extends HTMLElement {
 	runner = null;
+	container = null;
 	constructor() {
 		super(), this.attachShadow({ mode: "open" });
 	}
 	connectedCallback() {
-		this.render();
-		let e = this.shadowRoot.querySelector(".psycho-runner-container");
-		this.runner = new x(e);
-		let t = this.getAttribute("config");
-		t && this.loadRemoteConfig(t);
+		this.render(), this.container = this.shadowRoot.querySelector(".psycho-runner-container"), this.runner = new x(this.container);
+		let e = this.getAttribute("config");
+		e && this.loadRemoteConfig(e), this.shadowRoot.getElementById("download-results-btn")?.addEventListener("click", () => this.handleDownload()), this.shadowRoot.getElementById("finish-btn")?.addEventListener("click", () => this.cancel());
 	}
 	render() {
 		this.shadowRoot.innerHTML = `
       <style>
         ${S}
-        :host {
-          display: block;
-          width: 100%;
-        }
-        .psycho-runner-container {
-          all: initial; /* Reset inherited styles */
-          font-family: 'Inter', sans-serif;
-          display: block;
-        }
+        :host { display: block; width: 100%; }
+        .psycho-runner-container { all: initial; font-family: 'Inter', sans-serif; display: block; }
       </style>
       <div class="psycho-runner-container">
         <div class="container">
-          <header>
-            <h1>Psychoacoustic<span>Lab</span></h1>
-            <p class="subtitle">Research Edition</p>
-          </header>
+          ${w()}
 
           <div id="experiment-screen" class="experiment-area">
             <div class="experiment-info">
@@ -1293,10 +1282,11 @@ var f = /* @__PURE__ */ o(((e, t) => {
             </div>
 
             <div id="results-area" class="results-area hidden">
-              <h2>Success!</h2>
+              <h2>Experiment Complete</h2>
               <p id="results-text"></p>
               <div class="results-actions">
-                <button id="download-results-btn" class="btn">Download Results (JSON)</button>
+                <button id="download-results-btn" class="btn">Download JSON</button>
+                <button id="finish-btn" class="btn">New Experiment</button>
               </div>
             </div>
           </div>
@@ -1310,9 +1300,39 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	setConfig(e) {
 		this.runner && this.runner.loadConfig(e);
 	}
+	cancel() {
+		this.runner && this.runner.cancel();
+	}
+	async handleDownload() {
+		if (!this.runner) return;
+		let e = this.runner, t = {
+			timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+			experimentName: e.currentConfig?.meta?.name || "Experiment",
+			actualSeed: e.activeSeed,
+			results: e.sessionResults
+		}, n = JSON.stringify(t, null, 2), r = `results_${(e.currentConfig?.meta?.name || "experiment").replace(/\s+/g, "_")}_${Date.now()}.json`;
+		if ("showSaveFilePicker" in window) try {
+			let e = await (await window.showSaveFilePicker({
+				suggestedName: r,
+				types: [{
+					description: "JSON Files",
+					accept: { "application/json": [".json"] }
+				}]
+			})).createWritable();
+			await e.write(n), await e.close();
+			return;
+		} catch (e) {
+			if (e.name === "AbortError") return;
+			console.error("Save Picker failed, falling back", e);
+		}
+		let i = new Blob([n], { type: "application/json" }), a = URL.createObjectURL(i), o = document.createElement("a");
+		o.href = a, o.download = r, o.click(), URL.revokeObjectURL(a);
+	}
 };
-customElements.define("psychoacoustic-runner", w);
-var T = class extends HTMLElement {
+customElements.define("psychoacoustic-runner", T);
+var E = class extends HTMLElement {
+	selectedValue = "pitchDiscrimination";
+	customConfig = null;
 	constructor() {
 		super(), this.attachShadow({ mode: "open" });
 	}
@@ -1323,62 +1343,92 @@ var T = class extends HTMLElement {
 		this.shadowRoot.innerHTML = `
       <style>
         ${S}
-        :host { display: block; }
+        :host { display: block; width: 100%; }
         .app-container { all: initial; font-family: 'Inter', sans-serif; display: block; }
         .hidden { display: none !important; }
+        
+        /* Dropdown specific fixes */
+        .custom-select { position: relative; width: 100%; }
+        .select-options { width: 100%; z-index: 1000; }
+        .option { color: var(--psycho-text); } /* Ensure contrast */
       </style>
       <div class="app-container">
         <div id="selection-screen" class="container">
-          <header>
-            <h1>Psychoacoustic<span>Lab</span></h1>
-            <p class="subtitle">Select an experiment to begin</p>
-          </header>
+          ${w()}
           
           <div class="control-group">
             <label>Select Experiment</label>
-            <select id="experiment-select" class="btn" style="width: 100%; text-align: left; background: var(--psycho-card-bg); border: 1px solid var(--psycho-border); padding: 1rem; color: var(--psycho-text); cursor: pointer;">
-              <option value="pitchDiscrimination">Pitch Discrimination</option>
-              <option value="intensityDiscrimination">Intensity Discrimination</option>
-              <option value="toneInNoise">Tone in Noise</option>
-              <option value="amDetection">AM Detection</option>
-              <option value="itdDiscrimination">ITD Discrimination</option>
-              <option value="profileAnalysis">Profile Analysis</option>
-            </select>
+            <div class="custom-select" id="custom-dropdown">
+              <div class="select-trigger" id="dropdown-trigger">
+                <span id="selected-text">Pitch Discrimination</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 1.25rem; height: 1.25rem;">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <div class="select-options hidden" id="dropdown-options">
+                <div class="option selected" data-value="pitchDiscrimination">Pitch Discrimination</div>
+                <div class="option" data-value="intensityDiscrimination">Intensity Discrimination</div>
+                <div class="option" data-value="toneInNoise">Tone in Noise</div>
+                <div class="option" data-value="amDetection">AM Detection</div>
+                <div class="option" data-value="itdDiscrimination">ITD Discrimination</div>
+                <div class="option" data-value="profileAnalysis">Profile Analysis</div>
+                <div class="option" data-value="custom">Upload Custom JSON Configuration</div>
+              </div>
+            </div>
           </div>
 
-          <div id="selection-description" class="selection-description" style="margin-top: 1.5rem; padding: 1rem; background: var(--psycho-card-bg); font-size: 1rem; line-height: 1.6; color: var(--psycho-text); border-left: 3px solid var(--psycho-accent); border-radius: 0;">
-            Pick an experiment from the list above.
+          <div id="custom-json-group" class="control-group hidden">
+            <label>Select Experiment JSON File</label>
+            <input type="file" id="custom-file" accept=".json" 
+              style="background: var(--psycho-bg); color: var(--psycho-text); padding: 0.75rem; border: 1px solid var(--psycho-border); border-radius: var(--psycho-radius); width: 100%;">
+          </div>
+
+          <div id="selection-description" class="selection-description">
+            <!-- Initialized in setupListeners -->
           </div>
 
           <div style="display: flex; justify-content: center; margin-top: 1.5rem;">
-            <button id="load-btn" class="btn">Start Selected Experiment</button>
+            <button id="load-btn" class="btn">Confirm Selection</button>
           </div>
         </div>
 
         <div id="runner-screen" class="hidden">
            <psychoacoustic-runner id="the-runner"></psychoacoustic-runner>
-           <div style="display: flex; justify-content: center; margin-top: 1rem;">
-             <button id="back-btn" class="btn secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;">Back to Selection</button>
-           </div>
         </div>
       </div>
     `;
 	}
 	setupListeners() {
-		let e = this.shadowRoot.getElementById("experiment-select"), t = this.shadowRoot.getElementById("load-btn"), n = this.shadowRoot.getElementById("back-btn"), r = this.shadowRoot.getElementById("selection-screen"), i = this.shadowRoot.getElementById("runner-screen"), a = this.shadowRoot.getElementById("the-runner"), o = this.shadowRoot.getElementById("selection-description");
-		e.addEventListener("change", () => {
-			o.textContent = C[e.value]?.meta?.description || "No description available.";
-		}), a.container.addEventListener("experiment-cancelled", () => {
-			r.classList.remove("hidden"), i.classList.remove("hidden"), r.classList.remove("hidden"), i.classList.add("hidden");
-		}), t.addEventListener("click", () => {
-			let t = C[e.value];
-			t && (r.classList.add("hidden"), i.classList.remove("hidden"), a.setConfig(t));
+		let e = this.shadowRoot.getElementById("dropdown-trigger"), t = this.shadowRoot.getElementById("dropdown-options"), n = this.shadowRoot.getElementById("custom-dropdown"), r = this.shadowRoot.getElementById("selected-text"), i = this.shadowRoot.getElementById("load-btn"), a = this.shadowRoot.getElementById("selection-screen"), o = this.shadowRoot.getElementById("runner-screen"), s = this.shadowRoot.getElementById("the-runner"), c = this.shadowRoot.getElementById("selection-description"), l = this.shadowRoot.getElementById("custom-json-group"), u = this.shadowRoot.getElementById("custom-file");
+		e.addEventListener("click", (e) => {
+			e.stopPropagation(), t.classList.toggle("hidden"), n.classList.toggle("open");
+		}), document.addEventListener("click", () => {
+			t.classList.add("hidden"), n.classList.remove("open");
+		}), t.querySelectorAll(".option").forEach((e) => {
+			e.addEventListener("click", () => {
+				let i = e.getAttribute("data-value") || "", a = e.textContent || "";
+				this.selectedValue = i, r.textContent = a, t.querySelectorAll(".option").forEach((e) => e.classList.remove("selected")), e.classList.add("selected"), t.classList.add("hidden"), n.classList.remove("open"), l.classList.toggle("hidden", i !== "custom"), c.textContent = C[i]?.meta?.description || (i === "custom" ? "Upload a valid ExperimentConfig JSON file to begin." : "No description available.");
+			});
+		}), u.addEventListener("change", (e) => {
+			let t = e.target.files?.[0];
+			if (!t) return;
+			let n = new FileReader();
+			n.onload = (e) => {
+				try {
+					this.customConfig = JSON.parse(e.target?.result);
+				} catch {
+					alert("Invalid JSON file");
+				}
+			}, n.readAsText(t);
+		}), s.addEventListener("experiment-cancelled", () => {
+			a.classList.remove("hidden"), o.classList.add("hidden");
+		}), i.addEventListener("click", () => {
+			let e = C[this.selectedValue];
+			this.selectedValue === "custom" && (e = this.customConfig), e ? (a.classList.add("hidden"), o.classList.remove("hidden"), s.setConfig(e)) : alert("Please select a valid experiment.");
 		});
-		let s = C[e.value];
-		s?.meta?.description && (o.textContent = s.meta.description), n.addEventListener("click", () => {
-			r.classList.remove("hidden"), i.classList.add("hidden");
-		});
+		let d = C[this.selectedValue];
+		d?.meta?.description && (c.textContent = d.meta.description);
 	}
 };
-customElements.define("psychoacoustic-app", T);
+customElements.define("psychoacoustic-app", E);
 //#endregion

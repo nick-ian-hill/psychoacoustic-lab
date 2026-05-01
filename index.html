@@ -7,93 +7,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Psychoacoustic Lab</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/index-CivFgRLp.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-BHk_Jcsq.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: var(--psycho-bg);
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/index-DYzMbw4A.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Cg4is23m.css">
 </head>
 
 <body>
-  <div class="container">
-    <header>
-      <h1><span>Psychoacoustic</span> Lab</h1>
-    </header>
-
-    <div id="selection-screen">
-      <div class="control-group">
-        <label>Select Experiment</label>
-        <div class="custom-select" id="custom-dropdown">
-          <div class="select-trigger" id="dropdown-trigger">
-            <span id="selected-text">Pitch Discrimination</span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-          <div class="select-options hidden" id="dropdown-options">
-            <div class="option selected" data-value="pitchDiscrimination">Pitch Discrimination</div>
-            <div class="option" data-value="intensityDiscrimination">Intensity Discrimination</div>
-            <div class="option" data-value="toneInNoise">Tone in Noise</div>
-            <div class="option" data-value="amDetection">AM Detection</div>
-            <div class="option" data-value="itdDiscrimination">ITD Discrimination</div>
-            <div class="option" data-value="profileAnalysis">Profile Analysis</div>
-            <div class="option" data-value="custom">Upload Custom JSON Configuration</div>
-          </div>
-        </div>
-        <!-- Keep select for logic -->
-        <select id="experiment-select" class="hidden">
-          <option value="pitchDiscrimination">Pitch Discrimination</option>
-          <option value="intensityDiscrimination">Intensity Discrimination</option>
-          <option value="toneInNoise">Tone in Noise</option>
-          <option value="amDetection">AM Detection</option>
-          <option value="itdDiscrimination">ITD Discrimination</option>
-          <option value="profileAnalysis">Profile Analysis</option>
-          <option value="custom">Upload Custom JSON Configuration</option>
-        </select>
-
-      </div>
-
-      <div class="control-group hidden" id="custom-json-group">
-        <label for="custom-file">Select Experiment JSON File</label>
-        <input type="file" id="custom-file" accept=".json"
-          style="background: var(--bg); color: var(--text); padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); width: 100%;">
-      </div>
-
-      <div id="selection-description" class="selection-description hidden"></div>
-
-      <div style="display: flex; justify-content: center; margin-top: 1.5rem;">
-        <button id="load-experiment-btn" class="btn">Confirm Selection</button>
-      </div>
-
-    </div>
-
-    <div id="experiment-screen" class="experiment-area hidden">
-      <div class="experiment-info">
-        <div class="status-container">
-          <div id="status-badge" class="status-badge">Trial 1</div>
-        </div>
-        <div class="instruction-line">
-          <p id="instruction-text">Select the target.</p>
-        </div>
-      </div>
-
-      <div class="experiment-main">
-        <div id="play-btn-container" class="play-btn-container">
-          <button id="play-btn" class="btn">Start Experiment</button>
-        </div>
-
-        <div class="response-buttons" id="response-buttons">
-        </div>
-      </div>
-
-      <div id="results-area" class="results-area hidden">
-        <h2>Experiment Complete!</h2>
-        <p id="results-text"></p>
-        <div class="results-actions">
-          <button id="download-results-btn" class="btn secondary">Download JSON</button>
-          <button id="restart-btn" class="btn">New Experiment</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <!-- The single source of truth for the Lab UI -->
+  <psychoacoustic-app></psychoacoustic-app>
 
 </body>
 
