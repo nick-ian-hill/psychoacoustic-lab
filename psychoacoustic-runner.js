@@ -1082,6 +1082,12 @@ var f = /* @__PURE__ */ o(((e, t) => {
 						levelDb: 55,
 						phaseDegrees: 0,
 						ear: "both"
+					},
+					{
+						frequency: 6650,
+						levelDb: 55,
+						phaseDegrees: 0,
+						ear: "both"
 					}
 				],
 				durationMs: 300,
@@ -1090,11 +1096,25 @@ var f = /* @__PURE__ */ o(((e, t) => {
 					releaseMs: 20,
 					type: "cosine"
 				}
+			}, {
+				type: "multi_component",
+				components: [{
+					frequency: 1e3,
+					levelDb: 55,
+					phaseDegrees: 0,
+					ear: "both"
+				}],
+				durationMs: 300,
+				globalEnvelope: {
+					attackMs: 20,
+					releaseMs: 20,
+					type: "cosine"
+				},
+				applyTo: "target"
 			}],
 			perturbations: [
 				{
 					type: "gain",
-					stimulusIndex: 0,
 					applyTo: "all",
 					deltaDb: {
 						type: "uniform",
@@ -1148,7 +1168,6 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				},
 				{
 					type: "phase_shift",
-					stimulusIndex: 0,
 					targetFrequency: 1e3,
 					applyTo: "all",
 					deltaDegrees: {
@@ -1191,22 +1210,33 @@ var f = /* @__PURE__ */ o(((e, t) => {
 					}
 				},
 				{
-					type: "gain",
+					type: "phase_shift",
 					stimulusIndex: 0,
+					targetFrequency: 6650,
+					applyTo: "all",
+					deltaDegrees: {
+						type: "uniform",
+						min: 0,
+						max: 360
+					}
+				},
+				{
+					type: "gain",
+					stimulusIndex: 1,
 					applyTo: "target",
 					deltaDb: { adaptive: !0 }
 				}
 			],
 			adaptive: {
 				type: "staircase",
-				parameter: "perturbations[1].deltaDb",
-				initialValue: 12,
+				parameter: "perturbations[10].deltaDb",
+				initialValue: 4,
 				stepType: "linear",
-				stepSizes: [4, 2],
+				stepSizes: [2, 1],
 				rule: { correctDown: 2 },
-				minValue: 0,
-				maxValue: 40,
-				unit: "dB"
+				minValue: -40,
+				maxValue: 10,
+				unit: "dB (rel)"
 			},
 			termination: { reversals: 12 }
 		}]
