@@ -207,7 +207,7 @@ export const amDetectionConfig: ExperimentConfigInput = {
     name: "AM Detection",
     version: "2.2.0",
     summary: "Select the MODULATED (warbling) sound.",
-    description: "Identify the interval containing amplitude modulation. One interval contains steady-state noise; the other contains a periodic fluctuation in signal level."
+    description: "One sound is a constant, steady noise. The other has a rhythmic 'flutter' or 'warble' where the volume rises and falls. Identify the interval containing this amplitude modulation (the warbling sound)."
   },
   ui: {
     showTrialNumber: false,
@@ -316,8 +316,8 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
   meta: {
     name: "Profile Analysis",
     version: "2.2.0",
-    summary: "Select the sound with the DIFFERENT spectral shape (2 or 3).",
-    description: "Four sounds will be presented. The first and last are fixed reference complexes. Identify which of the middle two sounds (the 2nd or 3rd) has a different spectral profile."
+    summary: "Select the middle sound (2 or 3) with the different timbre.",
+    description: "Four sounds play with random volumes. The first and last are references; identify which of the middle two (2 or 3) has a different 'timbre' or 'color' (the spectral profile)."
   },
   ui: {
     showTrialNumber: false,
