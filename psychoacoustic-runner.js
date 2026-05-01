@@ -17,7 +17,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	constructor(e) {
 		this.ctx = new (window.AudioContext || window.webkitAudioContext)(), this.seed = e, this.worker = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/worker-CiSK0UVK.js", import.meta.url).href,
+			"" + new URL("assets/worker-CkZ8e6NK.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" }), this.worker.onmessage = (e) => {
 			let { id: t, left: n, right: r, intervalLengths: i } = e.data, a = this.pendingRequests.get(t);
