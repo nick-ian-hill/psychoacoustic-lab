@@ -133,7 +133,7 @@ class PsychoacousticApp extends HTMLElement {
           </header>
           
           <div class="control-group">
-            <label>Experiment Configuration</label>
+            <label>Select Experiment</label>
             <select id="experiment-select" class="btn" style="width: 100%; text-align: left; background: var(--psycho-card-bg); border: 1px solid var(--psycho-border); padding: 1rem; color: var(--psycho-text); cursor: pointer;">
               <option value="pitchDiscrimination">Pitch Discrimination</option>
               <option value="intensityDiscrimination">Intensity Discrimination</option>
@@ -144,7 +144,7 @@ class PsychoacousticApp extends HTMLElement {
             </select>
           </div>
 
-          <div id="selection-description" class="selection-description" style="margin-top: 1.5rem; padding: 1rem; background: var(--psycho-card-bg); font-size: 0.9rem; line-height: 1.5; color: var(--psycho-text-muted); border-left: 3px solid var(--psycho-accent); border-radius: 0;">
+          <div id="selection-description" class="selection-description" style="margin-top: 1.5rem; padding: 1rem; background: var(--psycho-card-bg); font-size: 1rem; line-height: 1.6; color: var(--psycho-text); border-left: 3px solid var(--psycho-accent); border-radius: 0;">
             Pick an experiment from the list above.
           </div>
 
