@@ -746,7 +746,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			name: "Intensity Discrimination",
 			version: "2.2.0",
 			summary: "Select the LOUDER tone.",
-			description: "Four tones will play. The first and last are markers. Which of the middle two (2 or 3) was LOUDER?"
+			description: "You will hear two tones on each trial. Identify which of the tones is louder (1 or 2)."
 		},
 		ui: {
 			showTrialNumber: !1,
@@ -760,7 +760,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				intervals: [{ condition: "reference" }, { condition: "target" }],
 				randomizeOrder: !0,
 				timing: {
-					isiMs: 300,
+					isiMs: 400,
 					itiMs: 1e3
 				}
 			},
@@ -802,7 +802,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			name: "Tone in Noise",
 			version: "2.2.0",
 			summary: "Select the interval containing the TONE.",
-			description: "Two intervals contain only noise; one has a hidden tone. Can you hear the beep inside the noise?"
+			description: "You will hear two noise bursts, one of which has an additional tone signal embedded within it. Identify the interval containing the tone."
 		},
 		ui: {
 			showTrialNumber: !1,
@@ -856,9 +856,9 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			adaptive: {
 				type: "staircase",
 				parameter: "perturbations[0].deltaDb",
-				initialValue: 10,
+				initialValue: 4,
 				stepType: "linear",
-				stepSizes: [4, 2],
+				stepSizes: [2, 1],
 				rule: { correctDown: 2 },
 				minValue: -30,
 				maxValue: 40,
@@ -871,8 +871,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "AM Detection",
 			version: "2.2.0",
-			summary: "Select the FLUCTUATING (wobbly) sound.",
-			description: "Listen for the pulsed fluctuation. Two sounds are steady noise; one is 'wobbly' or pulsing."
+			summary: "Select the MODULATED (warbling) sound.",
+			description: "Identify the interval containing amplitude modulation. One interval contains steady-state noise; the other contains a periodic fluctuation in signal level."
 		},
 		ui: {
 			showTrialNumber: !1,
@@ -929,8 +929,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "ITD Discrimination",
 			version: "2.2.0",
-			summary: "Select the sound shifted to the RIGHT.",
-			description: "Two sounds are centered; one is shifted toward your right ear. Select the sound shifted to the right."
+			summary: "Select the sound shifted to the RIGHT (2 or 3).",
+			description: "Four sounds will be presented. The first and last are always centered reference tones. Identify which of the middle two intervals contains the sound shifted toward the right ear."
 		},
 		ui: {
 			showTrialNumber: !1,
@@ -1000,8 +1000,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "Profile Analysis",
 			version: "2.2.0",
-			summary: "Select the interval with the DIFFERENT spectral shape.",
-			description: "A complex task comparing spectral patterns. Identify the interval where the 'color' of the sound is slightly different."
+			summary: "Select the sound with the DIFFERENT spectral shape (2 or 3).",
+			description: "Four sounds will be presented. The first and last are fixed reference complexes. Identify which of the middle two sounds (the 2nd or 3rd) has a different spectral profile."
 		},
 		ui: {
 			showTrialNumber: !1,
