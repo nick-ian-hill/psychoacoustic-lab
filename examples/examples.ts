@@ -337,54 +337,67 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
       randomizeOrder: true,
       timing: { isiMs: 400, itiMs: 1000 }
     },
-    stimuli: [{
-      type: "multi_component",
-      components: [
-        { frequency: 200, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 330, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 544, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 898, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 1000, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 1481, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 2442, levelDb: 55, phaseDegrees: 0, ear: "both" },
-        { frequency: 4030, levelDb: 55, phaseDegrees: 0, ear: "both" }
-      ],
-      durationMs: 300,
-      globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
-    }],
+    stimuli: [
+      {
+        type: "multi_component",
+        components: [
+          { frequency: 200, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 330, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 544, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 898, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 1000, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 1481, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 2442, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 4030, levelDb: 55, phaseDegrees: 0, ear: "both" },
+          { frequency: 6650, levelDb: 55, phaseDegrees: 0, ear: "both" }
+        ],
+        durationMs: 300,
+        globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
+      },
+      {
+        type: "multi_component",
+        components: [
+          { frequency: 1000, levelDb: 55, phaseDegrees: 0, ear: "both" }
+        ],
+        durationMs: 300,
+        globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
+        applyTo: "target"
+      }
+    ],
     perturbations: [
       {
         type: "gain",
-        stimulusIndex: 0,
         applyTo: "all",
-        deltaDb: { type: "uniform", min: -8, max: 8 } // Level Rove
+        deltaDb: { type: "uniform", min: -8, max: 8 } // Level Rove (applies to both generators)
       },
       // Random Phase per component per trial
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 200, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 330, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 544, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 898, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
-      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 1000, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      // Omit stimulusIndex for 1000Hz to keep signal and pedestal in phase
+      { type: "phase_shift", targetFrequency: 1000, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 1481, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 2442, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 4030, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 6650, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       {
         type: "gain",
-        stimulusIndex: 0,
+        stimulusIndex: 1, // Target the separate signal component
         applyTo: "target",
         deltaDb: { adaptive: true }
       }
     ],
     adaptive: {
       type: "staircase",
-      parameter: "perturbations[1].deltaDb",
-      initialValue: 12,
+      parameter: "perturbations[10].deltaDb",
+      initialValue: 4,
       stepType: "linear",
-      stepSizes: [4, 2],
+      stepSizes: [2, 1],
       rule: { correctDown: 2 },
-      minValue: 0,
-      maxValue: 40,
-      unit: "dB"
+      minValue: -40,
+      maxValue: 10,
+      unit: "dB (rel)"
     },
     termination: { reversals: 12 }
   }]
