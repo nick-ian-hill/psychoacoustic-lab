@@ -153,7 +153,7 @@ export function synthesizeMultiComponent(
         for (const p of perturbations) {
           const pAny = p as any;
           
-          if (pAny.targetGeneratorIndex !== undefined && pAny.targetGeneratorIndex !== genIndex) continue;
+          if (pAny.stimulusIndex !== undefined && pAny.stimulusIndex !== genIndex) continue;
           const matchesFrequency = !pAny.targetFrequency || pAny.targetFrequency === comp.frequency;
           if (!matchesFrequency) continue;
 
@@ -311,7 +311,7 @@ export function synthesizeNoise(
         const pAny = p as any;
         
         // 1. Check Generator Targeting
-        if (pAny.targetGeneratorIndex !== undefined && pAny.targetGeneratorIndex !== genIndex) continue;
+        if (pAny.stimulusIndex !== undefined && pAny.stimulusIndex !== genIndex) continue;
 
         // 2. Check Ear Match
         const pEar = pAny.ear || "both";

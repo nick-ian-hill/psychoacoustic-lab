@@ -318,7 +318,7 @@ class PsychoacousticServer {
             content: [{
               type: "text",
               // MAINTENANCE NOTE: Update this list whenever a new export is added to examples/examples.ts
-              text: "Available Examples: intensityDiscrimination, frequencyDiscrimination, itdDiscrimination, amDetection, profileAnalysis, toneInNoise"
+              text: "Available Examples: intensityDiscrimination, pitchDiscrimination, itdDiscrimination, amDetection, profileAnalysis, toneInNoise"
             }]
           };
 
@@ -412,6 +412,8 @@ Each generator is one of:
 ## perturbations? (optional, array)
 By default, perturbations apply only to the 'target' interval.
 - applyTo: "target" | "all" — Set to "all" for ROVING (randomization across all intervals).
+- stimulusIndex?: number — (Optional) Target a specific generator by its index in the stimuli array. If omitted, applies to all sound sources in the interval.
+- targetFrequency?: number — (Optional) When targeting a multi-component generator, use this to target a specific frequency. If omitted, applies to all components within that generator.
 
 ### Value Types (used for deltaDb, deltaPercent, etc.)
 - number — Static value.

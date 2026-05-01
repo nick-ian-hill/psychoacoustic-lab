@@ -34,7 +34,7 @@ export const pitchDiscriminationConfig: ExperimentConfigInput = {
       },
       stimuli: [{
         type: "multi_component",
-        components: [{ frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" }],
+        components: [{ frequency: 1000, levelDb: 55, phaseDegrees: 0, ear: "both" }],
         durationMs: 300,
         globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
       }],
@@ -107,12 +107,7 @@ export const intensityDiscriminationConfig: ExperimentConfigInput = {
     feedback: true,
     paradigm: {
       type: "m-AFC",
-      intervals: [
-        { condition: "reference", fixed: true, selectable: false },
-        { condition: "reference" },
-        { condition: "target" },
-        { condition: "reference", fixed: true, selectable: false }
-      ],
+      intervals: [{ condition: "reference" }, { condition: "target" }],
       randomizeOrder: true,
       timing: { isiMs: 300, itiMs: 1000 }
     },
@@ -129,9 +124,9 @@ export const intensityDiscriminationConfig: ExperimentConfigInput = {
     adaptive: {
       type: "staircase",
       parameter: "perturbations[0].deltaDb",
-      initialValue: 8,
+      initialValue: 4,
       stepType: "geometric",
-      stepSizes: [1.414, 1.2],
+      stepSizes: [1.414],
       rule: { correctDown: 2 },
       minValue: 0,
       maxValue: 20,
@@ -161,7 +156,7 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
     feedback: true,
     paradigm: {
       type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
+      intervals: [{ condition: "reference" }, { condition: "target" }],
       randomizeOrder: true,
       timing: { isiMs: 400, itiMs: 1000 }
     },
@@ -185,7 +180,7 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
     ],
     perturbations: [{
       type: "gain",
-      targetGeneratorIndex: 1,
+      stimulusIndex: 1,
       deltaDb: { adaptive: true }
     }],
     adaptive: {
@@ -223,7 +218,7 @@ export const amDetectionConfig: ExperimentConfigInput = {
     feedback: true,
     paradigm: {
       type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
+      intervals: [{ condition: "reference" }, { condition: "target" }],
       randomizeOrder: true,
       timing: { isiMs: 400, itiMs: 1000 }
     },
@@ -277,7 +272,12 @@ export const itdDiscriminationConfig: ExperimentConfigInput = {
     feedback: true,
     paradigm: {
       type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
+      intervals: [
+        { condition: "reference", fixed: true, selectable: false },
+        { condition: "reference" },
+        { condition: "target" },
+        { condition: "reference", fixed: true, selectable: false }
+      ],
       randomizeOrder: true,
       timing: { isiMs: 400, itiMs: 1000 }
     },
@@ -328,21 +328,26 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
     feedback: true,
     paradigm: {
       type: "m-AFC",
-      intervals: [{ condition: "reference" }, { condition: "reference" }, { condition: "target" }],
+      intervals: [
+        { condition: "reference", fixed: true, selectable: false },
+        { condition: "reference" },
+        { condition: "target" },
+        { condition: "reference", fixed: true, selectable: false }
+      ],
       randomizeOrder: true,
       timing: { isiMs: 400, itiMs: 1000 }
     },
     stimuli: [{
       type: "multi_component",
       components: [
-        { frequency: 200, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 330, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 544, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 898, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 1000, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 1481, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 2442, levelDb: 60, phaseDegrees: 0, ear: "both" },
-        { frequency: 4030, levelDb: 60, phaseDegrees: 0, ear: "both" }
+        { frequency: 200, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 330, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 544, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 898, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 1000, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 1481, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 2442, levelDb: 55, phaseDegrees: 0, ear: "both" },
+        { frequency: 4030, levelDb: 55, phaseDegrees: 0, ear: "both" }
       ],
       durationMs: 300,
       globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" }
@@ -350,13 +355,22 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
     perturbations: [
       {
         type: "gain",
-        targetGeneratorIndex: 0,
+        stimulusIndex: 0,
         applyTo: "all",
         deltaDb: { type: "uniform", min: -8, max: 8 } // Level Rove
       },
+      // Random Phase per component per trial
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 200, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 330, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 544, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 898, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 1000, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 1481, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 2442, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
+      { type: "phase_shift", stimulusIndex: 0, targetFrequency: 4030, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       {
         type: "gain",
-        targetGeneratorIndex: 0,
+        stimulusIndex: 0,
         applyTo: "target",
         deltaDb: { adaptive: true }
       }

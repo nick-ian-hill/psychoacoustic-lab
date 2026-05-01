@@ -17,7 +17,7 @@ Always prefer higher-level abstractions to ensure schema compliance and mathemat
     *   **Asynchrony:** A positive `delayMs` in `onset_asynchrony` delays the start of the targeted component relative to others.
 *   **IPD (Interaural Phase Difference):** Use `mode: 'fine_structure'`. The engine subtracts phase for positive values to maintain consistency with the delay model.
 *   **Adaptive Linking:** If you use `{ "adaptive": true }` in any perturbation, you MUST define an `adaptive` configuration block.
-*   **Precise Gain Logic:** All `gain` perturbations (roving + target) are summed into a single dB offset before synthesis. This eliminates double-counting while ensuring that roving levels do not "leak" between sound sources if `targetGeneratorIndex` is used.
+*   **Perturbation Summation:** Multiple `gain` perturbations targeting the same sound source (e.g., combining an adaptive signal level with a random level rove) are summed before synthesis. Use `stimulusIndex` to isolate perturbations to specific sound sources within an interval.
 *   **Binaural Alignment:** The engine automatically manages buffer padding and sample-accurate offsets to keep stimuli phase-aligned, even when applying differential delays.
 
 ## Human Auditory Thresholds (Empirical Yardsticks)
@@ -48,7 +48,7 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 
 ### Spectral Profile Analysis
 *   **Loudness Roving:** To prevent participants from using absolute energy cues, apply a uniform random `gain` perturbation (e.g., ±5 dB) across ALL intervals. (Green, 1988).
-*   **Global Level Roving:** Omit `targetGeneratorIndex` to shift the entire interval's level while keeping Signal-to-Masker (SMR) ratios constant.
+*   **Global Level Roving:** Omit `stimulusIndex` to shift all sound sources in the interval simultaneously, maintaining relative Signal-to-Masker (SMR) ratios while roving absolute levels.
 *   **Independent Jitter & Molecular Psychophysics:** By applying independent random `gain` perturbations to multiple components, researchers can estimate the **perceptual weight** of each component in the decision process (Berg, 1990). The platform's JSON export records these resolved offsets within the `trialState` metadata for every interval, enabling reverse-correlation or regression-based analysis.
 *   **Profile Cues:** Listeners compare levels across frequency channels rather than absolute levels. (Green, Mason & Kidd, 1984).
 
