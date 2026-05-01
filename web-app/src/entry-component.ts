@@ -199,7 +199,7 @@ class PsychoacousticApp extends HTMLElement {
           <div class="control-group">
             <label>Select Experiment</label>
             <div class="custom-select" id="custom-dropdown">
-              <div class="select-trigger" id="dropdown-trigger">
+              <div class="select-trigger" id="dropdown-trigger" tabindex="0" role="button" aria-haspopup="listbox">
                 <span id="selected-text">Pitch Discrimination</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 1.25rem; height: 1.25rem;">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -252,11 +252,66 @@ class PsychoacousticApp extends HTMLElement {
     const customGroup = this.shadowRoot!.getElementById("custom-json-group") as HTMLElement;
     const customFile = this.shadowRoot!.getElementById("custom-file") as HTMLInputElement;
 
+    // Keyboard Navigation State
+    let highlightedIndex = -1;
+    const options = Array.from(optionsList.querySelectorAll(".option"));
+
+    const updateHighlight = (index: number) => {
+      options.forEach((opt, i) => {
+        opt.classList.toggle("highlighted", i === index);
+      });
+      if (index >= 0) {
+        options[index].scrollIntoView({ block: "nearest" });
+      }
+    };
+
     // Toggle Dropdown
     trigger.addEventListener("click", (e) => {
       e.stopPropagation();
-      optionsList.classList.toggle("hidden");
-      dropdown.classList.toggle("open");
+      const isOpen = !optionsList.classList.contains("hidden");
+      if (isOpen) {
+        optionsList.classList.add("hidden");
+        dropdown.classList.remove("open");
+      } else {
+        optionsList.classList.remove("hidden");
+        dropdown.classList.add("open");
+        // Reset highlight to current selection
+        highlightedIndex = options.findIndex(opt => opt.classList.contains("selected"));
+        updateHighlight(highlightedIndex);
+      }
+    });
+
+    // Global keydown for accessibility
+    document.addEventListener("keydown", (e) => {
+      const isTriggerFocused = this.shadowRoot!.activeElement === trigger;
+      const isHidden = optionsList.classList.contains("hidden");
+
+      // Handle opening when focused
+      if (isHidden && isTriggerFocused && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        trigger.click();
+        return;
+      }
+
+      if (isHidden) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlightedIndex = Math.min(highlightedIndex + 1, options.length - 1);
+        updateHighlight(highlightedIndex);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlightedIndex = Math.max(highlightedIndex - 1, 0);
+        updateHighlight(highlightedIndex);
+      } else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (highlightedIndex >= 0) {
+          (options[highlightedIndex] as HTMLElement).click();
+        }
+      } else if (e.key === "Escape") {
+        optionsList.classList.add("hidden");
+        dropdown.classList.remove("open");
+      }
     });
 
     // Global click to close dropdown
@@ -266,14 +321,14 @@ class PsychoacousticApp extends HTMLElement {
     });
 
     // Handle Option Selection
-    optionsList.querySelectorAll(".option").forEach(option => {
+    options.forEach(option => {
       option.addEventListener("click", () => {
         const value = option.getAttribute("data-value") || "";
         const text = option.textContent || "";
         this.selectedValue = value;
         selectedText.textContent = text;
 
-        optionsList.querySelectorAll(".option").forEach(opt => opt.classList.remove("selected"));
+        options.forEach(opt => opt.classList.remove("selected"));
         option.classList.add("selected");
 
         // Close dropdown

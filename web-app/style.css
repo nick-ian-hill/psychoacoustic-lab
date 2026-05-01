@@ -107,8 +107,11 @@ label {
   transition: all 0.2s;
 }
 
-.select-trigger:hover {
+.select-trigger:hover,
+.select-trigger:focus-visible {
   border-color: var(--psycho-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
 .select-trigger svg {
@@ -272,9 +275,8 @@ textarea:focus {
 }
 
 .experiment-area {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--psycho-border);
+  margin-top: 0;
+  padding-top: 0.25rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -282,7 +284,7 @@ textarea:focus {
 }
 
 .selection-description {
-  margin-top: 1.5rem;
+  margin-top: 0;
   padding: 1rem;
   background: rgba(148, 163, 184, 0.05);
   border-radius: 0;
@@ -290,7 +292,7 @@ textarea:focus {
   font-size: 0.9375rem;
   color: var(--psycho-text-muted);
   line-height: 1.6;
-  max-height: 150px;
+  max-height: 200px;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -299,7 +301,7 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   width: 100%;
   justify-content: center;
 }
@@ -622,8 +624,8 @@ textarea:focus {
   }
 
   .experiment-area {
-    margin-top: 1rem;
-    padding-top: 1.5rem;
+    margin-top: 0;
+    padding-top: 0.25rem;
     gap: 1rem;
   }
 
@@ -631,9 +633,7 @@ textarea:focus {
     min-height: 80px;
   }
 
-  .selection-description {
-    max-height: 120px;
-  }
+
 
   .modal-content {
     width: 95%;
