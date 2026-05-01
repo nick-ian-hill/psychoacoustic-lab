@@ -7,7 +7,7 @@ describe('Amplitude Validation - RMS, Roving, Calibration', () => {
 
   it('should apply calibration offsets correctly (Log Interpolation)', () => {
     const calibration = {
-      TransducerName: "Test",
+      id: "Test",
       points: [
         { frequency: 1000, offsetDb: 0 },
         { frequency: 10000, offsetDb: 20 }
