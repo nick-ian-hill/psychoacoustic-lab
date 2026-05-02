@@ -690,7 +690,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			perturbations: [{
 				type: "mistuning",
 				targetFrequency: 1e3,
-				deltaPercent: 15
+				deltaPercent: 8
 			}],
 			termination: { correctTrials: 5 }
 		}, {
@@ -916,7 +916,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				parameter: "perturbations[0].deltaDepth",
 				initialValue: .5,
 				stepType: "geometric",
-				stepSizes: [1.414, 1.2],
+				stepSizes: [1.414, 1.189],
 				rule: { correctDown: 2 },
 				minValue: 0,
 				maxValue: 1,
@@ -987,7 +987,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				parameter: "perturbations[0].deltaMicroseconds",
 				initialValue: 400,
 				stepType: "geometric",
-				stepSizes: [1.414, 1.2],
+				stepSizes: [1.414, 1.189],
 				rule: { correctDown: 2 },
 				minValue: 0,
 				maxValue: 1e3,
