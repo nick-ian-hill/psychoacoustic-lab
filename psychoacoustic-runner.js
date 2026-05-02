@@ -17,7 +17,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	constructor(e) {
 		this.ctx = new (window.AudioContext || window.webkitAudioContext)(), this.seed = e, this.worker = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/worker-BhmWQzr0.js", import.meta.url).href,
+			"" + new URL("assets/worker-KwtPxlN2.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" }), this.worker.onmessage = (e) => {
 			let { id: t, left: n, right: r, intervalLengths: i } = e.data, a = this.pendingRequests.get(t);
@@ -871,8 +871,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		meta: {
 			name: "AM Detection",
 			version: "2.2.0",
-			summary: "Select the MODULATED (warbling) sound.",
-			description: "One sound is a constant, steady noise. The other has a rhythmic 'flutter' or 'warble' where the volume rises and falls. Identify the interval containing this amplitude modulation (the warbling sound)."
+			summary: "Select the MODULATED (fluttering) sound.",
+			description: "One sound is a constant, steady noise. The other has a rhythmic 'flutter' or 'pulsing' where the volume rises and falls. Identify the interval containing this amplitude modulation."
 		},
 		ui: {
 			showTrialNumber: !1,
@@ -904,7 +904,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				modulators: [{
 					type: "AM",
 					depth: 0,
-					sharedEnvelopeId: "mod1"
+					rateHz: 8
 				}]
 			}],
 			perturbations: [{
