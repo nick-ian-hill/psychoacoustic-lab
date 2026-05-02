@@ -3,9 +3,17 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
   ErrorCode,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import {
   ExperimentConfigSchema,
 } from "../../shared/schema.js";
@@ -34,11 +42,13 @@ class PsychoacousticServer {
       {
         capabilities: {
           tools: {},
+          resources: {},
         },
       }
     );
 
     this.setupTools();
+    this.setupResources();
     this.server.onerror = (error) => console.error("[MCP Error]", error);
   }
 
@@ -355,6 +365,40 @@ class PsychoacousticServer {
         default:
           throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
       }
+    });
+  }
+
+  private setupResources() {
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+      resources: [
+        {
+          uri: "file:///integration_guide.md",
+          name: "Integration Guide",
+          description: "A comprehensive guide on how to build the portable runner and embed it into external websites as a Web Component.",
+          mimeType: "text/markdown",
+        }
+      ]
+    }));
+
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      if (request.params.uri === "file:///integration_guide.md") {
+        try {
+          const guidePath = path.resolve(__dirname, "../../integration_guide.md");
+          const content = fs.readFileSync(guidePath, 'utf8');
+          return {
+            contents: [
+              {
+                uri: request.params.uri,
+                mimeType: "text/markdown",
+                text: content,
+              }
+            ]
+          };
+        } catch (error: any) {
+          throw new McpError(ErrorCode.InternalError, `Could not read integration guide: ${error.message}`);
+        }
+      }
+      throw new McpError(ErrorCode.InvalidParams, `Unknown resource: ${request.params.uri}`);
     });
   }
 
