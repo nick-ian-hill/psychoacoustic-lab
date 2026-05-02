@@ -4,24 +4,13 @@ import type { AdaptiveConfig } from '../../../shared/schema.js';
 import seedrandom from 'seedrandom';
 
 describe('Robot Observer - Staircase Convergence Validation', () => {
-  // A simple psychometric function: Logistic
-  // P(correct) = 1 / (1 + exp(-beta * (x - threshold)))
-  // For a 2AFC task, we scale it to [0.5, 1.0]
-  const simulateResponse = (value: number, threshold: number, slope: number, rng: () => number) => {
-    // In many psychoacoustic tasks (like Tone-in-Noise), HIGHER value = EASIER.
-    // So if value > threshold, P(correct) should be high.
-    const pCorrect = 0.5 + 0.5 * (1 / (1 + Math.exp(-slope * (value - threshold))));
-    return rng() < pCorrect;
-  };
-
   it('should converge to the theoretical 70.7% threshold (2-down 1-up)', () => {
-    const rng = seedrandom('robot-observer-staircase-v2');
+    const rng = seedrandom('robot-observer-linear');
     
-    // Config for a 2-down 1-up staircase
     const config: AdaptiveConfig = {
       type: 'staircase',
       parameter: 'gain',
-      initialValue: 30, // Start very high (easy)
+      initialValue: 30,
       stepType: 'linear',
       stepSizes: [4, 2, 1],
       rule: { correctDown: 2 },
@@ -30,21 +19,51 @@ describe('Robot Observer - Staircase Convergence Validation', () => {
       unit: 'dB'
     };
 
-    const targetThreshold = 10; // Robot threshold at 10dB
-    const slope = 0.8; // Steeper slope for cleaner convergence
-    
+    const targetThreshold = 10;
+    const slope = 0.8;
     const sc = new StaircaseController(config);
     
-    // Run 200 trials
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 300; i++) {
       const currentValue = sc.getCurrentValue();
-      const response = simulateResponse(currentValue, targetThreshold, slope, rng);
-      sc.processResponse(response);
+      const pCorrect = 0.5 + 0.5 * (1 / (1 + Math.exp(-slope * (currentValue - targetThreshold))));
+      sc.processResponse(rng() < pCorrect);
     }
 
-    const threshold = sc.calculateThreshold(10); // Discard more to ensure stability
-    
+    const threshold = sc.calculateThreshold(10);
     expect(threshold).toBeGreaterThan(targetThreshold - 2);
     expect(threshold).toBeLessThan(targetThreshold + 2);
+  });
+
+  it('should converge correctly on a geometric scale', () => {
+    const rng = seedrandom('robot-observer-geometric');
+    
+    const config: AdaptiveConfig = {
+      type: 'staircase',
+      parameter: 'delta',
+      initialValue: 1.0,
+      stepType: 'geometric',
+      stepSizes: [2, 1.414, 1.189],
+      rule: { correctDown: 2 },
+      minValue: 0.001,
+      maxValue: 10,
+      unit: '%'
+    };
+
+    const targetThreshold = 0.1; // 10% threshold
+    const slope = 4.0; // Higher slope for log-space
+    const sc = new StaircaseController(config);
+    
+    for (let i = 0; i < 400; i++) {
+      const currentValue = sc.getCurrentValue();
+      // In geometric tasks, we usually track 'threshold' where value > threshold is easy
+      const logDistance = Math.log(currentValue) - Math.log(targetThreshold);
+      const pCorrect = 0.5 + 0.5 * (1 / (1 + Math.exp(-slope * logDistance)));
+      sc.processResponse(rng() < pCorrect);
+    }
+
+    const threshold = sc.calculateThreshold(10);
+    // 0.1 +/- a bit
+    expect(threshold).toBeGreaterThan(0.08);
+    expect(threshold).toBeLessThan(0.12);
   });
 });

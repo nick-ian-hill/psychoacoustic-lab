@@ -162,5 +162,19 @@ describe('StaircaseController - Scientific Validation', () => {
       const expectedMean = reversalValues.reduce((a,b) => a+b, 0) / reversalValues.length;
       expect(sc.calculateThreshold(0)).toBeCloseTo(expectedMean);
     });
+
+    it('is calculated correctly for geometric means', () => {
+      const sc = new StaircaseController(geometricConfig);
+      
+      // Setup a manual history of reversals
+      // Log mean of 10 and 5 should be sqrt(50) = 7.071
+      (sc as any).history = [
+        { value: 10, isReversal: true, correct: false },
+        { value: 5, isReversal: true, correct: true }
+      ];
+
+      const threshold = sc.calculateThreshold(0);
+      expect(threshold).toBeCloseTo(Math.sqrt(50), 4);
+    });
   });
 });
