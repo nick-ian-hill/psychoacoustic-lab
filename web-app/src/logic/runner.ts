@@ -134,8 +134,8 @@ export class ExperimentRunner {
         <div class="modal-body">
           <p>${message}</p>
           <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button class="btn secondary" style="flex: 1;" id="modal-cancel">Keep Going</button>
-            <button class="btn" style="flex: 1; background: var(--psycho-error);" id="modal-confirm">${confirmText}</button>
+            <button class="btn" style="flex: 1; background: var(--psycho-keep-going-btn);" id="modal-cancel">Keep Going</button>
+            <button class="btn" style="flex: 1; background: var(--psycho-stop-btn);" id="modal-confirm">${confirmText}</button>
           </div>
         </div>
       </div>

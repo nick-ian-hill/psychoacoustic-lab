@@ -134,20 +134,26 @@ The component uses Shadow DOM for style encapsulation, but you can easily custom
 ### Common Customizations
 ```css
 psychoacoustic-runner {
-  /* Change the primary accent color */
+  /* Core Brand Tokens */
   --psycho-accent: #6366f1;
+  --psycho-bg: #0f172a;
+  --psycho-panel-bg: #1e293b;
+  --psycho-text: #f8fafc;
+  --psycho-text-muted: #94a3b8;
+  --psycho-border: rgba(148, 163, 184, 0.1);
+  --psycho-radius: 8px;
+  --psycho-font-family: 'Inter', sans-serif;
+
+  /* Hover State */
   --psycho-accent-hover: #4f46e5;
-  
-  /* Adjust typography */
-  --psycho-font-family: 'Outfit', sans-serif;
-  
-  /* Modify corners and spacing */
-  --psycho-radius: 12px;
-  
-  /* Dark mode / Light mode adjustments */
-  --psycho-bg: #ffffff;
-  --psycho-text: #1f2937;
-  --psycho-card-bg: #f3f4f6;
+
+  /* Semantic State Overrides */
+  --psycho-stop-btn: #ef4444;       /* Custom background for 'Stop' button */
+  --psycho-keep-going-btn: #38bdf8;  /* Custom background for 'Keep Going' button */
+  --psycho-interval-bg: #1e293b;    /* Custom background for interval buttons */
+  --psycho-interval-text: #ffffff;  /* Custom text color for interval buttons */
+  --psycho-badge-bg: rgba(99, 102, 241, 0.15); /* Custom Trials Remaining badge */
+}
   --psycho-border: #e5e7eb;
 }
 ```

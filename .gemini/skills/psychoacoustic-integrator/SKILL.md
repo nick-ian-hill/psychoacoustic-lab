@@ -39,7 +39,23 @@ The components use **Shadow DOM**. To customize styles, you MUST use CSS Custom 
 - `--psycho-text-muted`: Secondary/Instructional text color.
 - `--psycho-border`: Border and divider color.
 - `--psycho-radius`: Border rounding.
-- `--psycho-font-family`: Typography (e.g., 'Outfit', sans-serif).
+- `--psycho-font-family`: Typography (e.g., 'Inter', sans-serif).
+- `--psycho-accent-hover`: Hover color for primary buttons.
+
+### Semantic State Overrides
+For finer control, you can override specific semantic elements:
+- `--psycho-stop-btn`: Background for destructive actions (default: error color).
+- `--psycho-keep-going-btn`: Background for confirmation/cancel actions (default: accent color).
+- `--psycho-secondary-btn`: Background for secondary buttons (default: transparent).
+- `--psycho-interval-bg`: Background for the interval buttons.
+- `--psycho-interval-text`: Text color for the interval buttons.
+- `--psycho-badge-bg`: Background for the status badge.
+
+### Advanced Semantic Overrides
+- `--psycho-success-bg`: Glow color for correct responses.
+- `--psycho-error-bg`: Glow color for incorrect responses.
+- `--psycho-selection-bg`: Hover color for list selections.
+- `--psycho-modal-overlay`: Dimming level for the modal background.
 
 ## Scientific Continuity
 When helping with integration:
