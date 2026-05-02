@@ -352,8 +352,9 @@ class PsychoacousticApp extends HTMLElement {
       option.addEventListener("click", onSelect);
       
       // Fallback for mobile devices where long-press cancels the click event
-      option.addEventListener("pointerup", (e: PointerEvent) => {
-        if (e.pointerType !== 'mouse') {
+      option.addEventListener("pointerup", (e: Event) => {
+        const pe = e as PointerEvent;
+        if (pe.pointerType !== 'mouse') {
           onSelect(e);
         }
       });
