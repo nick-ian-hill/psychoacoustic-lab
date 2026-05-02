@@ -325,7 +325,11 @@ class PsychoacousticApp extends HTMLElement {
       // Prevent long-press context menu which blocks the click event on some mobile browsers
       option.addEventListener("contextmenu", (e) => e.preventDefault());
 
-      option.addEventListener("click", () => {
+      const onSelect = (e: Event) => {
+        // If the dropdown is already hidden, ignore (prevents double-triggering from click+pointerup)
+        if (optionsList.classList.contains("hidden")) return;
+
+        e.stopPropagation();
         const value = option.getAttribute("data-value") || "";
         const text = option.textContent || "";
         this.selectedValue = value;
@@ -343,6 +347,15 @@ class PsychoacousticApp extends HTMLElement {
         
         const config = (EXAMPLES as any)[value];
         description.textContent = config?.meta?.description || (value === "custom" ? "Upload a valid ExperimentConfig JSON file to begin." : "No description available.");
+      };
+
+      option.addEventListener("click", onSelect);
+      
+      // Fallback for mobile devices where long-press cancels the click event
+      option.addEventListener("pointerup", (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse') {
+          onSelect(e);
+        }
       });
     });
 
