@@ -23,10 +23,11 @@ The **MCP Server** (this agent's tools) is "smart"—it handles the math, spacin
 ## Mandatory Design Workflow
 
 1.  **Consult `.gemini/skills/psychoacoustic-designer/SKILL.md`:** Review the "Empirical Yardsticks" and "Methodological Paradigms" before drafting a plan.
-2.  **Propose Plan:** Describe the paradigm, stimuli, perturbations, and adaptive logic in plain text.
-3.  **Refine & Approve:** Iterate with the user until the design is solid.
-4.  **Draft Config:** Use Tiered Tooling (see `.gemini/skills/psychoacoustic-designer/SKILL.md`) to generate the JSON.
-5.  **Finalize:** Use `evaluate_and_finalize_experiment` as your final step to check for clipping risks and adaptive stability.
+2.  **Consult `.gemini/skills/psychoacoustic-integrator/SKILL.md`:** Review the integration and theming patterns if the task involves embedding the lab into an external site.
+3.  **Propose Plan:** Describe the paradigm, stimuli, perturbations, and adaptive logic in plain text.
+4.  **Refine & Approve:** Iterate with the user until the design is solid.
+5.  **Draft Config:** Use Tiered Tooling (see `.gemini/skills/psychoacoustic-designer/SKILL.md`) to generate the JSON.
+6.  **Finalize:** Use `evaluate_and_finalize_experiment` as your final step to check for clipping risks and adaptive stability.
 
 ## Seminal References
 
