@@ -536,8 +536,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	async handlePlayClick() {
 		if (!this.engine) return;
 		await this.engine.resume(), this.elements.playBtnContainer.classList.add("hidden"), this.elements.playBtn.disabled = !0, this.elements.playBtn.classList.add("playing"), this.responseButtons.forEach((e) => e.disabled = !0);
-		let e = this.currentBlock?.paradigm.timing.readyDelayMs ?? 500;
-		await new Promise((t) => setTimeout(t, e)), await this.playNextTrial();
+		let e = this.currentBlock?.paradigm.timing.readyDelayMs ?? 500, t = this.engine.getTime() + e / 1e3;
+		await this.playNextTrial(t);
 	}
 	async playNextTrial(e) {
 		this.preRenderedTrial ||= this.prepareTrial();
@@ -575,9 +575,9 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		let n = t, r = (this.currentBlock?.paradigm.timing.isiMs || 0) / 1e3, i = (this.currentBlock?.paradigm.timing.responseDelayMs || 250) / 1e3, a = this.engine.getTime();
 		e.forEach((e, t) => {
 			let i = this.responseButtons[t], o = (n - a) * 1e3, s = (n + e - a) * 1e3;
-			setTimeout(() => i.classList.add("active"), o), setTimeout(() => i.classList.remove("active"), s), n += e + r;
+			o <= 0 && s > 0 ? (i.classList.add("active"), setTimeout(() => i.classList.remove("active"), s)) : o > 0 && (setTimeout(() => i.classList.add("active"), o), setTimeout(() => i.classList.remove("active"), s)), n += e + r;
 		});
-		let o = (n - r + i - a) * 1e3;
+		let o = Math.max(0, (n - r + i - a) * 1e3);
 		setTimeout(() => {
 			this.responseButtons.forEach((e) => {
 				e.classList.contains("non-selectable") || (e.disabled = !1);
@@ -596,10 +596,10 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			}), this.currentBlockIndex < (this.currentConfig?.blocks.length || 0) - 1 ? await this.startBlock(this.currentBlockIndex + 1) : this.showResults();
 			else {
 				this.updateStatus(), this.preRenderedTrial = this.prepareTrial();
-				let e = this.currentBlock?.paradigm.timing.itiMs || 1e3;
-				setTimeout(() => this.playNextTrial(), e);
+				let e = this.currentBlock?.paradigm.timing.itiMs || 1e3, t = this.engine.getTime() + e / 1e3;
+				this.playNextTrial(t);
 			}
-		}, this.currentBlock?.paradigm.timing.feedbackDurationMs || 400);
+		}, this.currentBlock?.paradigm.timing.feedbackDurationMs ?? 400);
 	}
 	showFeedback(e, t) {
 		this.currentBlock?.feedback && this.responseButtons[e].classList.add(t ? "correct" : "incorrect");
