@@ -172,7 +172,7 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
       },
       {
         type: "multi_component",
-        components: [{ frequency: 1000, levelDb: 40, phaseDegrees: 0, ear: "both" }],
+        components: [{ frequency: 1000, levelDb: 0, phaseDegrees: 0, ear: "both" }],
         durationMs: 400,
         globalEnvelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
         applyTo: "target"
@@ -186,12 +186,12 @@ export const toneInNoiseConfig: ExperimentConfigInput = {
     adaptive: {
       type: "staircase",
       parameter: "perturbations[0].deltaDb",
-      initialValue: 4,
+      initialValue: 44,
       stepType: "linear",
       stepSizes: [2, 1],
       rule: { correctDown: 2 },
-      minValue: -30,
-      maxValue: 40,
+      minValue: 0,
+      maxValue: 60,
       unit: "dB"
     },
     termination: { reversals: 8 }
@@ -296,7 +296,7 @@ export const itdDiscriminationConfig: ExperimentConfigInput = {
     adaptive: {
       type: "staircase",
       parameter: "perturbations[0].deltaMicroseconds",
-      initialValue: 700,
+      initialValue: 400,
       stepType: "geometric",
       stepSizes: [1.414, 1.2],
       rule: { correctDown: 2 },
@@ -370,12 +370,12 @@ export const profileAnalysisConfig: ExperimentConfigInput = {
         applyTo: "all",
         deltaDb: { type: "uniform", min: -8, max: 8 } // Level Rove (applies to both generators)
       },
-      // Random Phase per component per trial
+      // Random phase per component per interval
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 200, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 330, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 544, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 898, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
-      // Omit stimulusIndex for 1000Hz to keep signal and pedestal in phase
+      // Apply same random phase shift to 1000Hz across all intervals
       { type: "phase_shift", targetFrequency: 1000, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 1481, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },
       { type: "phase_shift", stimulusIndex: 0, targetFrequency: 2442, applyTo: "all", deltaDegrees: { type: "uniform", min: 0, max: 360 } },

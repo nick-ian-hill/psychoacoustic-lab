@@ -72,6 +72,36 @@ function resolveValue(val: any, adaptiveValue: number | undefined, rng: () => nu
   return 0;
 }
 
+/**
+ * Resolves random/adaptive values in perturbations once per interval.
+ * This ensures that global perturbations (like level roving) apply the same value 
+ * across all generators and components within an interval.
+ */
+export function resolvePerturbations(
+  perturbations: Perturbation[] | undefined,
+  adaptiveValue: number | undefined,
+  rng: () => number
+): Perturbation[] | undefined {
+  if (!perturbations) return undefined;
+  return perturbations.map(p => {
+    const pAny = p as any;
+    const resolved: any = { ...p };
+    
+    // List of fields that can be RandomUniform or Adaptive
+    const fields = ['deltaDb', 'deltaPercent', 'deltaMicroseconds', 'delayMs', 'deltaDegrees', 'deltaDepth'];
+    
+    for (const field of fields) {
+      const val = pAny[field];
+      if (val && typeof val === 'object') {
+        if (val.adaptive || val.type === 'uniform') {
+          resolved[field] = resolveValue(val, adaptiveValue, rng);
+        }
+      }
+    }
+    return resolved as Perturbation;
+  });
+}
+
 export function applyFIR(input: Float32Array, fir: number[]): Float32Array {
   const output = new Float32Array(input.length);
   const firLen = fir.length;

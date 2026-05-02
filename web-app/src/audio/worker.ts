@@ -1,5 +1,5 @@
 import seedrandom from "seedrandom";
-import { synthesizeMultiComponent, synthesizeNoise, synthesizeFilteredNoise, normalizeStereo } from "./synthesis.js";
+import { synthesizeMultiComponent, synthesizeNoise, synthesizeFilteredNoise, normalizeStereo, resolvePerturbations } from "./synthesis.js";
 import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../../shared/schema.js";
 
 interface RenderTrialMessage {
@@ -78,6 +78,9 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
       }
     };
     interval.generators.forEach(scanForEnvelopes);
+    
+    // Resolve random/adaptive perturbations ONCE per interval to ensure consistency across generators
+    const resolvedPerturbations = resolvePerturbations(interval.perturbations, adaptiveValue, intervalRng);
 
     const layers: { left: Float32Array; right: Float32Array }[] = [];
     let maxLength = 0;
@@ -85,11 +88,11 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     interval.generators.forEach((gen, genIndex) => {
       let result;
       if (gen.type === "multi_component") {
-        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
+        result = synthesizeMultiComponent(gen, sampleRate, intervalRng, resolvedPerturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
       } else if (gen.type === "noise") {
-        result = synthesizeNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
+        result = synthesizeNoise(gen, sampleRate, intervalRng, resolvedPerturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
       } else if (gen.type === "filtered_noise") {
-        result = synthesizeFilteredNoise(gen, sampleRate, intervalRng, interval.perturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
+        result = synthesizeFilteredNoise(gen, sampleRate, intervalRng, resolvedPerturbations, adaptiveValue, calibration, sharedEnvelopes, genIndex);
       }
       
       if (result) {
