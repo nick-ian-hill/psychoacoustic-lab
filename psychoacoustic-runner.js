@@ -17,7 +17,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	constructor(e) {
 		this.ctx = new (window.AudioContext || window.webkitAudioContext)(), this.seed = e, this.worker = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/worker-CkZ8e6NK.js", import.meta.url).href,
+			"" + new URL("assets/worker-BhmWQzr0.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" }), this.worker.onmessage = (e) => {
 			let { id: t, left: n, right: r, intervalLengths: i } = e.data, a = this.pendingRequests.get(t);
@@ -836,7 +836,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 				type: "multi_component",
 				components: [{
 					frequency: 1e3,
-					levelDb: 40,
+					levelDb: 0,
 					phaseDegrees: 0,
 					ear: "both"
 				}],
@@ -856,12 +856,12 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			adaptive: {
 				type: "staircase",
 				parameter: "perturbations[0].deltaDb",
-				initialValue: 4,
+				initialValue: 44,
 				stepType: "linear",
 				stepSizes: [2, 1],
 				rule: { correctDown: 2 },
-				minValue: -30,
-				maxValue: 40,
+				minValue: 0,
+				maxValue: 60,
 				unit: "dB"
 			},
 			termination: { reversals: 8 }
@@ -985,7 +985,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			adaptive: {
 				type: "staircase",
 				parameter: "perturbations[0].deltaMicroseconds",
-				initialValue: 700,
+				initialValue: 400,
 				stepType: "geometric",
 				stepSizes: [1.414, 1.2],
 				rule: { correctDown: 2 },
