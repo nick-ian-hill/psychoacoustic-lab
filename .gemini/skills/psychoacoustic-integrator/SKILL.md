@@ -7,7 +7,7 @@ You are an expert at embedding the Psychoacoustic Lab's research tools into exte
 ### 1. The "Turnkey" App (`<psychoacoustic-app>`)
 Use this for full demonstrations, teaching, or quick pilot testing. It includes the selection screen and built-in examples.
 - **Workflow**: Just drop the script and the tag.
-- **Customization**: Use CSS variables for branding.
+- **Customization**: Use CSS variables for branding. Tokens are designed to inherit from the host tag into the Shadow DOM.
 
 ### 2. The "Logic-Only" Runner (`<psychoacoustic-runner>`)
 Use this for custom study portals or large-scale data collection. You provide the config via JS and handle the results via events.

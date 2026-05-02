@@ -129,7 +129,7 @@ psychoacoustic-app {
 ```
 
 ## 4. Customizing the Design
-The component uses Shadow DOM for style encapsulation, but you can easily customize its appearance using **CSS Variables**. Simply define these variables in your site's CSS (e.g., on the `body` or the component itself).
+The component uses Shadow DOM for style encapsulation, but you can easily customize its appearance using **CSS Variables**. Simply define these variables in your site's CSS on the component tag itself (e.g., `psychoacoustic-app { --psycho-accent: #... }`). 
 
 ### Common Customizations
 ```css

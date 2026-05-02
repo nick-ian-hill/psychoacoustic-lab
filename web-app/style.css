@@ -12,19 +12,6 @@
   --psycho-error: #ef4444;
   --psycho-border: rgba(148, 163, 184, 0.1);
   --psycho-radius: 4px;
-
-  /* Semantic UI Tokens */
-  --psycho-stop-btn: var(--psycho-error);
-  --psycho-keep-going-btn: var(--psycho-accent);
-  --psycho-secondary-btn: transparent;
-  --psycho-interval-bg: var(--psycho-bg);
-  --psycho-interval-text: var(--psycho-text);
-  --psycho-badge-bg: rgba(56, 189, 248, 0.1);
-  --psycho-success-bg: rgba(16, 185, 129, 0.15);
-  --psycho-error-bg: rgba(239, 68, 68, 0.15);
-  --psycho-selection-bg: rgba(59, 130, 246, 0.1);
-  --psycho-selection-selected: rgba(59, 130, 246, 0.2);
-  --psycho-modal-overlay: rgba(0, 0, 0, 0.7);
 }
 
 option {
@@ -126,7 +113,7 @@ label {
 .select-trigger:focus-visible {
   border-color: var(--psycho-accent);
   outline: none;
-  box-shadow: 0 0 0 2px var(--psycho-badge-bg);
+  box-shadow: 0 0 0 2px var(--psycho-badge-bg, rgba(56, 189, 248, 0.1));
 }
 
 .select-trigger svg {
@@ -184,12 +171,12 @@ label {
 
 .option:hover,
 .option.highlighted {
-  background: var(--psycho-selection-bg);
+  background: var(--psycho-selection-bg, rgba(59, 130, 246, 0.1));
   color: var(--psycho-accent);
 }
 
 .option.selected {
-  background: var(--psycho-selection-selected);
+  background: var(--psycho-selection-selected, rgba(59, 130, 246, 0.2));
   color: var(--psycho-accent);
   font-weight: 600;
 }
@@ -248,7 +235,7 @@ textarea:focus {
 }
 
 .btn-secondary {
-  background: var(--psycho-secondary-btn);
+  background: var(--psycho-secondary-btn, transparent);
   border: 1px solid var(--psycho-text-muted);
   color: var(--psycho-text);
 }
@@ -384,7 +371,7 @@ textarea:focus {
 .status-badge {
   padding: 0.5rem 1.25rem;
   border-radius: 999px;
-  background: var(--psycho-badge-bg);
+  background: var(--psycho-badge-bg, rgba(56, 189, 248, 0.1));
   color: var(--psycho-accent);
   font-size: 0.875rem;
   font-weight: 600;
@@ -406,9 +393,9 @@ textarea:focus {
 .response-btn {
   flex: 1;
   padding: 1.5rem;
-  background: var(--psycho-interval-bg);
+  background: var(--psycho-interval-bg, var(--psycho-bg));
   border: 2px solid var(--psycho-border);
-  color: var(--psycho-interval-text);
+  color: var(--psycho-interval-text, var(--psycho-text));
   border-radius: var(--psycho-radius);
   font-size: 1.5rem;
   font-weight: 800;
@@ -517,7 +504,7 @@ textarea:focus {
 .response-btn.correct:disabled {
   border-color: var(--psycho-success);
   color: var(--psycho-success);
-  background: var(--psycho-success-bg);
+  background: var(--psycho-success-bg, rgba(16, 185, 129, 0.15));
   opacity: 1;
 }
 
@@ -525,7 +512,7 @@ textarea:focus {
 .response-btn.incorrect:disabled {
   border-color: var(--psycho-error);
   color: var(--psycho-error);
-  background: var(--psycho-error-bg);
+  background: var(--psycho-error-bg, rgba(239, 68, 68, 0.15));
   opacity: 1;
 }
 
@@ -549,7 +536,7 @@ textarea:focus {
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--psycho-modal-overlay);
+  background: var(--psycho-modal-overlay, rgba(0, 0, 0, 0.7));
   backdrop-filter: blur(4px);
 }
 
