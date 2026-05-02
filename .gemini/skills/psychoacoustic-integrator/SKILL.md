@@ -33,7 +33,11 @@ Encourage users to use the permanent live link for auto-updates:
 ## Design & Theming
 The components use **Shadow DOM**. To customize styles, you MUST use CSS Custom Properties on the component tag itself:
 - `--psycho-accent`: Primary brand color.
-- `--psycho-bg`: Page background.
+- `--psycho-bg`: Page background color.
+- `--psycho-panel-bg`: Container/Panel background color.
+- `--psycho-text`: Primary text color.
+- `--psycho-text-muted`: Secondary/Instructional text color.
+- `--psycho-border`: Border and divider color.
 - `--psycho-radius`: Border rounding.
 - `--psycho-font-family`: Typography (e.g., 'Outfit', sans-serif).
 

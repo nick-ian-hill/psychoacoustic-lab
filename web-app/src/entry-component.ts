@@ -60,7 +60,14 @@ class PsychoacousticRunner extends HTMLElement {
       <style>
         ${styles}
         :host { display: block; width: 100%; }
-        .psycho-runner-container { all: initial; font-family: 'Inter', sans-serif; display: block; }
+        .psycho-runner-container { 
+          all: initial; 
+          font-family: var(--psycho-font-family, 'Inter', sans-serif); 
+          display: block; 
+          color: var(--psycho-text);
+          background: var(--psycho-bg);
+          min-height: inherit;
+        }
       </style>
       <div class="psycho-runner-container">
         <div class="container">
@@ -184,7 +191,14 @@ class PsychoacousticApp extends HTMLElement {
       <style>
         ${styles}
         :host { display: block; width: 100%; }
-        .app-container { all: initial; font-family: 'Inter', sans-serif; display: block; }
+        .app-container { 
+          all: initial; 
+          font-family: var(--psycho-font-family, 'Inter', sans-serif); 
+          display: block; 
+          color: var(--psycho-text);
+          background: var(--psycho-bg);
+          min-height: inherit;
+        }
         .hidden { display: none !important; }
         
         /* Dropdown specific fixes */
