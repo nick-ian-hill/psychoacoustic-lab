@@ -206,8 +206,8 @@ export const amDetectionConfig: ExperimentConfigInput = {
   meta: {
     name: "AM Detection",
     version: "2.2.0",
-    summary: "Select the MODULATED (warbling) sound.",
-    description: "One sound is a constant, steady noise. The other has a rhythmic 'flutter' or 'warble' where the volume rises and falls. Identify the interval containing this amplitude modulation (the warbling sound)."
+    summary: "Select the MODULATED (fluttering) sound.",
+    description: "One sound is a constant, steady noise. The other has a rhythmic 'flutter' or 'pulsing' where the volume rises and falls. Identify the interval containing this amplitude modulation."
   },
   ui: {
     showTrialNumber: false,
@@ -230,7 +230,7 @@ export const amDetectionConfig: ExperimentConfigInput = {
         durationMs: 400,
         envelope: { attackMs: 20, releaseMs: 20, type: "cosine" },
         ear: "both",
-        modulators: [{ type: "AM", depth: 0, sharedEnvelopeId: "mod1" }]
+        modulators: [{ type: "AM", depth: 0, rateHz: 8 }]
       }
     ],
     perturbations: [{

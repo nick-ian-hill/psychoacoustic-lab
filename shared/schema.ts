@@ -32,10 +32,10 @@ export const EnvelopeSchema = z.object({
 
 export const ModulatorSchema = z.object({
   type: z.enum(["AM", "FM"]),
-  rateHz: z.number().optional().describe("Rate in Hz. For AM, if sharedEnvelopeId is provided, this may be ignored or used as bandwidth."),
+  rateHz: z.number().optional().describe("Rate in Hz. For AM/FM, this defines the sine-wave frequency. If sharedEnvelopeId is provided, this value is used as the bandwidth for the random noise envelope."),
   depth: z.number(), // 0 to 1 for AM, or Hz deviation for FM
   phaseDegrees: z.number().optional(),
-  sharedEnvelopeId: z.string().optional().describe("If provided, this modulator uses a shared noise-based envelope rather than a sine wave."),
+  sharedEnvelopeId: z.string().optional().describe("ID of a shared, noise-based modulation envelope. All modulators sharing this ID will be perfectly correlated (comodulated)."),
 });
 
 export const StimulusComponentSchema = z.object({

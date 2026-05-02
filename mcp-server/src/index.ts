@@ -257,7 +257,7 @@ class PsychoacousticServer {
         },
         {
           name: "generate_stimulus_block",
-          description: "[Tier 2: Component Generator] Takes high-level parameters and returns a fully formed multi_component or noise generator object. Benefit: Prevents array length mismatches and ensures schema compliance.",
+          description: "[Tier 2: Component Generator] Takes high-level parameters and returns a fully formed multi_component or noise generator object. ADVANCED: Use 'sharedEnvelopeId' to enable correlated noise modulation across different blocks.",
           inputSchema: {
             type: "object",
             properties: {
@@ -497,6 +497,37 @@ Partial object. All fields are optional and fall back to defaults if omitted.
 - trials?: number — stop after exactly N trials (or as a safety ceiling for adaptive tasks)
 - correctTrials?: number — stop after N correct trials (useful for onboarding/practice)
 - discardReversals?: number — number of initial reversals to discard when calculating threshold. Defaults to 4.
+## Advanced Pattern Examples
+### 1. Comodulation Masking Release (CMR)
+Use 'sharedEnvelopeId' on noise modulators to synchronize the random volume rhythm across multiple noise bands.
+\`\`\`json
+"sharedEnvelopes": [{ "id": "env1", "type": "sine", "frequency": 4 }],
+"stimuli": [
+  { "type": "noise", "sharedEnvelopeId": "env1", "levelDb": 50 },
+  { "type": "noise", "sharedEnvelopeId": "env1", "levelDb": 50 }
+]
+\`\`\`
+
+### 2. Global Level Roving (Loudness Control)
+Omit 'stimulusIndex' to apply a level rove to EVERY sound source in the trial simultaneously.
+\`\`\`json
+{
+  "type": "gain",
+  "applyTo": "all",
+  "deltaDb": { "type": "uniform", "min": -5, "max": 5 }
+}
+\`\`\`
+
+### 3. Cross-Generator Frequency Targeting
+In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply the same random phase/level shift to a component (e.g., 1000Hz) even if it exists in two different generators (the complex masker and the target signal).
+\`\`\`json
+{
+  "type": "phase_shift",
+  "targetFrequency": 1000,
+  "applyTo": "all",
+  "deltaDegrees": { "type": "uniform", "min": 0, "max": 360 }
+}
+\`\`\`
 `;
     return { content: [{ type: "text", text: reference }] };
   }

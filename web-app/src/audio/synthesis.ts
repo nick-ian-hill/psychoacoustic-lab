@@ -370,7 +370,7 @@ export function synthesizeNoise(
     return { 
       gain: totalGainAmp, 
       amDepth: finalAmDepth, 
-      amRate: amMod?.rateHz || 8, // Default rate if just applying depth
+      amRate: amMod?.rateHz ?? 0, 
       amPhase: (amMod?.phaseDegrees || 0) * Math.PI / 180,
       sharedEnvelopeId: amMod?.sharedEnvelopeId,
       onsetMs: (gen.onsetDelayMs || 0) + onsetOffsetMs

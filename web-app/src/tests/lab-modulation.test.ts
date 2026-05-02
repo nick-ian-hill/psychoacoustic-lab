@@ -43,6 +43,38 @@ describe('Modulation Validation - AM, FM, Correlation', () => {
       // With depth 0.5, trough carrier amplitude should be 1.0 * (1 - 0.5) = 0.5
       expect(minPeak).toBeCloseTo(0.5, 0.05);
     });
+
+    it('should apply AM starting phase correctly (Peak vs Trough)', () => {
+      const durationMs = 500;
+      const rateHz = 4;
+      const depth = 1.0; 
+      const fixedRng = () => 0.5;
+
+      const peakConfig = {
+        type: 'noise' as const,
+        noiseType: 'white' as const,
+        levelDb: 60,
+        durationMs,
+        envelope: { attackMs: 0, releaseMs: 0 },
+        modulators: [{ type: 'AM' as const, depth, rateHz, phaseDegrees: 90 }]
+      };
+
+      const troughConfig = {
+        type: 'noise' as const,
+        noiseType: 'white' as const,
+        levelDb: 60,
+        durationMs,
+        envelope: { attackMs: 0, releaseMs: 0 },
+        modulators: [{ type: 'AM' as const, depth, rateHz, phaseDegrees: -90 }]
+      };
+
+      const peakRes = synthesizeNoise(peakConfig, sampleRate, fixedRng);
+      const troughRes = synthesizeNoise(troughConfig, sampleRate, fixedRng);
+
+      const sampleIdx = 10; 
+      expect(Math.abs(peakRes.left[sampleIdx])).toBeGreaterThan(Math.abs(troughRes.left[sampleIdx]) * 10);
+      expect(Math.abs(troughRes.left[sampleIdx])).toBeLessThan(0.01);
+    });
   });
 
   describe('Frequency Modulation (FM)', () => {
