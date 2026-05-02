@@ -182,7 +182,7 @@ class PsychoacousticServer {
               notchWidthHz: { type: "number", minimum: 0 },
               p: { type: "number", description: "Slope parameter p (steepness)." },
               r: { type: "number", description: "Dynamic range parameter r (limit)." },
-              filterOrder: { type: "integer", enum: [511, 1023], default: 511 },
+              filterOrder: { type: "string", enum: ["511", "1023"], default: "511" },
               sampleRate: { type: "integer", default: 44100 }
             },
             required: ["centerFreq", "notchWidthHz", "p", "r"]
@@ -671,7 +671,8 @@ Partial object. All fields are optional and fall back to defaults if omitted.
   }
 
   private handleGenerateNotchedNoise(args: any) {
-    const { centerFreq, notchWidthHz, p, r, filterOrder = 511, sampleRate = 44100 } = args;
+    const { centerFreq, notchWidthHz, p, r, filterOrder: filterOrderStr = "511", sampleRate = 44100 } = args;
+    const filterOrder = parseInt(filterOrderStr);
     const N = filterOrder + 1;
     const coeffs = new Float32Array(N);
     const halfN = N / 2;
