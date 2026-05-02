@@ -161,6 +161,9 @@ label {
   transition: background 0.2s;
   font-size: 0.9375rem;
   color: var(--psycho-text);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .option:hover,

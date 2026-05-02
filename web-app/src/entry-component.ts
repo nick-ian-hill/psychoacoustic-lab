@@ -322,6 +322,9 @@ class PsychoacousticApp extends HTMLElement {
 
     // Handle Option Selection
     options.forEach(option => {
+      // Prevent long-press context menu which blocks the click event on some mobile browsers
+      option.addEventListener("contextmenu", (e) => e.preventDefault());
+
       option.addEventListener("click", () => {
         const value = option.getAttribute("data-value") || "";
         const text = option.textContent || "";
