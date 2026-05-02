@@ -239,9 +239,8 @@ export class ExperimentRunner {
     this.responseButtons.forEach(btn => btn.disabled = true);
 
     const readyDelay = this.currentBlock?.paradigm.timing.readyDelayMs ?? 500;
-    await new Promise(resolve => setTimeout(resolve, readyDelay));
-
-    await this.playNextTrial();
+    const startTime = this.engine.getTime() + (readyDelay / 1000);
+    await this.playNextTrial(startTime);
   }
 
   private async playNextTrial(scheduledTime?: number) {
@@ -330,12 +329,21 @@ export class ExperimentRunner {
       const startDelay = (currentTime - now) * 1000;
       const endDelay = (currentTime + len - now) * 1000;
       
-      setTimeout(() => btn.classList.add("active"), startDelay);
-      setTimeout(() => btn.classList.remove("active"), endDelay);
+      if (startDelay <= 0 && endDelay > 0) {
+        // We are already in this interval, highlight immediately
+        btn.classList.add("active");
+        setTimeout(() => btn.classList.remove("active"), endDelay);
+      } else if (startDelay > 0) {
+        // Future interval
+        setTimeout(() => btn.classList.add("active"), startDelay);
+        setTimeout(() => btn.classList.remove("active"), endDelay);
+      }
+      // If endDelay <= 0, the interval has already passed, do nothing.
+
       currentTime += len + isi;
     });
 
-    const enableDelay = (currentTime - isi + responseDelay - now) * 1000;
+    const enableDelay = Math.max(0, (currentTime - isi + responseDelay - now) * 1000);
     setTimeout(() => {
       this.responseButtons.forEach(btn => {
         if (!btn.classList.contains("non-selectable")) {
@@ -375,10 +383,11 @@ export class ExperimentRunner {
       } else {
         this.updateStatus();
         this.preRenderedTrial = this.prepareTrial();
-        const nextTrialDelay = this.currentBlock?.paradigm.timing.itiMs || 1000;
-        setTimeout(() => this.playNextTrial(), nextTrialDelay);
+        const iti = this.currentBlock?.paradigm.timing.itiMs || 1000;
+        const startTime = this.engine.getTime() + (iti / 1000);
+        this.playNextTrial(startTime);
       }
-    }, (this.currentBlock?.paradigm.timing.feedbackDurationMs || 400));
+    }, (this.currentBlock?.paradigm.timing.feedbackDurationMs ?? 400));
   }
 
   private showFeedback(index: number, isCorrect: boolean) {
