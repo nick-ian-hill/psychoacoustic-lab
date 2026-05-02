@@ -41,7 +41,7 @@ export const pitchDiscriminationConfig: ExperimentConfigInput = {
       perturbations: [{
         type: "mistuning",
         targetFrequency: 1000,
-        deltaPercent: 15
+        deltaPercent: 8
       }],
       termination: { correctTrials: 5 }
     },
@@ -242,7 +242,7 @@ export const amDetectionConfig: ExperimentConfigInput = {
       parameter: "perturbations[0].deltaDepth",
       initialValue: 0.5,
       stepType: "geometric",
-      stepSizes: [1.414, 1.2],
+      stepSizes: [1.414, 1.189],
       rule: { correctDown: 2 },
       minValue: 0,
       maxValue: 1,
@@ -298,7 +298,7 @@ export const itdDiscriminationConfig: ExperimentConfigInput = {
       parameter: "perturbations[0].deltaMicroseconds",
       initialValue: 400,
       stepType: "geometric",
-      stepSizes: [1.414, 1.2],
+      stepSizes: [1.414, 1.189],
       rule: { correctDown: 2 },
       minValue: 0,
       maxValue: 1000,
