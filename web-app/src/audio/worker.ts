@@ -44,6 +44,7 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
   const { id, intervals, isiMs, sampleRate, seed, adaptiveValue, calibration, globalLevelDb } = event.data;
 
   const renderedIntervals: { left: Float32Array; right: Float32Array }[] = [];
+  const allResolvedPerturbations: any[] = [];
   
   for (let intervalIdx = 0; intervalIdx < intervals.length; intervalIdx++) {
     const interval = intervals[intervalIdx];
@@ -112,6 +113,7 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     }
 
     renderedIntervals.push({ left: intervalLeft, right: intervalRight });
+    allResolvedPerturbations.push(resolvedPerturbations);
   }
 
   const isiSamples = Math.ceil((isiMs / 1000) * sampleRate);
@@ -147,7 +149,8 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     id,
     left: finalLeft,
     right: finalRight,
-    intervalLengths: renderedIntervals.map(r => r.left.length)
+    intervalLengths: renderedIntervals.map(r => r.left.length),
+    resolvedPerturbations: allResolvedPerturbations
   }, [finalLeft.buffer, finalRight.buffer] as any);
 };
 

@@ -52,3 +52,13 @@ Use these citations as grounding for methodological logic:
 - **Viemeister, N. F. (1979):** Temporal modulation transfer function. *JASA*. (AM detection/temporal resolution).
 - **Green, D. M. (1988):** *Profile Analysis: Auditory Intensity Discrimination*. Oxford Univ. Press. (Spectral shape perception).
 - **Moore, B. C. J., et al. (1988):** The shape of the ear's temporal window. *JASA*. (Temporal integration models).
+
+## 8. Experiment Orchestration & Sequences
+
+To support complex, counterbalanced, and randomized experimental designs, the platform utilizes a hierarchical block structure:
+
+1.  **Block Entries:** A block can be a standalone `block` or a `group`.
+2.  **Repetitions:** Both individual blocks and groups support a `repetitions` field.
+3.  **Randomization:** Groups can be marked with `randomize: true`. This shuffles the blocks within the group using the experiment's master seed, ensuring a unique but reproducible order across participants.
+4.  **Practice vs. Experimental:** Use a flat list starting with a fixed practice block, followed by a randomized group containing experimental conditions.
+5.  **Result Mapping:** Remind the user that the results JSON explicitly distinguishes between runs of the same block ID using the `runIndex` and `presentationOrder` fields.

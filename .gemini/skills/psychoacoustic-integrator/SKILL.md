@@ -15,7 +15,7 @@ Use this for custom study portals or large-scale data collection. You provide th
     1. Embed `<psychoacoustic-runner>`.
     2. Call `runner.setConfig(config)`.
     3. Listen for the `experiment-complete` event.
-- **Event Detail**: `{ threshold, results, actualSeed }`.
+- **Event Detail**: `{ threshold, results, actualSeed }`. Note: The `results` array now includes `runIndex`, `presentationOrder`, `startTime`, and `endTime` (ISO strings) for each block.
 
 ## Build & Deployment
 
@@ -62,3 +62,4 @@ When helping with integration:
 1. **Always verify the config** against the `shared/schema.ts` before recommending a `setConfig` call.
 2. **Handle Results**: Remind users to send `actualSeed` and `results` to their backend for full reproducibility.
 3. **Seeding**: Explain that omitting `meta.seed` allows for fresh randomization per participant while still returning the seed used for later auditing.
+4. **Results Mapping**: The `results` array contains a chronological list of block outcomes. Use the `presentationOrder` to map results to the participant's focus over time and `runIndex` to group results from repeated experimental conditions.

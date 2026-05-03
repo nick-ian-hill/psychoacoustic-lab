@@ -219,7 +219,9 @@ export type CalibrationProfile = z.infer<typeof CalibrationProfileSchema>;
  * Block Schema
  */
 export const BlockSchema = z.object({
+  type: z.literal("block").optional().default("block"),
   id: z.string(),
+  repetitions: z.number().int().min(1).default(1).optional(),
   feedback: z.boolean().default(true),
   meta: z.object({
     summary: z.string().optional(),
@@ -267,6 +269,27 @@ export const BlockSchema = z.object({
   }
 });
 
+export type BlockEntry = BlockConfig | {
+  type: "group";
+  id: string;
+  randomize?: boolean;
+  repetitions?: number;
+  blocks: BlockEntry[];
+};
+
+export const BlockEntrySchema: z.ZodType<BlockEntry> = z.lazy(() => 
+  z.union([
+    BlockSchema,
+    z.object({
+      type: z.literal("group"),
+      id: z.string(),
+      randomize: z.boolean().default(false).optional(),
+      repetitions: z.number().int().min(1).default(1).optional(),
+      blocks: z.array(BlockEntrySchema),
+    })
+  ])
+);
+
 /**
  * Final Experiment Configuration
  */
@@ -290,7 +313,7 @@ export const ExperimentConfigSchema = z.object({
     showCurrentValue: z.boolean().default(false),
     showAverageThreshold: z.boolean().default(false),
   }).partial().optional(),
-  blocks: z.array(BlockSchema),
+  blocks: z.array(BlockEntrySchema),
 });
 
 export type ExperimentConfig = z.infer<typeof ExperimentConfigSchema>;

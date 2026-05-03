@@ -3,7 +3,7 @@ import type { StimulusGenerator, Perturbation, CalibrationProfile } from "../../
 export class AudioEngine {
   private ctx: AudioContext;
   private worker: Worker;
-  private pendingRequests: Map<string, (res: { buffer: AudioBuffer; intervalLengths: number[] }) => void> = new Map();
+  private pendingRequests: Map<string, (res: { buffer: AudioBuffer; intervalLengths: number[]; resolvedPerturbations?: any[] }) => void> = new Map();
   private seed: number;
   private renderCount: number = 0;
 
@@ -25,7 +25,7 @@ export class AudioEngine {
         this.pendingRequests.delete(id);
         
         const lengthsInSeconds = intervalLengths.map((samples: number) => samples / this.ctx.sampleRate);
-        resolve({ buffer, intervalLengths: lengthsInSeconds });
+        resolve({ buffer, intervalLengths: lengthsInSeconds, resolvedPerturbations: event.data.resolvedPerturbations });
       }
     };
   }
@@ -42,7 +42,7 @@ export class AudioEngine {
     calibration?: CalibrationProfile,
     globalLevelDb?: number,
     timeoutMs: number = 10000
-  ): Promise<{ buffer: AudioBuffer; intervalLengths: number[] }> {
+  ): Promise<{ buffer: AudioBuffer; intervalLengths: number[]; resolvedPerturbations?: any[] }> {
     const id = Math.random().toString(36).substring(7);
     const trialSeed = this.seed + this.renderCount++;
     

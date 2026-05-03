@@ -103,11 +103,16 @@ The project is split into three main components:
 - **Configurable Focus Period**: Explicitly control the delay between clicking "Start" and the first stimulus onset via `readyDelayMs` (default 500ms), ensuring participants have time to focus before audio begins.
 - **Scientific Control**: Configurable `allowReplay` flag to restrict or permit stimulus re-exposure, ensuring experimental rigor.
 - **Graceful Cancellation**: Support for `Escape` key experiment cancellation with a design-system compliant confirmation modal. The cancellation logic is intelligently gated to only be active during the response phase to prevent accidental interruptions during stimulus playback.
-- **Flexible Seeding & Reproducibility**: Support for optional experiment-level and block-level seeds:
+- **Flexible Seeding & Sequence Reproducibility**: Support for optional experiment-level and block-level seeds:
   - **Optional**: Omit the seed for random-by-default sessions (perfect for onboarding).
   - **Block-Level**: Assign specific seeds to individual blocks (e.g., for a fixed practice phase).
-  - **Deterministic**: Providing a seed ensures the FFT noise, trial order, and all perturbations are exactly reproducible. The actual seed used is always recorded in the results metadata.
-- **Constrained Randomization**: Mark specific intervals as `"fixed": true` to exclude them from randomization. Combined with `"selectable": false`, you can create standard professional paradigms like **4I2AFC**, where intervals 1 and 4 are fixed non-responsive anchors. The UI always displays interval numbers on all buttons (including non-selectable ones) to maintain clear spatial orientation for the participant.
+  - **Sequence Control**: The order of randomized block groups is fully deterministic based on the master seed. The actual seed used is always recorded in the results metadata.
+  - **Event Detail**: `{ threshold, results, actualSeed, presentationOrder, runIndex }`.
+- **Advanced Block Sequencing**: Group multiple experiment stages into a single session. Each block can have its own paradigm, stimuli, adaptive rules, and termination criteria.
+  - **Repetitions**: Run specific blocks or groups multiple times.
+  - **Hierarchical Groups**: Nest blocks within groups to create complex structures (e.g., Practice → [Randomized Experimental Blocks]).
+  - **Run Tracking**: Results explicitly record `runIndex`, `presentationOrder`, and start/end ISO timestamps for every block instance.
+- **Anchored Paradigms (4I2AFC):** Useful for training, but also for experiments where the detection cue is complex or difficult to articulate. By setting the first and last intervals as fixed (`fixed: true`) and non-selectable (`selectable: false`), you provide stable perceptual "anchors" that help the participant maintain a consistent internal reference. The UI always displays interval numbers (1, 2, 3, 4) to maintain clear spatial orientation, even if some intervals are not selectable.
 - **Advanced Roving & Randomization**: Apply interval-level global roving or component-level jitter across multiple physical dimensions. All perturbations support `RandomUniform` distributions and can target only the signal interval or `"all"` intervals for true roving. Omit the `stimulusIndex` to apply a perturbation to all sound sources in an interval, or omit `targetFrequency` to apply it to all components within a specific complex stimulus:
   - **Level**: via `gain` (global) or `spectral_profile` (per-component).
   - **Frequency**: via `mistuning` for global pitch roving.
@@ -117,7 +122,6 @@ The project is split into three main components:
 - **Adaptive Staircase**: Full-featured `StaircaseController` supporting N-down/1-up rules, fast-start logic (`initialN`/`switchReversalCount`), dynamic step-size reduction on reversals, and standard reversal-point threshold averaging (with configurable `discardReversals`, defaulting to 4).
 - **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Generates White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp brick-wall band-limiting.
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
-- **Block-Based Architecture**: Group multiple experiment stages into a single session. Each block can have its own paradigm, stimuli, adaptive rules, and termination criteria (e.g., a fixed-level practice block followed by an adaptive test block).
 - **Shared-Envelope Modulation**: Support for `sharedEnvelopeId` on noise modulators. This allows multiple noise bands to share a single, perfectly correlated modulation envelope, which is essential for studying Comodulation Masking Release (CMR).
 - **FIR Filtered Noise**: A `filtered_noise` generator that accepts custom FIR coefficients. This allows for high-precision masking paradigms like **Notched Noise** masking to measure auditory filter shapes.
 - **Binaural Temporal Precision**: Explicitly decouples fine-structure phase shifts (IPD) from gated stimulus onset shifts (True ITD), automatically managing buffer padding to prevent sample clipping. The engine follows a unified **Delay-based Convention**: positive values for both ITD and Onset Asynchrony represent a **Temporal Delay (Lag)**. For ITD, this shifts the sound AWAY from the targeted ear; for asynchrony, it delays the start of the targeted component.

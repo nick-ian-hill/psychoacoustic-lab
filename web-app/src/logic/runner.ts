@@ -10,10 +10,12 @@ export class ExperimentRunner {
   private activeSeed: number | undefined;
   private currentConfig: ExperimentConfig | null = null;
   private currentBlockIndex = 0;
+  private blockQueue: BlockConfig[] = [];
   private currentBlock: BlockConfig | null = null;
   private currentTargetIndex = -1;
   private trialRng: seedrandom.PRNG | null = null;
-  private preRenderedTrial: Promise<{ buffer: AudioBuffer; intervalLengths: number[] }> | null = null;
+  private preRenderedTrial: Promise<{ buffer: AudioBuffer; intervalLengths: number[]; resolvedPerturbations?: any[] }> | null = null;
+  private currentTrialMetadata: any = null;
   
   private container: HTMLElement;
   private elements: {
@@ -32,7 +34,16 @@ export class ExperimentRunner {
   
   private isInputEnabled: boolean = false;
   private responseButtons: HTMLButtonElement[] = [];
-  private sessionResults: { blockId: string, history: any[], threshold: number }[] = [];
+  private sessionResults: { 
+    blockId: string, 
+    history: any[], 
+    threshold: number,
+    runIndex: number,
+    presentationOrder: number,
+    startTime: string,
+    endTime: string
+  }[] = [];
+  private currentBlockStartTime: string = "";
   private keyDownHandler: (e: KeyboardEvent) => void;
 
   constructor(container: HTMLElement) {
@@ -176,13 +187,44 @@ export class ExperimentRunner {
     this.activeSeed = config.meta.seed ?? Math.floor(Math.random() * 1000000);
     this.engine = new AudioEngine(this.activeSeed);
     this.trialRng = seedrandom(this.activeSeed.toString());
+
+    // Flatten nested blocks/groups into a linear queue
+    this.blockQueue = ExperimentRunner.flattenBlocks(config.blocks, this.trialRng);
     await this.startBlock(0);
   }
 
+  /** @internal - Exported for testing */
+  public static flattenBlocks(entries: any[], rng: { (): number }): BlockConfig[] {
+    let flat: BlockConfig[] = [];
+    for (const entry of entries) {
+      if (entry.type === "group") {
+        const reps = entry.repetitions ?? 1;
+        for (let i = 0; i < reps; i++) {
+          let groupBlocks = ExperimentRunner.flattenBlocks(entry.blocks, rng);
+          if (entry.randomize) {
+            // Shuffle using the seeded RNG
+            for (let j = groupBlocks.length - 1; j > 0; j--) {
+              const k = Math.floor(rng() * (j + 1));
+              [groupBlocks[j], groupBlocks[k]] = [groupBlocks[k], groupBlocks[j]];
+            }
+          }
+          flat.push(...groupBlocks);
+        }
+      } else {
+        const reps = entry.repetitions ?? 1;
+        for (let i = 0; i < reps; i++) {
+          flat.push(entry);
+        }
+      }
+    }
+    return flat;
+  }
+
   private async startBlock(index: number) {
-    if (!this.currentConfig) return;
+    if (!this.currentConfig || index >= this.blockQueue.length) return;
     this.currentBlockIndex = index;
-    this.currentBlock = this.currentConfig.blocks[index];
+    this.currentBlock = this.blockQueue[index];
+    this.currentBlockStartTime = ""; // Reset until user clicks 'Start'
     
     // Derive block-specific seed to ensure independent and reproducible blocks.
     // If a block provides its own seed (e.g. for a fixed practice block), use it.
@@ -233,6 +275,11 @@ export class ExperimentRunner {
     if (!this.engine) return;
     await this.engine.resume();
 
+    // Record the actual start time when the user clicks 'Start' for the first trial of the block
+    if (!this.currentBlockStartTime) {
+      this.currentBlockStartTime = new Date().toISOString();
+    }
+
     this.elements.playBtnContainer.classList.add("hidden");
     this.elements.playBtn.disabled = true;
     this.elements.playBtn.classList.add("playing");
@@ -249,8 +296,9 @@ export class ExperimentRunner {
     }
 
     try {
-      const { buffer, intervalLengths } = await this.preRenderedTrial;
+      const { buffer, intervalLengths, resolvedPerturbations } = await this.preRenderedTrial;
       this.preRenderedTrial = null;
+      this.currentTrialMetadata = resolvedPerturbations;
 
       this.clearFeedback();
       const { source, startTime } = await this.engine.playBuffer(buffer, scheduledTime);
@@ -355,12 +403,17 @@ export class ExperimentRunner {
   }
 
   private handleResponse(index: number) {
-    if (!this.isInputEnabled || !this.staircase || !this.currentBlock) return;
+    if (!this.isInputEnabled || !this.staircase || !this.currentBlock) {
+      return;
+    }
     this.isInputEnabled = false;
     
     this.responseButtons.forEach(btn => btn.disabled = true);
     
-    const result = this.staircase.processResponse(index === this.currentTargetIndex);
+    const result = this.staircase.processResponse(index === this.currentTargetIndex, {
+      targetIndex: this.currentTargetIndex,
+      intervalStates: this.currentTrialMetadata
+    });
     const isCorrect = result.correct;
     const isFinished = this.staircase.isFinished(this.currentBlock.termination);
     
@@ -369,13 +422,20 @@ export class ExperimentRunner {
     setTimeout(async () => {
       this.clearFeedback();
       if (isFinished) {
+        // Calculate run index for blocks with the same ID
+        const runIndex = this.sessionResults.filter(r => r.blockId === (this.currentBlock?.id)).length;
+
         this.sessionResults.push({
           blockId: this.currentBlock?.id || `block_${this.currentBlockIndex}`,
           history: this.staircase?.getHistory() || [],
-          threshold: this.staircase?.calculateThreshold(this.currentBlock?.termination?.discardReversals) || 0
+          threshold: this.staircase?.calculateThreshold(this.currentBlock?.termination?.discardReversals) || 0,
+          runIndex,
+          presentationOrder: this.sessionResults.length + 1,
+          startTime: this.currentBlockStartTime,
+          endTime: new Date().toISOString()
         });
 
-        if (this.currentBlockIndex < (this.currentConfig?.blocks.length || 0) - 1) {
+        if (this.currentBlockIndex < (this.blockQueue.length - 1)) {
           await this.startBlock(this.currentBlockIndex + 1);
         } else {
           this.showResults();

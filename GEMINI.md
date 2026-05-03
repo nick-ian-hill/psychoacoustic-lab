@@ -81,6 +81,12 @@ The MCP server provides tools in three tiers:
 2.  **Tier 2 (Component Generators):** Mid-level logic (e.g., `generate_harmonic_complex`).
 3.  **Tier 3 (Primitives):** Low-level math (e.g., `calc_itd`, `calc_erb_spacing`).
 
+### D. Block Sequencing & Randomization
+-   **Repetitions:** Blocks can be run multiple times using the `repetitions` field. The runner tracks the `runIndex` and `presentationOrder` in the results.
+-   **Hierarchical Groups:** Blocks can be nested within a `type: "group"` entry. 
+-   **Randomization:** Groups can be randomized using the `randomize: true` flag. This is essential for counterbalancing conditions across blocks to control for order effects (e.g., fatigue or learning).
+-   **Seeded Randomization:** Block randomization uses the experiment's master seed, ensuring that a given seed always results in the same block order for a specific configuration.
+
 ## 4. Scientific Audits & Rigorous Testing
 
 The suite of 70+ automated scientific audits (`web-app/npm run test`) is the backbone of the project. **Verification is the only path to finality.**
@@ -103,7 +109,8 @@ The suite of 70+ automated scientific audits (`web-app/npm run test`) is the bac
 2.  **Tooling Second:** Update `mcp-server/src/index.ts` to provide tools that generate the new schema elements.
 3.  **Engine Third:** Implement the synthesis or logic changes in the `web-app` (Worker or Runner).
 4.  **Audit Fourth:** Run the full test suite. **A feature is not complete until it passes the relevant scientific audit.**
-5.  **Documentation Fifth:** Ensure all related documentation is kept in sync. This includes \`README.md\`, MCP tool descriptions in \`mcp-server/src/index.ts\`, the \`integration_guide.md\`, and any relevant \`SKILL.md\` files in the \`.gemini\` folder.
+5.  **Linting & Hygiene:** Review code for unused variables, duplicate identifiers, or diagnostic warnings. Maintaining a clean "Problems" tab is part of scientific rigor.
+6.  **Documentation Sixth:** Ensure all related documentation is kept in sync. This includes \`README.md\`, MCP tool descriptions in \`mcp-server/src/index.ts\`, the \`integration_guide.md\`, and any relevant \`SKILL.md\` files in the \`.gemini\` folder.
 
 ## 6. Seminal References
 

@@ -914,89 +914,96 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
     const warnings: string[] = [];
     const sampleRate = 44100;
 
-    config.blocks.forEach((block, blockIdx) => {
-      const calculatePeakPower = (condition: "target" | "reference") => {
-        let totalPowerL = 0;
-        let totalPowerR = 0;
+    const validateRecursive = (blocks: any[]) => {
+      blocks.forEach((block, blockIdx) => {
+        if (block.type === 'group') {
+          validateRecursive(block.blocks);
+          return;
+        }
 
-        const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
-          let maxDb = 0;
-          if (!block.perturbations) return 0;
-          for (const p of block.perturbations) {
-            if (p.type === type && (!targetFreq || (p as any).targetFrequency === targetFreq)) {
-              const val = (p as any).deltaDb;
-              if (typeof val === 'number') maxDb += val;
-              else if (val?.adaptive) maxDb += block.adaptive?.maxValue || 0;
-              else if (val?.type === 'uniform') maxDb += val.max;
+        const calculatePeakPower = (condition: "target" | "reference") => {
+          let totalPowerL = 0;
+          let totalPowerR = 0;
+
+          const getPerturbationMaxDb = (targetFreq: number | undefined, type: string) => {
+            let maxDb = 0;
+            if (!block.perturbations) return 0;
+            for (const p of block.perturbations) {
+              if (p.type === type && (!targetFreq || (p as any).targetFrequency === targetFreq)) {
+                const val = (p as any).deltaDb;
+                if (typeof val === 'number') maxDb += val;
+                else if (val?.adaptive) maxDb += block.adaptive?.maxValue || 0;
+                else if (val?.type === 'uniform') maxDb += val.max;
+              }
             }
-          }
-          return maxDb;
-        };
+            return maxDb;
+          };
 
-        const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
+          const globalPertDb = getPerturbationMaxDb(undefined, 'gain');
 
-        for (const gen of block.stimuli) {
-          const genApplyTo = (gen as any).applyTo || "all";
-          if (genApplyTo !== "all" && genApplyTo !== condition) continue;
+          for (const gen of block.stimuli) {
+            const genApplyTo = (gen as any).applyTo || "all";
+            if (genApplyTo !== "all" && genApplyTo !== condition) continue;
 
-          if (gen.type === "multi_component") {
-            for (const c of gen.components as any[]) {
-              const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+            if (gen.type === "multi_component") {
+              for (const c of gen.components as any[]) {
+                const pDb = c.levelDb + getPerturbationMaxDb(c.frequency, 'spectral_profile') + globalPertDb;
+                const p = Math.pow(10, pDb / 10);
+                if (c.ear === "left") { totalPowerL += p; }
+                else if (c.ear === "right") { totalPowerR += p; }
+                else { totalPowerL += p; totalPowerR += p; }
+              }
+            } else if (gen.type === "noise" || gen.type === "filtered_noise") {
+              const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
               const p = Math.pow(10, pDb / 10);
-              if (c.ear === "left") { totalPowerL += p; }
-              else if (c.ear === "right") { totalPowerR += p; }
+              if (gen.ear === "left") { totalPowerL += p; }
+              else if (gen.ear === "right") { totalPowerR += p; }
               else { totalPowerL += p; totalPowerR += p; }
             }
-          } else if (gen.type === "noise" || gen.type === "filtered_noise") {
-            const pDb = gen.levelDb + getPerturbationMaxDb(undefined, 'spectral_profile') + globalPertDb;
-            const p = Math.pow(10, pDb / 10);
-            if (gen.ear === "left") { totalPowerL += p; }
-            else if (gen.ear === "right") { totalPowerR += p; }
-            else { totalPowerL += p; totalPowerR += p; }
+          }
+
+          if (config.globalLevelDb !== undefined) {
+            const globalLinear = Math.pow(10, config.globalLevelDb / 10);
+            totalPowerL *= globalLinear;
+            totalPowerR *= globalLinear;
+          }
+          return Math.max(totalPowerL, totalPowerR);
+        };
+
+        const peakChannelPower = Math.max(calculatePeakPower("target"), calculatePeakPower("reference"));
+        if (peakChannelPower > 0) {
+          const totalDb = 10 * Math.log10(peakChannelPower);
+          if (totalDb > 95) {
+            warnings.push(`Block '${block.id}': CLIPPING RISK: Worst-case peak level exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB).`);
           }
         }
 
-        if (config.globalLevelDb !== undefined) {
-          const globalLinear = Math.pow(10, config.globalLevelDb / 10);
-          totalPowerL *= globalLinear;
-          totalPowerR *= globalLinear;
+        if (block.adaptive && (block.termination?.reversals ?? 0) < 10) {
+          warnings.push(`Block '${block.id}': STABILITY WARNING: Adaptive staircase reversals are below 10.`);
         }
-        return Math.max(totalPowerL, totalPowerR);
-      };
 
-      const peakChannelPower = Math.max(calculatePeakPower("target"), calculatePeakPower("reference"));
-      if (peakChannelPower > 0) {
-        const totalDb = 10 * Math.log10(peakChannelPower);
-        if (totalDb > 95) {
-          warnings.push(`Block ${blockIdx} (${block.id}): CLIPPING RISK: Worst-case peak level exceeds 95 dB SPL (Estimated: ${totalDb.toFixed(1)} dB).`);
+        if (block.adaptive) {
+          const path = block.adaptive.parameter;
+          const existsInStimuli = block.stimuli.some((_: any, i: number) => path.startsWith(`stimuli[${i}]`));
+          const existsInPerturbations = block.perturbations?.some((_: any, i: number) => path.startsWith(`perturbations[${i}]`));
+          if (!existsInStimuli && !existsInPerturbations) {
+            warnings.push(`Block '${block.id}': INVALID PATH: Adaptive parameter '${path}' does not resolve to an existing stimulus or perturbation.`);
+          }
         }
-      }
 
-      if (block.adaptive && (block.termination?.reversals ?? 0) < 10) {
-        warnings.push(`Block ${blockIdx} (${block.id}): STABILITY WARNING: Adaptive staircase reversals are below 10.`);
-      }
-
-      // Path resolution check
-      if (block.adaptive) {
-        const path = block.adaptive.parameter;
-        const existsInStimuli = block.stimuli.some((_, i) => path.startsWith(`stimuli[${i}]`));
-        const existsInPerturbations = block.perturbations?.some((_, i) => path.startsWith(`perturbations[${i}]`));
-        if (!existsInStimuli && !existsInPerturbations) {
-          warnings.push(`Block ${blockIdx} (${block.id}): INVALID PATH: Adaptive parameter '${path}' does not resolve to an existing stimulus or perturbation.`);
-        }
-      }
-
-      // Nyquist check
-      block.stimuli.forEach(gen => {
-        if (gen.type === 'multi_component') {
-          gen.components.forEach(comp => {
-            if (comp.frequency >= sampleRate / 2) {
-              warnings.push(`Block ${blockIdx} (${block.id}): NYQUIST VIOLATION: Frequency ${comp.frequency}Hz exceeds ${sampleRate / 2}Hz.`);
-            }
-          });
-        }
+        block.stimuli.forEach((gen: any) => {
+          if (gen.type === 'multi_component') {
+            gen.components.forEach((comp: any) => {
+              if (comp.frequency >= sampleRate / 2) {
+                warnings.push(`Block '${block.id}': NYQUIST VIOLATION: Frequency ${comp.frequency}Hz exceeds ${sampleRate / 2}Hz.`);
+              }
+            });
+          }
+        });
       });
-    });
+    };
+
+    validateRecursive(config.blocks);
 
     return {
       content: [{
@@ -1126,33 +1133,34 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
     let summary = `
 # Experiment Summary: ${config.meta.name}
 **Rationale**: ${config.meta.rationale || "N/A"}
-**Total Blocks**: ${config.blocks.length}
 
 `;
 
-    config.blocks.forEach((block, i) => {
-      summary += `## Block ${i + 1}: ${block.id}\n`;
-      summary += `**Paradigm**: ${block.paradigm.type}\n`;
-      summary += `### Stimuli\n`;
-      block.stimuli.forEach((s, j) => {
-        const applyToStr = (s as any).applyTo && (s as any).applyTo !== "all" ? ` [${(s as any).applyTo}]` : "";
-        if (s.type === 'multi_component') {
-          summary += `- Generator ${j + 1}: Multi-component (${s.components.length} tones), ${s.durationMs}ms${applyToStr}\n`;
-        } else if (s.type === 'noise') {
-          summary += `- Generator ${j + 1}: ${(s as any).noiseType} noise, ${s.durationMs}ms${applyToStr}\n`;
-        } else if (s.type === 'filtered_noise') {
-          summary += `- Generator ${j + 1}: Filtered noise (FIR), ${s.durationMs}ms${applyToStr}\n`;
+    const summarizeRecursive = (entries: any[], level: number = 0) => {
+      let text = "";
+      const indent = "  ".repeat(level);
+      const header = "#".repeat(level + 2);
+
+      entries.forEach((entry) => {
+        if (entry.type === "group") {
+          text += `${header} Group: ${entry.id}${entry.randomize ? " [Randomized]" : ""}${entry.repetitions > 1 ? ` (${entry.repetitions}x)` : ""}\n`;
+          text += summarizeRecursive(entry.blocks, level + 1);
+        } else {
+          text += `${header} Block: ${entry.id}${entry.repetitions > 1 ? ` (${entry.repetitions}x)` : ""}\n`;
+          text += `${indent}**Paradigm**: ${entry.paradigm.type}\n`;
+          text += `${indent}**Adaptive**: ${entry.adaptive ? `Yes (${entry.adaptive.rule.correctDown}-down/1-up on ${entry.adaptive.parameter})` : "No"}\n`;
+          const term = entry.termination;
+          const termConditions = [];
+          if (term?.reversals) termConditions.push(`${term.reversals} reversals`);
+          if (term?.trials) termConditions.push(`${term.trials} trials`);
+          if (term?.correctTrials) termConditions.push(`${term.correctTrials} correct trials`);
+          text += `${indent}**Termination**: ${termConditions.join(" OR ") || "N/A"}\n\n`;
         }
       });
-      summary += `### Logic\n`;
-      summary += `**Adaptive**: ${block.adaptive ? `Yes (${block.adaptive.rule.correctDown}-down/1-up on ${block.adaptive.parameter})` : "No"}\n`;
-      const term = block.termination;
-      const termConditions = [];
-      if (term?.reversals) termConditions.push(`${term.reversals} reversals`);
-      if (term?.trials) termConditions.push(`${term.trials} trials`);
-      if (term?.correctTrials) termConditions.push(`${term.correctTrials} correct trials`);
-      summary += `**Termination**: ${termConditions.join(" OR ") || "N/A"}\n\n`;
-    });
+      return text;
+    };
+
+    summary += summarizeRecursive(config.blocks);
 
     return { content: [{ type: "text", text: summary }] };
   }
