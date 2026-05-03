@@ -33,8 +33,8 @@ The components use Shadow DOM, but provide a rich set of CSS variables for seaml
 | `--psycho-panel-bg` | `#1e293b` | Experiment card background. |
 | `--psycho-text` | `#f8fafc` | Primary text color. |
 | `--psycho-radius` | `8px` | Global border radius. |
-| `--psycho-quit-top` | `0.5rem` | Top offset for the Quit (X) button. |
-| `--psycho-quit-right` | `0.5rem` | Right offset for the Quit (X) button. |
+| `--psycho-quit-top` | `0.15rem` | Top offset for the Quit (X) button. |
+| `--psycho-quit-right` | `0.15rem` | Right offset for the Quit (X) button. |
 | `--psycho-quit-width` | `40px` | Width of the Quit button. |
 | `--psycho-quit-height` | `40px` | Height of the Quit button. |
 
