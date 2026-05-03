@@ -109,6 +109,16 @@ The suite of 70+ automated scientific audits (`web-app/npm run test`) is the bac
 -   **RNG Consistency:** Verifies that provided seeds result in bit-identical stimuli. Reproducibility is a fundamental requirement for scientific peer review.
 -   **Timing & ISI:** Validates that silence gaps (ISI) and stimulus durations are sample-accurate to prevent temporal integration errors.
 
+### C. Running the Audits
+To execute the scientific audit suite, navigate to the `web-app` directory and run:
+```bash
+npm test
+```
+*Note for Windows/PowerShell users:* If script execution is disabled on your system, use the following command instead:
+```bash
+cmd /c npm test
+```
+
 ## 5. Maintenance Workflow
 
 1.  **Schema First:** Update `shared/schema.ts` to define the new data structure.

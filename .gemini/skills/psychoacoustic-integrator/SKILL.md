@@ -20,10 +20,23 @@ Add the `show-quit` attribute to the component to provide a visible exit path (a
 - **Stateless Demos**: For public-facing apps, combine `show-quit` with the `disable-autosave` attribute to ensure each visitor starts with a clean slate and can easily exit.
 
 ### 2. Implementation Guide
-| Attribute | Type | Purpose |
-| :--- | :--- | :--- |
 | `show-quit` | Boolean | Displays a visible 'X' button in the experiment screen. |
 | `disable-autosave` | Boolean | Force-disables crash recovery, regardless of the JSON `autoSave` setting. |
+
+### 3. Styling & Theming
+The components use Shadow DOM, but provide a rich set of CSS variables for seamless integration.
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `--psycho-accent` | `#38bdf8` | Primary brand/action color. |
+| `--psycho-bg` | `#0f172a` | Main background color. |
+| `--psycho-panel-bg` | `#1e293b` | Experiment card background. |
+| `--psycho-text` | `#f8fafc` | Primary text color. |
+| `--psycho-radius` | `8px` | Global border radius. |
+| `--psycho-quit-top` | `0.5rem` | Top offset for the Quit (X) button. |
+| `--psycho-quit-right` | `0.5rem` | Right offset for the Quit (X) button. |
+| `--psycho-quit-width` | `40px` | Width of the Quit button. |
+| `--psycho-quit-height` | `40px` | Height of the Quit button. |
 
 ## Lifecycle & Data Integrity
 

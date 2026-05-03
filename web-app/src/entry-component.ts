@@ -76,10 +76,10 @@ class PsychoacousticRunner extends HTMLElement {
       </style>
       <div class="psycho-runner-container">
         <div class="container">
+          <button id="quit-btn" class="quit-btn hidden" aria-label="Quit Experiment" part="quit-btn">&times;</button>
           ${getHeaderTemplate()}
 
           <div id="experiment-screen" class="experiment-area">
-            <button id="quit-btn" class="quit-btn hidden" aria-label="Quit Experiment">&times;</button>
             <div class="experiment-info">
               <div class="status-container">
                 <div id="status-badge" class="status-badge hidden"></div>

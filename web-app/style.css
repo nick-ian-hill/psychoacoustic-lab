@@ -682,13 +682,13 @@ textarea:focus {
 /* Quit Button Styles */
 .quit-btn {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: var(--psycho-quit-top, 0.5rem);
+  right: var(--psycho-quit-right, 0.5rem);
   background: transparent;
   border: none;
   color: var(--psycho-text-muted);
-  width: 40px;
-  height: 40px;
+  width: var(--psycho-quit-width, 40px);
+  height: var(--psycho-quit-height, 40px);
   font-size: 1.25rem;
   cursor: pointer;
   z-index: 10;

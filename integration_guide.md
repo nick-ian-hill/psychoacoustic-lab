@@ -154,6 +154,10 @@ psychoacoustic-runner {
   --psycho-interval-text: #ffffff;  /* Custom text color for interval buttons */
   --psycho-badge-bg: rgba(99, 102, 241, 0.15); /* Custom Trials Remaining badge */
   --psycho-quit-color: #94a3b8;     /* Custom color for the Quit (X) button */
+  --psycho-quit-top: 0.5rem;        /* Custom top offset for Quit button */
+  --psycho-quit-right: 0.5rem;      /* Custom right offset for Quit button */
+  --psycho-quit-width: 40px;        /* Custom width for Quit button */
+  --psycho-quit-height: 40px;       /* Custom height for Quit button */
 }
 ```
 
