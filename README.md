@@ -28,6 +28,20 @@ Add the following to your `mcp_config.json` (typically in `%USERPROFILE%\.gemini
 }
 ```
 
+### AI Agent Workspace Requirements (For Researchers)
+
+To empower your AI agent (Antigravity, Claude, etc.) with expert psychoacoustic knowledge and experiment design capabilities, you must provide it with the specialized context files found in this repository.
+
+1. **Include the `.gemini/` folder**: Copy this folder to the root of your experimental workspace. It contains the "Empirical Yardsticks" and procedural knowledge needed for scientifically grounded designs.
+2. **Setup `GEMINI.md`**: 
+   - Copy `mcp-server/GEMINI.md` from this repository.
+   - Place it at the **root of your workspace** and rename it to `GEMINI.md`. 
+   - *(Note: In this repository, this file is stored inside `mcp-server/` to avoid collision with the project's internal maintenance instructions.)*
+
+Once these files are in your workspace root, the agent will automatically adopt the **Psychoacoustic Lab Assistant** role, allowing it to brainstorm paradigms, validate parameters against literature, and generate schema-compliant configurations.
+
+*(Developers maintaining this codebase should instead refer to the root `GEMINI.md` for engineering standards.)*
+
 ### 2. GitHub Copilot (VS Code)
 To use the psychoacoustic-lab MCP server within VS Code, you can configure it as a workspace-specific server:
 
@@ -79,7 +93,7 @@ Add to your `claude_desktop_config.json`:
 The project is split into three main components:
 
 1. **`shared/schema.ts`**: The source of truth. Defines Zod schemas for `ExperimentConfig`, utilizing a **Block-Based Architecture** for multi-stage studies (e.g., Practice → Test).
-2. **`mcp-server`**: A "Math Toolkit" and Expert Advisor. Includes **Specialized Stimulus Utilities** for generating complex configurations like notched noise, harmonic complexes, and BMLD presets. It provides a final validation endpoint that checks for per-block clipping risks, adaptive stability, calibration mismatches, and IPD configuration errors across all blocks. High-level architectural and procedural guidance is provided in `GEMINI.md` and `SKILLS.md`.
+2. **`mcp-server`**: A "Math Toolkit" and Expert Advisor. Includes **Specialized Stimulus Utilities** for generating complex configurations like notched noise, harmonic complexes, and BMLD presets. It provides a final validation endpoint that checks for per-block clipping risks, adaptive stability, calibration mismatches, and IPD configuration errors across all blocks. High-level procedural guidance for experiment design is provided in `mcp-server/GEMINI.md` and the `.gemini/skills/` directory.
 3. **`web-app`**: A complete frontend execution environment. The UI provides per-block metadata and instructions, while the **Web Worker**-based audio engine handles advanced synthesis like FIR filtering and correlated noise modulation.
 
 ## Features
