@@ -456,8 +456,9 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	sessionResults = [];
 	currentBlockStartTime = "";
 	keyDownHandler;
-	constructor(e) {
-		this.container = e, this.engine = null, this.elements = {
+	options;
+	constructor(e, t = {}) {
+		this.container = e, this.options = t, this.engine = null, this.elements = {
 			instructionText: this.findSafe("instruction-text"),
 			playBtn: this.findSafe("play-btn"),
 			playBtnContainer: this.findSafe("play-btn-container"),
@@ -489,7 +490,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		this.engine &&= (this.engine.close(), null);
 	}
 	cancel() {
-		this.close(), this.currentConfig?.meta.autoSave && this.clearBackup(this.currentConfig.meta.name), this.elements.resultsArea.classList.add("hidden"), this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.statusBadge.classList.add("hidden"), this.elements.instructionText.classList.add("hidden"), this.container.dispatchEvent(new CustomEvent("experiment-cancelled", {
+		this.close(), this.currentConfig?.meta.autoSave && !this.options.disableAutoSave && this.clearBackup(this.currentConfig.meta.name), this.elements.resultsArea.classList.add("hidden"), this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.statusBadge.classList.add("hidden"), this.elements.instructionText.classList.add("hidden"), this.container.dispatchEvent(new CustomEvent("experiment-cancelled", {
 			bubbles: !0,
 			composed: !0
 		})), this.currentConfig = null, this.currentBlock = null, this.isInputEnabled = !1;
@@ -526,7 +527,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		});
 	}
 	async loadConfig(e) {
-		if (e.meta.autoSave) {
+		if (e.meta.autoSave && !this.options.disableAutoSave) {
 			let t = this.getBackup(e.meta.name);
 			if (t && t.results.length > 0) {
 				this.showModal("Resume Session?", `A previous session for "${e.meta.name}" was found with ${t.results.length} blocks completed. Would you like to resume or start fresh?`, "Start Fresh", () => this.initSession(e), "Resume Session", () => this.initSession(e, t));
@@ -675,7 +676,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		this.elements.statusBadge.textContent = c, this.elements.statusBadge.classList.toggle("hidden", !c);
 	}
 	showResults() {
-		this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.statusBadge.classList.add("hidden"), this.elements.instructionText.classList.add("hidden"), this.elements.infoArea.classList.add("hidden"), this.elements.mainArea.classList.add("hidden"), this.elements.resultsArea.classList.remove("hidden"), this.currentConfig?.meta.autoSave && this.clearBackup(this.currentConfig.meta.name);
+		this.elements.playBtnContainer.classList.add("hidden"), this.elements.responseButtonsContainer.innerHTML = "", this.elements.statusBadge.classList.add("hidden"), this.elements.instructionText.classList.add("hidden"), this.elements.infoArea.classList.add("hidden"), this.elements.mainArea.classList.add("hidden"), this.elements.resultsArea.classList.remove("hidden"), this.currentConfig?.meta.autoSave && !this.options.disableAutoSave && this.clearBackup(this.currentConfig.meta.name);
 		let e = this.sessionResults.length > 0 ? this.sessionResults[this.sessionResults.length - 1].threshold : 0, t = this.currentBlock?.adaptive?.unit || "";
 		this.elements.resultsText.textContent = `Estimated Threshold: ${e.toFixed(2)}${t ? " " + t : ""}`, this.container.dispatchEvent(new CustomEvent("experiment-complete", {
 			detail: {
@@ -709,7 +710,7 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		}
 	}
 	saveBackup() {
-		if (!this.currentConfig || !this.currentConfig.meta.autoSave) return;
+		if (!this.currentConfig || !this.currentConfig.meta.autoSave || this.options.disableAutoSave) return;
 		let e = {
 			seed: this.activeSeed,
 			results: this.sessionResults,
@@ -1325,9 +1326,11 @@ var f = /* @__PURE__ */ o(((e, t) => {
 		super(), this.attachShadow({ mode: "open" });
 	}
 	connectedCallback() {
-		this.render(), this.container = this.shadowRoot.querySelector(".psycho-runner-container"), this.runner = new x(this.container);
-		let e = this.getAttribute("config");
-		e && this.loadRemoteConfig(e), this.shadowRoot.getElementById("download-results-btn")?.addEventListener("click", () => this.handleDownload()), this.shadowRoot.getElementById("finish-btn")?.addEventListener("click", () => this.cancel());
+		this.render(), this.container = this.shadowRoot.querySelector(".psycho-runner-container");
+		let e = this.hasAttribute("disable-autosave");
+		this.runner = new x(this.container, { disableAutoSave: e });
+		let t = this.getAttribute("config");
+		t && this.loadRemoteConfig(t), this.shadowRoot.getElementById("download-results-btn")?.addEventListener("click", () => this.handleDownload()), this.shadowRoot.getElementById("finish-btn")?.addEventListener("click", () => this.cancel());
 	}
 	render() {
 		this.shadowRoot.innerHTML = `
@@ -1484,7 +1487,7 @@ var E = class extends HTMLElement {
         </div>
 
         <div id="runner-screen" class="hidden">
-           <psychoacoustic-runner id="the-runner"></psychoacoustic-runner>
+           <psychoacoustic-runner id="the-runner" disable-autosave></psychoacoustic-runner>
         </div>
       </div>
     `;
