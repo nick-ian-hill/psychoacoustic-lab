@@ -113,6 +113,9 @@ export class ExperimentRunner {
 
   public cancel() {
     this.close();
+    if (this.currentConfig?.meta.autoSave) {
+      this.clearBackup(this.currentConfig.meta.name);
+    }
     this.elements.resultsArea.classList.add("hidden");
     this.elements.playBtnContainer.classList.add("hidden");
     this.elements.responseButtonsContainer.innerHTML = "";
@@ -129,7 +132,14 @@ export class ExperimentRunner {
     this.isInputEnabled = false;
   }
 
-  private showModal(title: string, message: string, confirmText: string, onConfirm: () => void) {
+  private showModal(
+    title: string, 
+    message: string, 
+    confirmText: string, 
+    onConfirm: () => void, 
+    cancelText: string = "Keep Going",
+    onCancel?: () => void
+  ) {
     const wasInputEnabled = this.isInputEnabled;
     this.isInputEnabled = false;
 
@@ -145,7 +155,7 @@ export class ExperimentRunner {
         <div class="modal-body">
           <p>${message}</p>
           <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button class="btn" style="flex: 1; background: var(--psycho-keep-going-btn, var(--psycho-accent));" id="modal-cancel">Keep Going</button>
+            <button class="btn" style="flex: 1; background: var(--psycho-keep-going-btn, var(--psycho-accent));" id="modal-cancel">${cancelText}</button>
             <button class="btn" style="flex: 1; background: var(--psycho-stop-btn, var(--psycho-error));" id="modal-confirm">${confirmText}</button>
           </div>
         </div>
@@ -159,8 +169,8 @@ export class ExperimentRunner {
       this.container.removeChild(modal);
     };
 
-    modal.querySelector(".modal-close")?.addEventListener("click", close);
-    modal.querySelector("#modal-cancel")?.addEventListener("click", close);
+    modal.querySelector(".modal-close")?.addEventListener("click", () => { close(); if(onCancel) onCancel(); });
+    modal.querySelector("#modal-cancel")?.addEventListener("click", () => { close(); if(onCancel) onCancel(); });
     modal.querySelector("#modal-confirm")?.addEventListener("click", () => {
       close();
       onConfirm();
@@ -168,8 +178,26 @@ export class ExperimentRunner {
   }
 
   public async loadConfig(config: ExperimentConfig) {
+    if (config.meta.autoSave) {
+      const backup = this.getBackup(config.meta.name);
+      if (backup && backup.results.length > 0) {
+        this.showModal(
+          "Resume Session?",
+          `A previous session for "${config.meta.name}" was found with ${backup.results.length} blocks completed. Would you like to resume or start fresh?`,
+          "Start Fresh",
+          () => this.initSession(config),
+          "Resume Session",
+          () => this.initSession(config, backup)
+        );
+        return;
+      }
+    }
+    await this.initSession(config);
+  }
+
+  private async initSession(config: ExperimentConfig, backup?: any) {
     this.currentConfig = config;
-    this.sessionResults = [];
+    this.sessionResults = backup ? backup.results : [];
     
     if (this.engine) {
       await this.engine.close();
@@ -183,14 +211,20 @@ export class ExperimentRunner {
     this.elements.mainArea.classList.remove("hidden");
     
     // Initialize engine and RNG with the experiment's master seed
-    // If no seed is provided in the config, generate a random one for this session.
-    this.activeSeed = config.meta.seed ?? Math.floor(Math.random() * 1000000);
-    this.engine = new AudioEngine(this.activeSeed);
-    this.trialRng = seedrandom(this.activeSeed.toString());
+    this.activeSeed = backup ? backup.seed : (config.meta.seed ?? Math.floor(Math.random() * 1000000));
+    this.engine = new AudioEngine(this.activeSeed!);
+    this.trialRng = seedrandom(this.activeSeed!.toString());
 
     // Flatten nested blocks/groups into a linear queue
     this.blockQueue = ExperimentRunner.flattenBlocks(config.blocks, this.trialRng);
-    await this.startBlock(0);
+    
+    // If resuming, start at the next block
+    const startIndex = backup ? backup.results.length : 0;
+    if (startIndex >= this.blockQueue.length) {
+      this.showResults();
+    } else {
+      await this.startBlock(startIndex);
+    }
   }
 
   /** @internal - Exported for testing */
@@ -425,7 +459,7 @@ export class ExperimentRunner {
         // Calculate run index for blocks with the same ID
         const runIndex = this.sessionResults.filter(r => r.blockId === (this.currentBlock?.id)).length;
 
-        this.sessionResults.push({
+        const blockResult = {
           blockId: this.currentBlock?.id || `block_${this.currentBlockIndex}`,
           history: this.staircase?.getHistory() || [],
           threshold: this.staircase?.calculateThreshold(this.currentBlock?.termination?.discardReversals) || 0,
@@ -433,9 +467,24 @@ export class ExperimentRunner {
           presentationOrder: this.sessionResults.length + 1,
           startTime: this.currentBlockStartTime,
           endTime: new Date().toISOString()
-        });
+        };
+
+        this.sessionResults.push(blockResult);
+
+        // Dispatch lifecycle event for progressive saving
+        this.container.dispatchEvent(new CustomEvent('block-complete', {
+          detail: {
+            experiment: this.currentConfig?.meta.name,
+            blockResult,
+            sessionResults: this.sessionResults,
+            actualSeed: this.activeSeed
+          },
+          bubbles: true,
+          composed: true
+        }));
 
         if (this.currentBlockIndex < (this.blockQueue.length - 1)) {
+          this.saveBackup();
           await this.startBlock(this.currentBlockIndex + 1);
         } else {
           this.showResults();
@@ -498,6 +547,10 @@ export class ExperimentRunner {
     this.elements.infoArea.classList.add("hidden");
     this.elements.mainArea.classList.add("hidden");
     this.elements.resultsArea.classList.remove("hidden");
+
+    if (this.currentConfig?.meta.autoSave) {
+      this.clearBackup(this.currentConfig.meta.name);
+    }
     
     // For UI display, we'll just show the threshold of the final block (or 0 if none)
     const finalThreshold = this.sessionResults.length > 0 
@@ -536,5 +589,31 @@ export class ExperimentRunner {
     a.download = `results_${this.currentConfig.meta.name.replace(/\s+/g, "_")}_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // --- Backup Logic ---
+
+  private getBackup(name: string): any | null {
+    const data = localStorage.getItem(`psycho_lab_backup_${name}`);
+    if (!data) return null;
+    try {
+      return JSON.parse(data);
+    } catch {
+      return null;
+    }
+  }
+
+  private saveBackup() {
+    if (!this.currentConfig || !this.currentConfig.meta.autoSave) return;
+    const backup = {
+      seed: this.activeSeed,
+      results: this.sessionResults,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem(`psycho_lab_backup_${this.currentConfig.meta.name}`, JSON.stringify(backup));
+  }
+
+  private clearBackup(name: string) {
+    localStorage.removeItem(`psycho_lab_backup_${name}`);
   }
 }

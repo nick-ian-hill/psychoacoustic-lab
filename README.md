@@ -107,7 +107,7 @@ The project is split into three main components:
   - **Optional**: Omit the seed for random-by-default sessions (perfect for onboarding).
   - **Block-Level**: Assign specific seeds to individual blocks (e.g., for a fixed practice phase).
   - **Sequence Control**: The order of randomized block groups is fully deterministic based on the master seed. The actual seed used is always recorded in the results metadata.
-  - **Event Detail**: `{ threshold, results, actualSeed, presentationOrder, runIndex }`.
+  - **Lifecycle Events**: Detailed programmatic hooks for integration: `{ threshold, results, actualSeed, presentationOrder, runIndex }`.
 - **Advanced Block Sequencing**: Group multiple experiment stages into a single session. Each block can have its own paradigm, stimuli, adaptive rules, and termination criteria.
   - **Repetitions**: Run specific blocks or groups multiple times.
   - **Hierarchical Groups**: Nest blocks within groups to create complex structures (e.g., Practice → [Randomized Experimental Blocks]).
@@ -132,6 +132,7 @@ The project is split into three main components:
 - **Global & Block UI Control**: Configure UI visibility (e.g., `showCurrentValue`, `showTrialNumber`) either globally for the experiment or override them per-block for different experimental phases.
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Termination & Thresholding**: Configure exactly how and when an experiment ends (e.g., stopping after $N$ reversals or $M$ trials).
+- **Automatic Backup & Recovery**: Optional `autoSave` mode that incrementally backs up results to `localStorage` after every block, allowing participants to resume from where they left off after a crash or accidental exit.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
 - **Data Export**: Download detailed trial history as a **JSON** file. Supports the modern **File System Access API** for professional "Save As" workflows, with automatic fallbacks for older browsers. The format includes the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis.

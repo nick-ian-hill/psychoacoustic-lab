@@ -9,57 +9,41 @@ Use this for full demonstrations, teaching, or quick pilot testing. It includes 
 - **Workflow**: Just drop the script and the tag.
 - **Customization**: Use CSS variables for branding. Tokens are designed to inherit from the host tag into the Shadow DOM.
 
-### 2. The "Logic-Only" Runner (`<psychoacoustic-runner>`)
-Use this for custom study portals or large-scale data collection. You provide the config via JS and handle the results via events.
-- **Workflow**:
-    1. Embed `<psychoacoustic-runner>`.
-    2. Call `runner.setConfig(config)`.
-    3. Listen for the `experiment-complete` event.
-- **Event Detail**: `{ threshold, results, actualSeed }`. Note: The `results` array now includes `runIndex`, `presentationOrder`, `startTime`, and `endTime` (ISO strings) for each block.
+## Lifecycle & Data Integrity
 
-## Build & Deployment
+The runner provides hooks for robust data collection and session recovery.
 
-### Local Library Build
-```bash
-# In web-app directory
-npm run build -- --mode library
+### 1. Automatic Backup (Crash Recovery)
+Set `meta.autoSave: true` in the configuration. The runner will incrementally backup results to `localStorage`. If the browser crashes, it will offer a "Resume Session" prompt upon reload.
+
+### 2. Lifecycle Events
+Listen for events on the runner component to handle data persistence:
+
+| Event | Payload Detail | Purpose |
+| :--- | :--- | :--- |
+| `block-complete` | `{ experiment, blockResult, sessionResults, actualSeed }` | **Progressive Saving**: Send data to server after each block. |
+| `experiment-complete` | `{ experiment, threshold, results, actualSeed, config }` | **Final Collection**: Store total session results. |
+| `experiment-cancelled` | `null` | **Cleanup**: Log drop-outs or clear local states. |
+
+### 3. Implementation Example: Progressive Saving
+```javascript
+const runner = document.querySelector('psychoacoustic-runner');
+
+// Send data to server as it happens
+runner.addEventListener('block-complete', async (e) => {
+    const { blockResult, experiment } = e.detail;
+    await fetch('/api/study/save-block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ study: experiment, data: blockResult })
+    });
+});
 ```
-Outputs `dist/psychoacoustic-runner.js`.
-
-### Live GitHub Deployment
-Encourage users to use the permanent live link for auto-updates:
-`https://nick-ian-hill.github.io/psychoacoustic-lab/psychoacoustic-runner.js`
-
-## Design & Theming
-The components use **Shadow DOM**. To customize styles, you MUST use CSS Custom Properties on the component tag itself:
-- `--psycho-accent`: Primary brand color.
-- `--psycho-bg`: Page background color.
-- `--psycho-panel-bg`: Container/Panel background color.
-- `--psycho-text`: Primary text color.
-- `--psycho-text-muted`: Secondary/Instructional text color.
-- `--psycho-border`: Border and divider color.
-- `--psycho-radius`: Border rounding.
-- `--psycho-font-family`: Typography (e.g., 'Inter', sans-serif).
-- `--psycho-accent-hover`: Hover color for primary buttons.
-
-### Semantic State Overrides
-For finer control, you can override specific semantic elements:
-- `--psycho-stop-btn`: Background for destructive actions (default: error color).
-- `--psycho-keep-going-btn`: Background for confirmation/cancel actions (default: accent color).
-- `--psycho-secondary-btn`: Background for secondary buttons (default: transparent).
-- `--psycho-interval-bg`: Background for the interval buttons.
-- `--psycho-interval-text`: Text color for the interval buttons.
-- `--psycho-badge-bg`: Background for the status badge.
-
-### Advanced Semantic Overrides
-- `--psycho-success-bg`: Glow color for correct responses.
-- `--psycho-error-bg`: Glow color for incorrect responses.
-- `--psycho-selection-bg`: Hover color for list selections.
-- `--psycho-modal-overlay`: Dimming level for the modal background.
 
 ## Scientific Continuity
 When helping with integration:
 1. **Always verify the config** against the `shared/schema.ts` before recommending a `setConfig` call.
 2. **Handle Results**: Remind users to send `actualSeed` and `results` to their backend for full reproducibility.
-3. **Seeding**: Explain that omitting `meta.seed` allows for fresh randomization per participant while still returning the seed used for later auditing.
-4. **Results Mapping**: The `results` array contains a chronological list of block outcomes. Use the `presentationOrder` to map results to the participant's focus over time and `runIndex` to group results from repeated experimental conditions.
+3. **Data Resilience**: For long sessions, recommend enabling `autoSave` to prevent participant frustration and data loss.
+4. **Seeding**: Explain that omitting `meta.seed` allows for fresh randomization per participant while still returning the seed used for later auditing.
+5. **Results Mapping**: The `results` array contains a chronological list of block outcomes. Use the `presentationOrder` to map results to the participant's focus over time and `runIndex` to group results from repeated experimental conditions.

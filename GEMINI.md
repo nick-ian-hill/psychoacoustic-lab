@@ -87,6 +87,12 @@ The MCP server provides tools in three tiers:
 -   **Randomization:** Groups can be randomized using the `randomize: true` flag. This is essential for counterbalancing conditions across blocks to control for order effects (e.g., fatigue or learning).
 -   **Seeded Randomization:** Block randomization uses the experiment's master seed, ensuring that a given seed always results in the same block order for a specific configuration.
 
+### E. Data Integrity & Lifecycle Management
+-   **Incremental Backups:** For experiments with `autoSave: true`, the runner MUST incrementally back up `sessionResults` and the master `seed` to `localStorage` after every block.
+-   **Session Recovery:** Upon loading a config, the runner must detect existing backups and offer a "Resume" vs "Start Fresh" prompt to the participant.
+-   **Progressive Saving:** The runner dispatches a `block-complete` event after each block. Integrators should use this event to push data to a remote server to minimize data loss.
+-   **Deterministic Resumption:** Resuming from a backup must preserve the original `seed` and the `presentationOrder` of blocks to maintain experimental validity.
+
 ## 4. Scientific Audits & Rigorous Testing
 
 The suite of 70+ automated scientific audits (`web-app/npm run test`) is the backbone of the project. **Verification is the only path to finality.**

@@ -154,8 +154,52 @@ psychoacoustic-runner {
   --psycho-interval-text: #ffffff;  /* Custom text color for interval buttons */
   --psycho-badge-bg: rgba(99, 102, 241, 0.15); /* Custom Trials Remaining badge */
 }
-  --psycho-border: #e5e7eb;
-}
+```
+
+## 5. Advanced Lifecycle & Data Integrity
+
+For professional research, the runner provides lifecycle events to enable server-side persistence and automatic crash recovery.
+
+### Automatic Backups (Crash Recovery)
+You can enable automatic `localStorage` backups by setting `autoSave: true` in the experiment metadata. If the browser crashes or the user accidentally closes the tab, the runner will offer to resume the session upon reload.
+
+```javascript
+const config = {
+  meta: {
+    name: "My Study",
+    autoSave: true, // Enables incremental backup to localStorage
+    ...
+  },
+  blocks: [...]
+};
+```
+
+### Programmatic Data Saving (Events)
+Listen for lifecycle events to send data to your own backend as it happens.
+
+| Event | Trigger | Detail Payload |
+|-------|---------|----------------|
+| `block-complete` | After each block finishes | `{ experiment, blockResult, sessionResults, actualSeed }` |
+| `experiment-complete` | After the entire session finishes | `{ experiment, threshold, results, actualSeed, config }` |
+| `experiment-cancelled` | If the user terminates the session | `null` |
+
+#### Example: Progressive Saving
+```javascript
+const runner = document.getElementById('my-runner');
+
+// Save data progressively to your server after every block
+runner.addEventListener('block-complete', (e) => {
+    const { experiment, blockResult } = e.detail;
+    
+    fetch('/api/results/incremental', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            study: experiment,
+            block: blockResult
+        })
+    });
+});
 ```
 
 

@@ -303,6 +303,7 @@ export const ExperimentConfigSchema = z.object({
     description: z.string().describe("A detailed description shown on the selection screen and in the help popup."),
     literature_references: z.array(z.string()).optional(),
     advisor_warnings: z.array(z.string()).optional(),
+    autoSave: z.boolean().default(false).optional().describe("If true, results are automatically backed up to local storage after each block."),
   }),
   calibration: CalibrationProfileSchema.optional(),
   globalLevelDb: z.number().optional(),
