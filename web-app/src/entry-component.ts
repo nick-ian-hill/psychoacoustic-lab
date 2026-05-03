@@ -43,7 +43,8 @@ class PsychoacousticRunner extends HTMLElement {
   connectedCallback() {
     this.render();
     this.container = this.shadowRoot!.querySelector(".psycho-runner-container") as HTMLElement;
-    this.runner = new ExperimentRunner(this.container);
+    const disableAutoSave = this.hasAttribute("disable-autosave");
+    this.runner = new ExperimentRunner(this.container, { disableAutoSave });
 
     const configName = this.getAttribute("config");
     if (configName) {
@@ -247,7 +248,7 @@ class PsychoacousticApp extends HTMLElement {
         </div>
 
         <div id="runner-screen" class="hidden">
-           <psychoacoustic-runner id="the-runner"></psychoacoustic-runner>
+           <psychoacoustic-runner id="the-runner" disable-autosave></psychoacoustic-runner>
         </div>
       </div>
     `;

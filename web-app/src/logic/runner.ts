@@ -45,9 +45,11 @@ export class ExperimentRunner {
   }[] = [];
   private currentBlockStartTime: string = "";
   private keyDownHandler: (e: KeyboardEvent) => void;
+  private options: { disableAutoSave?: boolean };
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, options: { disableAutoSave?: boolean } = {}) {
     this.container = container;
+    this.options = options;
     // We'll initialize the engine once we have a config (and its seed)
     this.engine = null as any; 
     
@@ -113,7 +115,7 @@ export class ExperimentRunner {
 
   public cancel() {
     this.close();
-    if (this.currentConfig?.meta.autoSave) {
+    if (this.currentConfig?.meta.autoSave && !this.options.disableAutoSave) {
       this.clearBackup(this.currentConfig.meta.name);
     }
     this.elements.resultsArea.classList.add("hidden");
@@ -178,7 +180,7 @@ export class ExperimentRunner {
   }
 
   public async loadConfig(config: ExperimentConfig) {
-    if (config.meta.autoSave) {
+    if (config.meta.autoSave && !this.options.disableAutoSave) {
       const backup = this.getBackup(config.meta.name);
       if (backup && backup.results.length > 0) {
         this.showModal(
@@ -548,7 +550,7 @@ export class ExperimentRunner {
     this.elements.mainArea.classList.add("hidden");
     this.elements.resultsArea.classList.remove("hidden");
 
-    if (this.currentConfig?.meta.autoSave) {
+    if (this.currentConfig?.meta.autoSave && !this.options.disableAutoSave) {
       this.clearBackup(this.currentConfig.meta.name);
     }
     
@@ -604,7 +606,7 @@ export class ExperimentRunner {
   }
 
   private saveBackup() {
-    if (!this.currentConfig || !this.currentConfig.meta.autoSave) return;
+    if (!this.currentConfig || !this.currentConfig.meta.autoSave || this.options.disableAutoSave) return;
     const backup = {
       seed: this.activeSeed,
       results: this.sessionResults,

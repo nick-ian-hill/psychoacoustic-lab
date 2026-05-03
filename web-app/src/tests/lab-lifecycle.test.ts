@@ -152,4 +152,46 @@ describe('Experiment Lifecycle & Backups', () => {
     expect((runner as any).sessionResults.length).toBe(0);
     expect((runner as any).activeSeed).toBe(111);
   });
+
+  it('should ignore existing backups if disableAutoSave is true', async () => {
+    const config: any = {
+      meta: { name: 'Ignore Backup Test', autoSave: true, seed: 123 },
+      blocks: [{ id: 'b1', stimuli: [], termination: { trials: 1 }, paradigm: { type: 'nAFC', intervals: [{}], timing: { readyDelayMs: 0, itiMs: 0, feedbackDurationMs: 10 } } }]
+    };
+
+    // Pre-seed a backup
+    localStorage.setItem('psycho_lab_backup_Ignore Backup Test', JSON.stringify({ seed: 999, results: [{ blockId: 'b1' }] }));
+
+    // Instantiate with disableAutoSave
+    runner = new ExperimentRunner(container, { disableAutoSave: true });
+    await runner.loadConfig(config);
+
+    const modal = container.querySelector('.modal');
+    expect(modal).toBeNull(); // No prompt should appear
+    expect((runner as any).currentBlockIndex).toBe(0);
+    expect((runner as any).activeSeed).toBe(123); // Uses config seed, not backup seed
+  });
+
+  it('should not save backups if disableAutoSave is true', async () => {
+    const config: any = {
+      meta: { name: 'No Save Test', autoSave: true, seed: 123 },
+      blocks: [
+        { id: 'b1', stimuli: [], termination: { trials: 1 }, paradigm: { type: 'nAFC', intervals: [{}], timing: { readyDelayMs: 0, itiMs: 0, feedbackDurationMs: 10 } } },
+        { id: 'b2', stimuli: [], termination: { trials: 1 }, paradigm: { type: 'nAFC', intervals: [{}], timing: { readyDelayMs: 0, itiMs: 0, feedbackDurationMs: 10 } } }
+      ]
+    };
+
+    runner = new ExperimentRunner(container, { disableAutoSave: true });
+    await runner.loadConfig(config);
+    
+    // Complete Block 1
+    await (runner as any).handlePlayClick();
+    await advance();
+    await (runner as any).handleResponse(0);
+    await advance();
+
+    // Verify LocalStorage is empty for this experiment
+    const backupKey = 'psycho_lab_backup_No Save Test';
+    expect(localStorage.getItem(backupKey)).toBeNull();
+  });
 });

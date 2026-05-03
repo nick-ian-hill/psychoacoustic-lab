@@ -163,7 +163,11 @@ For professional research, the runner provides lifecycle events to enable server
 ### Automatic Backups (Crash Recovery)
 You can enable automatic `localStorage` backups by setting `autoSave: true` in the experiment metadata. If the browser crashes or the user accidentally closes the tab, the runner will offer to resume the session upon reload.
 
+> [!NOTE]
+> To explicitly prevent backups (e.g., in a public kiosk or demonstration setting), add the `disable-autosave` attribute to the `<psychoacoustic-runner>` component. This attribute is enabled by default in the `<psychoacoustic-app>`.
+
 ```javascript
+// In your configuration
 const config = {
   meta: {
     name: "My Study",

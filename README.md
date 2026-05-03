@@ -160,8 +160,9 @@ npm run test:ui    # Open the interactive testing dashboard
 The Psychoacoustic Lab is designed to be highly portable. You can build the web-app as a standalone **Web Component** and embed it into any website or CMS (like WordPress or a personal blog) with a single script tag.
 
 See the [Integration Guide](integration_guide.md) for full instructions on building and embedding the portable components:
-- `<psychoacoustic-runner>`: **The Researcher's Choice.** Minimal, logic-only runner for building custom experiment portals via JavaScript.
-- `<psychoacoustic-app>`: **Turnkey Lab & Demo.** A complete UI with built-in examples and support for uploading a custom configuration. Perfect for demos and teaching.
+
+- **`<psychoacoustic-runner>`**: **The Researcher's Choice.** A minimal, logic-only runner for building custom experiment portals. Supports all features including `autoSave` backups.
+- **`<psychoacoustic-app>`**: **Turnkey Lab & Demo.** A complete "all-in-one" UI with built-in examples. **Note:** The demo app is **stateless** and has `autoSave` disabled by default to ensure a clean experience for every visitor.
 
 Both components support **CSS Custom Properties (Variables)**, allowing you to seamlessly theme the lab (colors, fonts, radius) to match your host website.
 
