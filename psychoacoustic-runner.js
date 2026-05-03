@@ -17,15 +17,16 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	constructor(e) {
 		this.ctx = new (window.AudioContext || window.webkitAudioContext)(), this.seed = e, this.worker = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/worker-KwtPxlN2.js", import.meta.url).href,
+			"" + new URL("assets/worker-CFuhzkG9.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" }), this.worker.onmessage = (e) => {
 			let { id: t, left: n, right: r, intervalLengths: i } = e.data, a = this.pendingRequests.get(t);
 			if (a) {
-				let e = this.ctx.createBuffer(2, n.length, this.ctx.sampleRate);
-				e.copyToChannel(n, 0), e.copyToChannel(r, 1), this.pendingRequests.delete(t), a({
-					buffer: e,
-					intervalLengths: i.map((e) => e / this.ctx.sampleRate)
+				let o = this.ctx.createBuffer(2, n.length, this.ctx.sampleRate);
+				o.copyToChannel(n, 0), o.copyToChannel(r, 1), this.pendingRequests.delete(t), a({
+					buffer: o,
+					intervalLengths: i.map((e) => e / this.ctx.sampleRate),
+					resolvedPerturbations: e.data.resolvedPerturbations
 				});
 			}
 		};
@@ -436,21 +437,24 @@ var f = /* @__PURE__ */ o(((e, t) => {
 })), b = /* @__PURE__ */ c((/* @__PURE__ */ o(((e, t) => {
 	var n = f(), r = p(), i = m(), a = h(), o = g(), s = _(), c = y();
 	c.alea = n, c.xor128 = r, c.xorwow = i, c.xorshift7 = a, c.xor4096 = o, c.tychei = s, t.exports = c;
-})))(), 1), x = class {
+})))(), 1), x = class e {
 	engine;
 	staircase = null;
 	activeSeed;
 	currentConfig = null;
 	currentBlockIndex = 0;
+	blockQueue = [];
 	currentBlock = null;
 	currentTargetIndex = -1;
 	trialRng = null;
 	preRenderedTrial = null;
+	currentTrialMetadata = null;
 	container;
 	elements;
 	isInputEnabled = !1;
 	responseButtons = [];
 	sessionResults = [];
+	currentBlockStartTime = "";
 	keyDownHandler;
 	constructor(e) {
 		this.container = e, this.engine = null, this.elements = {
@@ -517,12 +521,30 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			o(), r();
 		});
 	}
-	async loadConfig(e) {
-		this.currentConfig = e, this.sessionResults = [], this.engine && await this.engine.close(), this.elements.resultsArea.classList.add("hidden"), this.elements.playBtnContainer.classList.remove("hidden"), this.elements.instructionText.classList.remove("hidden"), this.elements.infoArea.classList.remove("hidden"), this.elements.mainArea.classList.remove("hidden"), this.activeSeed = e.meta.seed ?? Math.floor(Math.random() * 1e6), this.engine = new l(this.activeSeed), this.trialRng = (0, b.default)(this.activeSeed.toString()), await this.startBlock(0);
+	async loadConfig(t) {
+		this.currentConfig = t, this.sessionResults = [], this.engine && await this.engine.close(), this.elements.resultsArea.classList.add("hidden"), this.elements.playBtnContainer.classList.remove("hidden"), this.elements.instructionText.classList.remove("hidden"), this.elements.infoArea.classList.remove("hidden"), this.elements.mainArea.classList.remove("hidden"), this.activeSeed = t.meta.seed ?? Math.floor(Math.random() * 1e6), this.engine = new l(this.activeSeed), this.trialRng = (0, b.default)(this.activeSeed.toString()), this.blockQueue = e.flattenBlocks(t.blocks, this.trialRng), await this.startBlock(0);
+	}
+	static flattenBlocks(t, n) {
+		let r = [];
+		for (let i of t) if (i.type === "group") {
+			let t = i.repetitions ?? 1;
+			for (let a = 0; a < t; a++) {
+				let t = e.flattenBlocks(i.blocks, n);
+				if (i.randomize) for (let e = t.length - 1; e > 0; e--) {
+					let r = Math.floor(n() * (e + 1));
+					[t[e], t[r]] = [t[r], t[e]];
+				}
+				r.push(...t);
+			}
+		} else {
+			let e = i.repetitions ?? 1;
+			for (let t = 0; t < e; t++) r.push(i);
+		}
+		return r;
 	}
 	async startBlock(e) {
-		if (!this.currentConfig) return;
-		this.currentBlockIndex = e, this.currentBlock = this.currentConfig.blocks[e];
+		if (!this.currentConfig || e >= this.blockQueue.length) return;
+		this.currentBlockIndex = e, this.currentBlock = this.blockQueue[e], this.currentBlockStartTime = "";
 		let t = this.currentBlock.meta?.seed ?? this.activeSeed + e;
 		this.engine.setBaseSeed(t), this.trialRng = (0, b.default)(t.toString()), this.staircase = new u(this.currentBlock.adaptive), this.isInputEnabled = !1;
 		let n = this.currentBlock.meta?.summary || this.currentConfig.meta.summary || "Select the target.";
@@ -535,17 +557,17 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	}
 	async handlePlayClick() {
 		if (!this.engine) return;
-		await this.engine.resume(), this.elements.playBtnContainer.classList.add("hidden"), this.elements.playBtn.disabled = !0, this.elements.playBtn.classList.add("playing"), this.responseButtons.forEach((e) => e.disabled = !0);
+		await this.engine.resume(), this.currentBlockStartTime ||= (/* @__PURE__ */ new Date()).toISOString(), this.elements.playBtnContainer.classList.add("hidden"), this.elements.playBtn.disabled = !0, this.elements.playBtn.classList.add("playing"), this.responseButtons.forEach((e) => e.disabled = !0);
 		let e = this.currentBlock?.paradigm.timing.readyDelayMs ?? 500, t = this.engine.getTime() + e / 1e3;
 		await this.playNextTrial(t);
 	}
 	async playNextTrial(e) {
 		this.preRenderedTrial ||= this.prepareTrial();
 		try {
-			let { buffer: t, intervalLengths: n } = await this.preRenderedTrial;
-			this.preRenderedTrial = null, this.clearFeedback();
-			let { source: r, startTime: i } = await this.engine.playBuffer(t, e);
-			this.highlightIntervals(n, i), r.onended = () => {
+			let { buffer: t, intervalLengths: n, resolvedPerturbations: r } = await this.preRenderedTrial;
+			this.preRenderedTrial = null, this.currentTrialMetadata = r, this.clearFeedback();
+			let { source: i, startTime: a } = await this.engine.playBuffer(t, e);
+			this.highlightIntervals(n, a), i.onended = () => {
 				this.elements.playBtn.classList.remove("playing"), this.elements.playBtn.disabled = !0;
 			};
 		} catch (e) {
@@ -587,14 +609,23 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	handleResponse(e) {
 		if (!this.isInputEnabled || !this.staircase || !this.currentBlock) return;
 		this.isInputEnabled = !1, this.responseButtons.forEach((e) => e.disabled = !0);
-		let t = this.staircase.processResponse(e === this.currentTargetIndex).correct, n = this.staircase.isFinished(this.currentBlock.termination);
+		let t = this.staircase.processResponse(e === this.currentTargetIndex, {
+			targetIndex: this.currentTargetIndex,
+			intervalStates: this.currentTrialMetadata
+		}).correct, n = this.staircase.isFinished(this.currentBlock.termination);
 		this.showFeedback(e, t), setTimeout(async () => {
-			if (this.clearFeedback(), n) this.sessionResults.push({
-				blockId: this.currentBlock?.id || `block_${this.currentBlockIndex}`,
-				history: this.staircase?.getHistory() || [],
-				threshold: this.staircase?.calculateThreshold(this.currentBlock?.termination?.discardReversals) || 0
-			}), this.currentBlockIndex < (this.currentConfig?.blocks.length || 0) - 1 ? await this.startBlock(this.currentBlockIndex + 1) : this.showResults();
-			else {
+			if (this.clearFeedback(), n) {
+				let e = this.sessionResults.filter((e) => e.blockId === this.currentBlock?.id).length;
+				this.sessionResults.push({
+					blockId: this.currentBlock?.id || `block_${this.currentBlockIndex}`,
+					history: this.staircase?.getHistory() || [],
+					threshold: this.staircase?.calculateThreshold(this.currentBlock?.termination?.discardReversals) || 0,
+					runIndex: e,
+					presentationOrder: this.sessionResults.length + 1,
+					startTime: this.currentBlockStartTime,
+					endTime: (/* @__PURE__ */ new Date()).toISOString()
+				}), this.currentBlockIndex < this.blockQueue.length - 1 ? await this.startBlock(this.currentBlockIndex + 1) : this.showResults();
+			} else {
 				this.updateStatus(), this.preRenderedTrial = this.prepareTrial();
 				let e = this.currentBlock?.paradigm.timing.itiMs || 1e3, t = this.engine.getTime() + e / 1e3;
 				this.playNextTrial(t);
