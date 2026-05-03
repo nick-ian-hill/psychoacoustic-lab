@@ -9,6 +9,22 @@ Use this for full demonstrations, teaching, or quick pilot testing. It includes 
 - **Workflow**: Just drop the script and the tag.
 - **Customization**: Use CSS variables for branding. Tokens are designed to inherit from the host tag into the Shadow DOM.
 
+### 2. The Logic Engine (`<psychoacoustic-runner>`)
+Use this for building custom research portals. It is a minimal, logic-only runner that gives you full control over the experiment flow.
+## UI Control & Accessibility
+
+The runner's interface can be tuned for different environments (e.g., kiosks, mobile apps, or distraction-free labs).
+
+### 1. The Quit Button (`show-quit`)
+Add the `show-quit` attribute to the component to provide a visible exit path (an 'X' button). This is essential for mobile users who cannot access the `Escape` key.
+- **Stateless Demos**: For public-facing apps, combine `show-quit` with the `disable-autosave` attribute to ensure each visitor starts with a clean slate and can easily exit.
+
+### 2. Implementation Guide
+| Attribute | Type | Purpose |
+| :--- | :--- | :--- |
+| `show-quit` | Boolean | Displays a visible 'X' button in the experiment screen. |
+| `disable-autosave` | Boolean | Force-disables crash recovery, regardless of the JSON `autoSave` setting. |
+
 ## Lifecycle & Data Integrity
 
 The runner provides hooks for robust data collection and session recovery.
@@ -47,3 +63,4 @@ When helping with integration:
 3. **Data Resilience**: For long sessions, recommend enabling `autoSave` to prevent participant frustration and data loss.
 4. **Seeding**: Explain that omitting `meta.seed` allows for fresh randomization per participant while still returning the seed used for later auditing.
 5. **Results Mapping**: The `results` array contains a chronological list of block outcomes. Use the `presentationOrder` to map results to the participant's focus over time and `runIndex` to group results from repeated experimental conditions.
+6. **Mobile Accessibility**: When embedding for a general audience, always recommend enabling the `show-quit` attribute to provide a discoverable exit path for touch-device users.

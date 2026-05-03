@@ -30,6 +30,7 @@ export class ExperimentRunner {
     experimentArea: HTMLElement;
     infoArea: HTMLElement;
     mainArea: HTMLElement;
+    quitBtn?: HTMLElement;
   };
   
   private isInputEnabled: boolean = false;
@@ -66,6 +67,7 @@ export class ExperimentRunner {
       experimentArea: this.findSafe("experiment-screen"),
       infoArea: this.findSafe("experiment-info"),
       mainArea: this.findSafe("experiment-main"),
+      quitBtn: this.findOptional("quit-btn"),
     };
 
     this.keyDownHandler = (e: KeyboardEvent) => {
@@ -76,12 +78,7 @@ export class ExperimentRunner {
                                   this.elements.resultsArea.classList.contains("hidden");
         
         if (isExperimentActive) {
-          this.showModal(
-            "Cancel Experiment?", 
-            "Are you sure you want to stop the current experiment? All progress in this session will be lost.",
-            "Stop Experiment",
-            () => this.cancel()
-          );
+          this.requestCancel();
         }
       }
     };
@@ -100,9 +97,18 @@ export class ExperimentRunner {
     return el as HTMLElement;
   }
 
+  private findOptional(id: string): HTMLElement | undefined {
+    try {
+      return this.findSafe(id);
+    } catch {
+      return undefined;
+    }
+  }
+
   private setupListeners() {
     this.elements.playBtn.addEventListener("click", () => this.handlePlayClick());
     this.elements.downloadBtn.addEventListener("click", () => this.handleDownload());
+    this.elements.quitBtn?.addEventListener("click", () => this.requestCancel());
     document.addEventListener("keydown", this.keyDownHandler);
   }
 
@@ -111,6 +117,28 @@ export class ExperimentRunner {
       this.engine.close();
       this.engine = null as any;
     }
+  }
+
+  public requestCancel() {
+    const isExperimentScreenVisible = !this.elements.experimentArea.classList.contains("hidden") && 
+                                     this.elements.resultsArea.classList.contains("hidden");
+    
+    if (!isExperimentScreenVisible) return;
+
+    // If we haven't even started the first trial, just cancel immediately without a modal
+    const hasStarted = this.sessionResults.length > 0 || !!this.currentBlockStartTime;
+
+    if (!hasStarted) {
+      this.cancel();
+      return;
+    }
+
+    this.showModal(
+      "Cancel Experiment?", 
+      "Are you sure you want to stop the current experiment? All progress in this session will be lost.",
+      "Stop Experiment",
+      () => this.cancel()
+    );
   }
 
   public cancel() {

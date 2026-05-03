@@ -133,6 +133,7 @@ The project is split into three main components:
 - **Dichotic Routing**: Route components independently to the left, right, or both ears, enabling Binaural Masking Level Difference (BMLD) and Spatial Release from Masking (SRM) paradigms.
 - **Termination & Thresholding**: Configure exactly how and when an experiment ends (e.g., stopping after $N$ reversals or $M$ trials).
 - **Automatic Backup & Recovery**: Optional `autoSave` mode that incrementally backs up results to `localStorage` after every block, allowing participants to resume from where they left off after a crash or accidental exit.
+- **Mobile-Friendly Exit**: Configurable `show-quit` option to display a visible "Quit" button, essential for discoverability on touch devices.
 - **Hardware Calibration**: Apply log-frequency interpolated dB offsets to account for transducer frequency responses.
 - **Runtime Perturbations**: Dynamically alter components (Mistuning, Spectral Profile, Onset Asynchrony, Phase Shift, AM Depth, ITD) based on the adaptive staircase value.
 - **Data Export**: Download detailed trial history as a **JSON** file. Supports the modern **File System Access API** for professional "Save As" workflows, with automatic fallbacks for older browsers. The format includes the exact numerical state of all random and adaptive perturbations for perfect mathematical reconstructability and advanced analysis.

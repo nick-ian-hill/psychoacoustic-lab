@@ -153,6 +153,7 @@ psychoacoustic-runner {
   --psycho-interval-bg: #1e293b;    /* Custom background for interval buttons */
   --psycho-interval-text: #ffffff;  /* Custom text color for interval buttons */
   --psycho-badge-bg: rgba(99, 102, 241, 0.15); /* Custom Trials Remaining badge */
+  --psycho-quit-color: #94a3b8;     /* Custom color for the Quit (X) button */
 }
 ```
 
@@ -165,6 +166,8 @@ You can enable automatic `localStorage` backups by setting `autoSave: true` in t
 
 > [!NOTE]
 > To explicitly prevent backups (e.g., in a public kiosk or demonstration setting), add the `disable-autosave` attribute to the `<psychoacoustic-runner>` component. This attribute is enabled by default in the `<psychoacoustic-app>`.
+>
+> To display a visible "Quit" button (essential for mobile discoverability), add the `show-quit` attribute.
 
 ```javascript
 // In your configuration

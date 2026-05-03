@@ -51,6 +51,10 @@ class PsychoacousticRunner extends HTMLElement {
       this.loadRemoteConfig(configName);
     }
 
+    if (this.hasAttribute("show-quit")) {
+      this.shadowRoot!.getElementById("quit-btn")?.classList.remove("hidden");
+    }
+
     // Add local listeners for the results buttons
     this.shadowRoot!.getElementById("download-results-btn")?.addEventListener("click", () => this.handleDownload());
     this.shadowRoot!.getElementById("finish-btn")?.addEventListener("click", () => this.cancel());
@@ -75,6 +79,7 @@ class PsychoacousticRunner extends HTMLElement {
           ${getHeaderTemplate()}
 
           <div id="experiment-screen" class="experiment-area">
+            <button id="quit-btn" class="quit-btn hidden" aria-label="Quit Experiment">&times;</button>
             <div class="experiment-info">
               <div class="status-container">
                 <div id="status-badge" class="status-badge hidden"></div>
@@ -248,7 +253,7 @@ class PsychoacousticApp extends HTMLElement {
         </div>
 
         <div id="runner-screen" class="hidden">
-           <psychoacoustic-runner id="the-runner" disable-autosave></psychoacoustic-runner>
+           <psychoacoustic-runner id="the-runner" disable-autosave show-quit></psychoacoustic-runner>
         </div>
       </div>
     `;

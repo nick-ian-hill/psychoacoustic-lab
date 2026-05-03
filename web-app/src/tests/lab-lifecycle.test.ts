@@ -38,6 +38,7 @@ describe('Experiment Lifecycle & Backups', () => {
       <div id="experiment-screen"></div>
       <div id="experiment-info"></div>
       <div id="experiment-main"></div>
+      <button id="quit-btn"></button>
     `;
     
     runner = new ExperimentRunner(container);
@@ -193,5 +194,62 @@ describe('Experiment Lifecycle & Backups', () => {
     // Verify LocalStorage is empty for this experiment
     const backupKey = 'psycho_lab_backup_No Save Test';
     expect(localStorage.getItem(backupKey)).toBeNull();
+  });
+
+  it('should cancel experiment when quit button is clicked', async () => {
+    // 1. Load a config and mock elements
+    const mockConfig = {
+      meta: { name: 'Quit Test' },
+      blocks: [{ paradigm: { type: '2AFC', intervals: [{ condition: 'target' }, { condition: 'reference' }] } }]
+    };
+    
+    // @ts-ignore - access private elements for mocking
+    const quitBtn = runner.elements.quitBtn;
+    // @ts-ignore
+    const cancelSpy = vi.spyOn(runner, 'cancel');
+    // @ts-ignore
+    const showModalSpy = vi.spyOn(runner, 'showModal');
+
+    await runner.loadConfig(mockConfig as any);
+
+    // 2. Click the quit button
+    // Before start, it should cancel immediately
+    quitBtn?.dispatchEvent(new MouseEvent('click'));
+    expect(cancelSpy).toHaveBeenCalled();
+
+    // 3. Start experiment (mock start time) and click again
+    cancelSpy.mockClear();
+    // @ts-ignore - mock started state
+    runner.currentBlockStartTime = new Date().toISOString();
+    
+    quitBtn?.dispatchEvent(new MouseEvent('click'));
+    
+    // Now it should show the confirmation modal instead of cancelling immediately
+    expect(showModalSpy).toHaveBeenCalled();
+    expect(cancelSpy).not.toHaveBeenCalled();
+  });
+
+  it('should show confirmation modal if user has clicked Start but not yet responded', async () => {
+    const mockConfig = {
+      meta: { name: 'Mid-Trial Test' },
+      blocks: [{ id: 'b1', paradigm: { type: '2AFC', intervals: [{}, {}], timing: { readyDelayMs: 0 } } }]
+    };
+    await runner.loadConfig(mockConfig as any);
+    
+    // @ts-ignore
+    const showModalSpy = vi.spyOn(runner, 'showModal');
+    // @ts-ignore
+    const cancelSpy = vi.spyOn(runner, 'cancel');
+
+    // 1. Simulate clicking Start
+    await (runner as any).handlePlayClick();
+    
+    // 2. Click quit button
+    // @ts-ignore
+    runner.elements.quitBtn.dispatchEvent(new MouseEvent('click'));
+
+    // Should show modal because we have "started" the block
+    expect(showModalSpy).toHaveBeenCalled();
+    expect(cancelSpy).not.toHaveBeenCalled();
   });
 });
