@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "name": "Relative Freq Discrimination",
+    "version": "1.1.0",
+    "seed": 42,
+    "autoSave": true,
+    "summary": "Identify the mistuned 4th component in harmonic vs. stretched complexes.",
+    "description": "This experiment measures your sensitivity to frequency shifts within a complex tone. You will compare performance between perfectly harmonic tones and 'stretched' inharmonic tones.",
+    "rationale": "Comparing discrimination thresholds in harmonic vs. inharmonic contexts reveals how the brain utilizes harmonicity for auditory scene analysis."
+  },
+  "blocks": [
+    {
+      "id": "harmonic",
+      "feedback": true,
+      "meta": {
+        "summary": "HARMONIC CONTEXT: Select the interval where the 4th tone sounds different.",
+        "description": "The first and last sounds are anchors. Identify which of the middle two (2 or 3) has a different pitch in its 4th component."
+      },
+      "paradigm": {
+        "type": "m-AFC",
+        "intervals": [
+          { "condition": "reference", "fixed": true, "selectable": false },
+          { "condition": "reference", "selectable": true },
+          { "condition": "target", "selectable": true },
+          { "condition": "reference", "fixed": true, "selectable": false }
+        ],
+        "randomizeOrder": true,
+        "timing": { "isiMs": 500, "itiMs": 1000 }
+      },
+      "stimuli": [
+        {
+          "type": "multi_component",
+          "components": [
+            { "frequency": 200, "levelDb": 60 },
+            { "frequency": 400, "levelDb": 60 },
+            { "frequency": 600, "levelDb": 60 },
+            { "frequency": 800, "levelDb": 60 },
+            { "frequency": 1000, "levelDb": 60 },
+            { "frequency": 1200, "levelDb": 60 },
+            { "frequency": 1400, "levelDb": 60 }
+          ],
+          "durationMs": 400,
+          "globalEnvelope": { "attackMs": 50, "releaseMs": 50, "type": "cosine" }
+        }
+      ],
+      "perturbations": [
+        {
+          "type": "mistuning",
+          "applyTo": "all",
+          "deltaPercent": { "type": "uniform", "min": -10, "max": 10 }
+        },
+        {
+          "type": "phase_shift",
+          "applyTo": "all",
+          "deltaDegrees": { "type": "uniform", "min": 0, "max": 360 }
+        },
+        {
+          "type": "mistuning",
+          "targetFrequency": 800,
+          "deltaPercent": { "adaptive": true }
+        }
+      ],
+      "adaptive": {
+        "type": "staircase",
+        "parameter": "perturbations[3].deltaPercent",
+        "initialValue": 4,
+        "stepType": "geometric",
+        "stepSizes": [2, 1.414, 1.189],
+        "rule": { "correctDown": 3 },
+        "minValue": 0.01,
+        "maxValue": 50,
+        "unit": "%"
+      },
+      "termination": { "reversals": 12 }
+    },
+    {
+      "id": "stretched",
+      "feedback": true,
+      "meta": {
+        "summary": "STRETCHED CONTEXT: Select the interval where the 4th tone sounds different.",
+        "description": "Similar to the previous block, but the base tone is now 'stretched' and inharmonic."
+      },
+      "paradigm": {
+        "type": "m-AFC",
+        "intervals": [
+          { "condition": "reference", "fixed": true, "selectable": false },
+          { "condition": "reference", "selectable": true },
+          { "condition": "target", "selectable": true },
+          { "condition": "reference", "fixed": true, "selectable": false }
+        ],
+        "randomizeOrder": true,
+        "timing": { "isiMs": 500, "itiMs": 1000 }
+      },
+      "stimuli": [
+        {
+          "type": "multi_component",
+          "components": [
+            { "frequency": 210, "levelDb": 60 },
+            { "frequency": 384, "levelDb": 60 },
+            { "frequency": 612, "levelDb": 60 },
+            { "frequency": 776, "levelDb": 60 },
+            { "frequency": 1040, "levelDb": 60 },
+            { "frequency": 1176, "levelDb": 60 },
+            { "frequency": 1442, "levelDb": 60 }
+          ],
+          "durationMs": 400,
+          "globalEnvelope": { "attackMs": 50, "releaseMs": 50, "type": "cosine" }
+        }
+      ],
+      "perturbations": [
+        {
+          "type": "mistuning",
+          "applyTo": "all",
+          "deltaPercent": { "type": "uniform", "min": -10, "max": 10 }
+        },
+        {
+          "type": "phase_shift",
+          "applyTo": "all",
+          "deltaDegrees": { "type": "uniform", "min": 0, "max": 360 }
+        },
+        {
+          "type": "mistuning",
+          "targetFrequency": 776,
+          "deltaPercent": { "adaptive": true }
+        }
+      ],
+      "adaptive": {
+        "type": "staircase",
+        "parameter": "perturbations[3].deltaPercent",
+        "initialValue": 4,
+        "stepType": "geometric",
+        "stepSizes": [2, 1.414, 1.189],
+        "rule": { "correctDown": 3 },
+        "minValue": 0.01,
+        "maxValue": 50,
+        "unit": "%"
+      },
+      "termination": { "reversals": 12 }
+    }
+  ]
+}

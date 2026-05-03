@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "name": "Tone in Noise (JSON Example)",
+    "version": "2.2.0",
+    "summary": "Detect a 1000Hz tone hidden in white noise.",
+    "description": "In each trial, you will hear three intervals of noise. One of them contains a faint 1000Hz tone. Identify which interval (1, 2, or 3) contains the tone.",
+    "rationale": "Classic masked detection task used to measure the power-spectrum model of hearing."
+  },
+  "blocks": [
+    {
+      "id": "test_block",
+      "feedback": true,
+      "paradigm": {
+        "type": "m-AFC",
+        "intervals": [
+          { "condition": "reference" },
+          { "condition": "reference" },
+          { "condition": "target" }
+        ],
+        "randomizeOrder": true,
+        "timing": {
+          "isiMs": 400,
+          "itiMs": 1000
+        }
+      },
+      "stimuli": [
+        {
+          "type": "noise",
+          "noiseType": "white",
+          "levelDb": 50,
+          "durationMs": 400,
+          "envelope": { "attackMs": 20, "releaseMs": 20, "type": "cosine" },
+          "applyTo": "all"
+        },
+        {
+          "type": "multi_component",
+          "components": [
+            { "frequency": 1000, "levelDb": 0, "ear": "both" }
+          ],
+          "durationMs": 400,
+          "globalEnvelope": { "attackMs": 20, "releaseMs": 20, "type": "cosine" },
+          "applyTo": "target"
+        }
+      ],
+      "perturbations": [
+        {
+          "type": "gain",
+          "stimulusIndex": 1,
+          "deltaDb": { "adaptive": true }
+        }
+      ],
+      "adaptive": {
+        "type": "staircase",
+        "parameter": "perturbations[0].deltaDb",
+        "initialValue": 44,
+        "stepType": "linear",
+        "stepSizes": [2, 1],
+        "rule": { "correctDown": 2 },
+        "minValue": 0,
+        "maxValue": 60,
+        "unit": "dB"
+      },
+      "termination": {
+        "reversals": 8
+      }
+    }
+  ]
+}

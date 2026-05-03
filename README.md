@@ -223,9 +223,12 @@ A dedicated Python Streamlit application is included in the `analysis/` director
    ```
 4. Upload your `.csv` results file to fit curves and calculate accurate thresholds.
 
-## Included Examples (`examples/examples.ts`)
+## Included Examples
 
-All examples include participant-facing metadata displayed in the UI.
+The laboratory includes several classic paradigms to help you get started. You can browse the full collection in [`examples/examples.ts`](examples/examples.ts) or use the following standalone JSON templates for your own research:
+
+- [**Tone in Noise**](examples/tone_in_noise.json): Classic 3AFC detection task using noise maskers.
+- [**Relative Frequency Discrimination**](examples/relative_freq_discrimination.json): Advanced multi-block study comparing harmonic vs. inharmonic complexes.
 
 | Example | Key Paradigm | Sensory Target |
 |---------|-------------|-----------|
