@@ -463,10 +463,11 @@ By default, perturbations apply only to the 'target' interval.
 - number — Static value.
 - { adaptive: true } — Links to the mandatory 'adaptive' staircase block.
 - { type: "uniform", min: number, max: number } — ROVING: Randomized per interval/trial using meta.seed.
+- { type: "choice", values: number[] } — STOCHASTIC CHOICE: Randomly picks one of the provided values per trial.
 
 ### Types:
 #### gain
-- deltaDb: number | { adaptive: true } | RandomUniform
+- deltaDb: value
 - applyTo: "all" — Use this for GLOBAL LEVEL ROVING (e.g., +/- 5 dB).
 
 #### spectral_profile
@@ -499,7 +500,7 @@ By default, perturbations apply only to the 'target' interval.
 
 ## paradigm (required)
 - type: "2AFC" | "3AFC" | "m-AFC" | "Probe-Signal"
-- intervals: Array<{ condition: "reference" | "target" | "probe", fixed?: boolean, selectable?: boolean }> — Set 'fixed: true' to lock an interval's position. Set 'selectable: false' (default true) to mark an interval as a non-clickable cue/anchor.
+- intervals: Array<{ condition: "reference" | "target" | "probe", fixed?: boolean, selectable?: boolean }> — Set 'fixed: true' to lock an interval's position (useful for lead-in cues or fixed-target tasks). Set 'selectable: false' (default true) to mark an interval as a non-clickable cue/anchor.
 - randomizeOrder: boolean — uses meta.seed for reproducibility
 - timing:
   - isiMs: number — inter-stimulus interval
@@ -515,13 +516,13 @@ By default, perturbations apply only to the 'target' interval.
 - initialValue: number
 - stepSizes: number[] — step sizes; later entries used after each reversal
 - stepType?: "linear" | "geometric" — Defaults to linear. Use 'geometric' for variables bounded by zero (multiplies/divides step sizes).
-- stepSizeInterval?: number — Number of reversals required before advancing to the next step size in the stepSizes array. Defaults to 1. WARNING: Setting this to N means the step size only advances every N reversals. If stepSizes has fewer entries than (totalReversals / N), the final step size will be held for the remainder — which may be intentional but is a common misconfiguration.
-- rule: { correctDown: number } — e.g., { correctDown: 3 } for 3-down/1-up
+- stepSizeInterval?: number — Number of reversals required before advancing to the next step size in the stepSizes array. Defaults to 1.
+- rule: { correctDown: number } — e.g., { correctDown: 3 } for 3-down/1-up (79.4% threshold)
 - initialN?: number — fast-start: use N-down/1-up until switchReversalCount reversals
 - switchReversalCount?: number — reversal count at which fast-start ends
 - minValue: number
 - maxValue: number
-- unit?: string — The display unit of the adaptive parameter (e.g., 'Hz', 'dB', '%', '°'). Shown in the UI status badge and included in the downloaded results JSON. Always set this for labelled threshold output.
+- unit?: string — e.g., 'Hz', 'dB', '%', '°'.
 
 ## conditions? (optional)
 A free-form object with 'reference' and/or 'target' keys. Currently used as a metadata carrier for documenting per-condition parameter overrides in the config file. The engine itself does not read this field — all condition differences must be expressed via perturbations.

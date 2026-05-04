@@ -119,7 +119,8 @@ The project is split into three main components:
   - **Timing**: via `onset_asynchrony` for global onset roving.
   - **Phase**: via `phase_shift` for global phase roving.
   - **Modulation**: via `am_depth` for global AM depth roving.
-- **Adaptive Staircase**: Full-featured `StaircaseController` supporting N-down/1-up rules, fast-start logic (`initialN`/`switchReversalCount`), dynamic step-size reduction on reversals, and standard reversal-point threshold averaging (with configurable `discardReversals`, defaulting to 4).
+  - **Stochastic Choice**: All parameters support `type: 'choice'` with a `values` array for picking from discrete sets.
+- **Adaptive Staircase**: Full-featured `StaircaseController` supporting N-down/1-up rules (including the **3-down 79.4% rule**), fast-start logic (`initialN`/`switchReversalCount`), dynamic step-size reduction on reversals, and standard reversal-point threshold averaging (with configurable `discardReversals`, defaulting to 4).
 - **FFT-Based Noise Synthesis**: Lab-grade broadband noise generation in the frequency domain. Generates White, Pink ($1/f$), and Brown ($1/f^2$) spectra with perfectly sharp brick-wall band-limiting.
 - **AM & FM Modulations**: Sinusoidal Amplitude and Frequency modulation support for both components and noise carriers, including adaptive `am_depth` perturbations.
 - **Shared-Envelope Modulation**: Support for `sharedEnvelopeId` on noise modulators. This allows multiple noise bands to share a single, perfectly correlated modulation envelope, which is essential for studying Comodulation Masking Release (CMR).
@@ -140,14 +141,15 @@ The project is split into three main components:
 
 ## Scientific Validation & Testing
 
-The Psychoacoustic Lab includes a rigorous suite of **70+ automated scientific audits** to ensure experimental integrity. These tests verify the mathematical accuracy of the audio engine and the reliability of the adaptive logic.
+The Psychoacoustic Lab includes a rigorous suite of **140+ automated scientific audits** to ensure experimental integrity. These tests verify the mathematical accuracy of the audio engine and the reliability of the adaptive logic.
 
 ### 🧪 Key Validation Laboratories:
 - **Audio Synthesis**: Verified sample-accurate ITD, phase-accurate modulation (AM/FM), and spectral noise slopes (-3dB/-6dB).
 - **Adaptive Logic**: Verified staircase convergence, boundary enforcement, and reversal-point threshold averaging.
 - **Binaural Precision**: Verified Schroeder phase relationships, crest factors, and sub-sample temporal alignment.
-- **Hardware Independence**: Verified bit-identical output across 44.1kHz and 48kHz sample rates.
+- **RNG & Lifecycle**: Verified sequence reproducibility, deterministic session resumption, and automatic backup integrity.
 - **Robot Observer**: Monte Carlo simulations using logistic psychometric functions to validate that the staircase correctly tracks simulated "human" thresholds.
+- **Regression Stability**: "Gold standard" binary-stability tests with analytical companions to prevent silent drift in synthesis logic.
 
 ### 🚀 Running the Suite:
 ```bash

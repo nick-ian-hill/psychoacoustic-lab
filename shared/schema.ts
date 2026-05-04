@@ -102,44 +102,44 @@ export const BasePerturbationSchema = z.object({
 export const SpectralProfilePerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("spectral_profile"),
   targetFrequency: z.number(),
-  deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
 });
 
 export const AsynchronyPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("onset_asynchrony"),
   targetFrequency: z.number().optional(),
-  delayMs: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  delayMs: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
 });
 
 export const MistuningPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("mistuning"),
   targetFrequency: z.number().optional().describe("If omitted, applies to all components in the stimulus (Global Pitch Roving)."),
-  deltaPercent: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  deltaPercent: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
 });
 
 export const PhaseShiftPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("phase_shift"),
   targetFrequency: z.number().optional(), // optional if applying to broadband noise
-  deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  deltaDegrees: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
   ear: z.enum(["left", "right", "both"]).optional(),
 });
 
 export const AMDepthPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("am_depth"),
   targetFrequency: z.number().optional(), // optional if applying to broadband noise
-  deltaDepth: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  deltaDepth: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
 });
 
 export const GainPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("gain"),
-  deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  deltaDb: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
   ear: z.enum(["left", "right", "both"]).optional().describe("Optional: target only one ear for dichotic level roving."),
 });
 
 export const ITDPerturbationSchema = BasePerturbationSchema.extend({
   type: z.literal("itd"),
   targetFrequency: z.number().optional().describe("For fine-structure ITD, which frequency component to shift. If omitted, applies to all components (broadband ITD)."),
-  deltaMicroseconds: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema]),
+  deltaMicroseconds: z.union([z.number(), AdaptiveParamRefSchema, RandomUniformSchema, RandomChoiceSchema]),
   mode: z.enum(["fine_structure", "envelope", "both"]).default("both")
     .describe("fine_structure: shift phase only; envelope: shift onset only; both: shift both."),
   ear: z.enum(["left", "right"]).default("right").describe("Which ear to delay/shift. Delaying the right ear moves the sound to the left."),
@@ -246,11 +246,16 @@ export const BlockSchema = z.object({
     discardReversals: z.number().int().optional().describe("Number of initial reversals to discard when calculating threshold. Defaults to 4."),
   }).optional(),
 }).superRefine((data, ctx) => {
-  const hasAdaptivePerturbation = data.perturbations?.some(p => {
-    const pAny = p as any;
-    const val = pAny.deltaDb || pAny.deltaPercent || pAny.deltaMicroseconds || pAny.delayMs || pAny.deltaDegrees || pAny.deltaDepth;
+  const checkAdaptive = (p: any) => {
+    const val = p.deltaDb || p.deltaPercent || p.deltaMicroseconds || p.delayMs || p.deltaDegrees || p.deltaDepth;
     return val && typeof val === 'object' && val.adaptive === true;
-  });
+  };
+
+  const hasAdaptiveInTopLevel = data.perturbations?.some(checkAdaptive);
+  const hasAdaptiveInTarget = data.paradigm.targetPerturbation && checkAdaptive(data.paradigm.targetPerturbation);
+  const hasAdaptiveInIntervals = data.paradigm.intervals.some(int => int.perturbations?.some(checkAdaptive));
+
+  const hasAdaptivePerturbation = hasAdaptiveInTopLevel || hasAdaptiveInTarget || hasAdaptiveInIntervals;
 
   if (hasAdaptivePerturbation && !data.adaptive) {
     ctx.addIssue({

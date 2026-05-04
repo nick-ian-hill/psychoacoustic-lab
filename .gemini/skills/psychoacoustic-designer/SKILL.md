@@ -16,7 +16,8 @@ Always prefer higher-level abstractions to ensure schema compliance and mathemat
     *   **ITD:** A positive `deltaMicroseconds` delays the targeted ear (Lag), shifting the perceived image AWAY from that ear.
     *   **Asynchrony:** A positive `delayMs` in `onset_asynchrony` delays the start of the targeted component relative to others.
 *   **IPD (Interaural Phase Difference):** Use `mode: 'fine_structure'`. The engine subtracts phase for positive values to maintain consistency with the delay model.
-*   **Adaptive Linking:** If you use `{ "adaptive": true }` in any perturbation, you MUST define an `adaptive` configuration block.
+*   **Adaptive Linking:** If you use `{ "adaptive": true }` in any perturbation, you MUST define an `adaptive` configuration block. The platform supports targeting any numeric parameter, including those within `targetPerturbation`.
+*   **Stochastic Choice:** All perturbation parameters support `type: 'choice'` with a `values` array (e.g., `values: [1000, 2000]`). Use this for counterbalancing specific discrete conditions.
 *   **Perturbation Summation:** Multiple `gain` perturbations targeting the same sound source (e.g., combining an adaptive signal level with a random level rove) are summed before synthesis. Use `stimulusIndex` to isolate perturbations to specific sound sources within an interval.
 *   **Binaural Alignment:** The engine automatically manages buffer padding and sample-accurate offsets to keep stimuli phase-aligned, even when applying differential delays.
 
@@ -41,6 +42,7 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 *   **Efficiency:** Adaptive methods are significantly more efficient than constant stimuli for threshold estimation. (Watson & Fitzhugh, 1990).
 *   **Step Sizes:** Start large and systematically decrease (e.g., use `stepSizeInterval`) to balance speed and precision. (Jesteadt, 1980).
 *   **Anchored Paradigms (4I2AFC):** Useful for training, but also for experiments where the detection cue is complex or difficult to articulate. By setting the first and last intervals as fixed (`fixed: true`) and non-selectable (`selectable: false`), you provide stable perceptual "anchors" that help the participant maintain a consistent internal reference. The UI always displays interval numbers (1, 2, 3, 4) to maintain clear spatial orientation, even if some intervals are not selectable.
+*   **Fixed Intervals:** Beyond anchors, `fixed: true` can be used on any interval to exclude it from random target selection (e.g., for lead-in reference tones).
 
 ## Experiment Orchestration, Sequence Control & Data Integrity
 

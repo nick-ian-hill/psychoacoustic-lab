@@ -12,7 +12,7 @@ vi.mock('../audio/engine.js', () => {
       setBaseSeed = vi.fn();
       getTime = () => 0;
       playBuffer = vi.fn().mockResolvedValue({ source: { onended: null }, startTime: 0 });
-      renderTrial = vi.fn().mockResolvedValue({ buffer: {}, intervalLengths: [0.5] });
+      renderTrial = vi.fn().mockImplementation((intervals) => Promise.resolve({ buffer: { duration: 1.1 }, intervalLengths: intervals.map(() => 0.5) }));
       close = vi.fn().mockResolvedValue(undefined);
     }
   };
@@ -232,7 +232,7 @@ describe('Experiment Lifecycle & Backups', () => {
   it('should show confirmation modal if user has clicked Start but not yet responded', async () => {
     const mockConfig = {
       meta: { name: 'Mid-Trial Test' },
-      blocks: [{ id: 'b1', paradigm: { type: '2AFC', intervals: [{}, {}], timing: { readyDelayMs: 0 } } }]
+      blocks: [{ id: 'b1', stimuli: [], paradigm: { type: '2AFC', intervals: [{}, {}], timing: { readyDelayMs: 0 } } }]
     };
     await runner.loadConfig(mockConfig as any);
     
@@ -251,5 +251,168 @@ describe('Experiment Lifecycle & Backups', () => {
     // Should show modal because we have "started" the block
     expect(showModalSpy).toHaveBeenCalled();
     expect(cancelSpy).not.toHaveBeenCalled();
+  });
+
+  describe('Extended Lifecycle Features', () => {
+    it('responseDelayMs: should delay enabling response buttons', async () => {
+      const config: any = {
+        meta: { name: 'Delay Test' },
+        blocks: [{ 
+          id: 'b1', 
+          stimuli: [],
+          paradigm: { 
+            type: '2AFC', 
+            intervals: [{ selectable: true }, { selectable: true }],
+            timing: { readyDelayMs: 0, isiMs: 100, responseDelayMs: 500 } 
+          }
+        }]
+      };
+
+      await runner.loadConfig(config);
+      await (runner as any).handlePlayClick();
+      
+      // Total stimulus time: 0.5 (int1) + 0.1 (isi) + 0.5 (int2) = 1.1s
+      // Plus responseDelayMs: 0.5s = 1.6s
+      
+      vi.advanceTimersByTime(1200); // Past sound (1.1s) but before response delay (1.6s)
+      expect((runner as any).isInputEnabled).toBe(false);
+      
+      vi.advanceTimersByTime(500); // 1.7s total
+      expect((runner as any).isInputEnabled).toBe(true);
+    });
+
+    it('allowReplay: should allow replaying stimulus during response phase', async () => {
+      const config: any = {
+        meta: { name: 'Replay Test' },
+        blocks: [{ 
+          id: 'b1', 
+          stimuli: [],
+          paradigm: { 
+            type: '2AFC', 
+            intervals: [{}, {}],
+            timing: { readyDelayMs: 0, allowReplay: true } 
+          }
+        }]
+      };
+
+      await runner.loadConfig(config);
+      await (runner as any).handlePlayClick();
+      
+      // Simulate end of play
+      const { source } = await (runner as any).engine.playBuffer();
+      if (source.onended) source.onended();
+      
+      const playBtn = container.querySelector('#play-btn') as HTMLButtonElement;
+      expect(playBtn.disabled).toBe(false);
+      expect(playBtn.textContent).toBe('Replay Stimulus');
+      
+      // Click replay
+      await (runner as any).handlePlayClick();
+      expect((runner as any).engine.playBuffer).toHaveBeenCalledTimes(3);
+    });
+
+    it('feedback: false: should suppress feedback highlights', async () => {
+      const config: any = {
+        meta: { name: 'No Feedback Test' },
+        blocks: [{ 
+          id: 'b1', 
+          feedback: false,
+          stimuli: [],
+          paradigm: { type: '2AFC', intervals: [{}, {}], timing: { feedbackDurationMs: 100 } }
+        }]
+      };
+
+      await runner.loadConfig(config);
+      (runner as any).staircase = { processResponse: () => ({ correct: true }), isFinished: () => false, getHistory: () => [], getReversalCount: () => 0, getCurrentValue: () => 1 };
+      (runner as any).isInputEnabled = true;
+
+      const btn = (runner as any).responseButtons[0];
+      await (runner as any).handleResponse(0);
+      
+      expect(btn.classList.contains('correct')).toBe(false);
+      expect(btn.classList.contains('incorrect')).toBe(false);
+    });
+
+    it('block.ui: should correctly merge display options', async () => {
+      const config: any = {
+        meta: { name: 'UI Merge Test', summary: 'Global' },
+        ui: { showTrialNumber: true, showReversals: false },
+        blocks: [{ 
+          id: 'b1', 
+          ui: { showReversals: true }, // Override
+          stimuli: [],
+          paradigm: { type: '2AFC', intervals: [{}, {}] }
+        }]
+      };
+
+      await runner.loadConfig(config);
+      const statusBadge = container.querySelector('#status-badge')!;
+      expect(statusBadge.textContent).toContain('Trial: 1');
+      expect(statusBadge.textContent).toContain('Reversals: 0');
+    });
+
+    it('meta.seed: should use per-block seed if provided', async () => {
+      const config: any = {
+        meta: { name: 'Seed Test', seed: 1000 },
+        blocks: [{ 
+          id: 'b1', 
+          meta: { seed: 9999 },
+          stimuli: [],
+          paradigm: { type: '2AFC', intervals: [{}, {}] }
+        }]
+      };
+
+      await runner.loadConfig(config);
+      expect((runner as any).engine.setBaseSeed).toHaveBeenCalledWith(9999);
+    });
+
+    it('Resume: should correctly re-seed RNG for the next block', async () => {
+      const config: any = {
+        meta: { name: 'Resume RNG Test', autoSave: true, seed: 1000 },
+        blocks: [
+          { id: 'b1', stimuli: [], paradigm: { type: '2AFC', intervals: [{}, {}] } },
+          { id: 'b2', stimuli: [], paradigm: { type: '2AFC', intervals: [{}, {}] } }
+        ]
+      };
+
+      // Mock backup after block 1
+      const backupData = {
+        seed: 1000,
+        results: [{ blockId: 'b1', threshold: 0.5, runIndex: 0, presentationOrder: 1 }],
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('psycho_lab_backup_Resume RNG Test', JSON.stringify(backupData));
+
+      await runner.loadConfig(config);
+      // Click Resume
+      const modal = container.querySelector('.modal');
+      (modal!.querySelector('#modal-cancel') as HTMLElement).click();
+
+      // Block index should be 1. Seed should be activeSeed(1000) + index(1) = 1001
+      expect((runner as any).currentBlockIndex).toBe(1);
+      expect((runner as any).engine.setBaseSeed).toHaveBeenCalledWith(1001);
+    });
+
+    it('Quit: should clear backup for the experiment', async () => {
+      const config: any = {
+        meta: { name: 'Quit Backup Test', autoSave: true, seed: 1000 },
+        blocks: [{ id: 'b1', stimuli: [], paradigm: { type: '2AFC', intervals: [{}, {}] } }]
+      };
+
+      await runner.loadConfig(config);
+      (runner as any).currentBlockStartTime = new Date().toISOString(); // Simulate start
+      
+      // Manually set a backup (as if block 1 was finished in a multi-block experiment)
+      localStorage.setItem('psycho_lab_backup_Quit Backup Test', JSON.stringify({ seed: 1000, results: [] }));
+
+      // Click quit
+      (runner as any).elements.quitBtn.dispatchEvent(new MouseEvent('click'));
+      
+      // Confirm quit in modal
+      const modal = container.querySelector('.modal');
+      (modal!.querySelector('#modal-confirm') as HTMLElement).click();
+
+      expect(localStorage.getItem('psycho_lab_backup_Quit Backup Test')).toBeNull();
+    });
   });
 });

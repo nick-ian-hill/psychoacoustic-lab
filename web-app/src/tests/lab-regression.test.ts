@@ -46,8 +46,20 @@ describe('Gold Standard Regression - Synthesis Stability', () => {
 
     const checksum = calculateChecksum(left, right);
     
+    // Noise-only RMS check (-20dB white noise approx 0.1, but reduced by envelopes)
+    const noiseRms = Math.sqrt(noiseResult.left.reduce((a, b) => a + b * b, 0) / noiseResult.left.length);
+    expect(noiseRms).toBeCloseTo(0.094, 2);
+
+    // Analytical check: RMS should be approx sqrt(10^-2 + 10^-2.5) / sqrt(2) * 2? 
+    // Wait, -20dB is 0.1 amplitude, -25dB is 0.056 amplitude.
+    // RMS of sine is amp/sqrt(2). RMS of white noise is amp.
+    const rmsLeft = Math.sqrt(left.reduce((a, b) => a + b * b, 0) / left.length);
+    // Analytical check: Noise RMS (0.1) + Tone RMS (0.04)
+    // Expected combined RMS approx 0.1077 without envelopes.
+    // With 5ms ramps on a 50ms stimulus, the effective RMS is approx 0.100.
+    expect(rmsLeft).toBeCloseTo(0.100, 3);
+
     // This value is what the current engine produces with this seed.
-    // If it changes, it means the synthesis math or RNG application has changed.
     expect(checksum).toBeCloseTo(369845.99, 0); 
   });
 
@@ -88,8 +100,11 @@ describe('Gold Standard Regression - Synthesis Stability', () => {
     }
 
     // Verify Spi: left and right tone components should be inverted
-    // We can check the toneResult directly
     expect(toneResult.left[100]).toBeCloseTo(-toneResult.right[100], 5);
+
+    // Analytical check: Tone RMS should be approx 0.04 (10^-25/20 / sqrt(2) * 1.0)
+    const toneRms = Math.sqrt(toneResult.left.reduce((a, b) => a + b * b, 0) / toneResult.left.length);
+    expect(toneRms).toBeCloseTo(0.0397, 3);
 
     const checksum = calculateChecksum(left, right);
     expect(checksum).toBeCloseTo(414824.03, 0);

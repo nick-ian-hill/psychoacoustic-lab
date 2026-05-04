@@ -69,6 +69,9 @@ function resolveValue(val: any, adaptiveValue: number | undefined, rng: () => nu
   if (val.type === 'uniform') {
     return val.min + rng() * (val.max - val.min);
   }
+  if (val.type === 'choice') {
+    return val.values[Math.floor(rng() * val.values.length)];
+  }
   return 0;
 }
 
@@ -324,7 +327,11 @@ export function synthesizeNoise(
   const duration = gen.durationMs / 1000;
   // Add +1 sample to include the point at t=duration where the envelope is exactly 0.
   const targetSamples = Math.floor(duration * sampleRate) + 1;
-  const baseAmp = Math.pow(10, gen.levelDb / 20);
+  const refFreq = gen.bandLimit 
+    ? Math.sqrt(gen.bandLimit.lowFreq * gen.bandLimit.highFreq) 
+    : 1000;
+  const calibrationOffset = getCalibrationOffset(refFreq, calibration);
+  const baseAmp = Math.pow(10, (gen.levelDb + calibrationOffset) / 20);
   const ear = gen.ear || "both";
 
   const baseNoise = generateFFTNoise(targetSamples, sampleRate, gen.noiseType, gen.bandLimit, rng, (f) => getCalibrationOffset(f, calibration));

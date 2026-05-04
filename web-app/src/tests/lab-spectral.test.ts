@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateFFTNoise } from '../audio/fft.js';
+import { synthesizeNoise } from '../audio/synthesis.js';
 
 describe('Spectral Validation - Noise & Filters', () => {
   const sampleRate = 44100;
@@ -93,6 +94,50 @@ describe('Spectral Validation - Noise & Filters', () => {
       
       // Amplitude ratio for -6dB is 0.5
       expect(sumRatio / realizations).toBeCloseTo(0.5, 0.05);
+    });
+
+    it('should support complex combination (band-limited + ear routing + level)', () => {
+      const gen: any = {
+        type: 'noise',
+        noiseType: 'white',
+        levelDb: -6, // approx 0.5 amplitude
+        durationMs: 10,
+        envelope: { attackMs: 0, releaseMs: 0 },
+        bandLimit: { lowFreq: 1000, highFreq: 2000 },
+        ear: 'left'
+      };
+      const { left, right } = synthesizeNoise(gen, sampleRate, () => 0.5);
+      
+      // Check ear routing
+      expect(left.some(v => v !== 0)).toBe(true);
+      expect(right.every(v => v === 0)).toBe(true);
+      
+      // Check level (RMS)
+      const rms = Math.sqrt(left.reduce((a, b) => a + b * b, 0) / left.length);
+      expect(rms).toBeCloseTo(0.5, 2);
+    });
+    
+    it('should respect onsetDelayMs for noise stimuli with samples-accurate precision', () => {
+      const delayMs = 10.5;
+      const gen: any = {
+        type: 'noise',
+        noiseType: 'white',
+        levelDb: 0,
+        durationMs: 5,
+        envelope: { attackMs: 0, releaseMs: 0 },
+        onsetDelayMs: delayMs
+      };
+      const { left } = synthesizeNoise(gen, sampleRate, () => 0.5);
+      
+      const delaySamples = Math.floor((delayMs / 1000) * sampleRate); // approx 463
+      
+      // All samples within delay should be exactly 0
+      let maxInDelay = 0;
+      for (let i = 0; i < delaySamples; i++) maxInDelay = Math.max(maxInDelay, Math.abs(left[i]));
+      expect(maxInDelay).toBe(0);
+      
+      // Sample immediately after delay should be non-zero
+      expect(Math.abs(left[delaySamples + 1])).toBeGreaterThan(0);
     });
   });
 });

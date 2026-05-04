@@ -17,7 +17,7 @@ The project is split into two distinct logic layers, connected by the **Shared S
     -   `runner.ts`: Manages the experiment lifecycle (UI, trials, responses).
     -   `staircase.ts`: Implements adaptive tracking (Levitt 1971).
     -   `trial.ts`: Logic for picking target intervals and applying perturbations.
--   **`web-app/src/tests/`**: The "Scientific Audits." Suite of 70+ tests for DSP and logic validation.
+-   **`web-app/src/tests/`**: The "Scientific Audits." Suite of 140+ tests for DSP and logic validation.
 -   **`analysis/psychometrics.py`**: The "Researcher's Tool." Python logic for fitting psychometric curves to results.
 
 -   **Dumb Engine (Web App):** A deterministic, stateless stimulus renderer.
@@ -67,6 +67,7 @@ Agents designing experiments must discuss and implement:
 -   **Level Roving:** ±5 dB global gain roving to prevent loudness cues in spectral tasks.
 -   **Frequency Roving:** Roving the center/fundamental frequency to prevent absolute pitch cues.
 -   **Phase Roving:** Randomizing starting phases of harmonics to prevent temporal peak/crest-factor cues.
+-   **Random Choice:** Use `type: "choice"` with a `values` array (e.g. `values: [-5, 0, 5]`) to pick from a discrete set of perturbations, enabling controlled stochastic variation.
 
 ### B. Adaptive Logic (Staircase)
 -   Implement the **Levitt (1971)** transformed up-down methods.
@@ -81,7 +82,9 @@ The MCP server provides tools in three tiers:
 2.  **Tier 2 (Component Generators):** Mid-level logic (e.g., `generate_harmonic_complex`).
 3.  **Tier 3 (Primitives):** Low-level math (e.g., `calc_itd`, `calc_erb_spacing`).
 
-### D. Block Sequencing & Randomization
+### D. Paradigm Logic & Randomization
+-   **Target Randomization:** The engine picks a random `targetIndex` among `selectable: true` intervals.
+-   **Fixed Intervals:** Intervals marked as `fixed: true` are excluded from the target randomization pool. Use them for lead-in cues (Fixed Reference) or forced-target tasks (Fixed Target).
 -   **Repetitions:** Blocks can be run multiple times using the `repetitions` field. The runner tracks the `runIndex` and `presentationOrder` in the results.
 -   **Hierarchical Groups:** Blocks can be nested within a `type: "group"` entry. 
 -   **Randomization:** Groups can be randomized using the `randomize: true` flag. This is essential for counterbalancing conditions across blocks to control for order effects (e.g., fatigue or learning).
@@ -95,7 +98,7 @@ The MCP server provides tools in three tiers:
 
 ## 4. Scientific Audits & Rigorous Testing
 
-The suite of 70+ automated scientific audits (`web-app/npm run test`) is the backbone of the project. **Verification is the only path to finality.**
+The suite of 140+ automated scientific audits (`web-app/npm run test`) is the backbone of the project. **Verification is the only path to finality.**
 
 ### A. Testing Mandates
 -   **Refactoring Safety:** No refactor or architectural change is complete until the **entire** test suite passes. There are no "minor" changes that bypass this rule.
@@ -106,8 +109,9 @@ The suite of 70+ automated scientific audits (`web-app/npm run test`) is the bac
 -   **DSP Validation:** Uses FFT analysis to ensure filters, envelopes, and modulators produce the exact expected spectral shape without unintended artifacts.
 -   **Binaural Precision:** Uses cross-correlation and phase-extraction to verify ITD/ILD precision down to the microsecond/sub-sample level.
 -   **Robot Observer:** A Monte Carlo simulation that models a human observer using a psychometric function. It verifies that the `StaircaseController` converges to the mathematically expected threshold (e.g., 70.7% or 79.4%).
--   **RNG Consistency:** Verifies that provided seeds result in bit-identical stimuli. Reproducibility is a fundamental requirement for scientific peer review.
+-   **RNG Consistency & Resumption:** Verifies that provided seeds result in bit-identical stimuli and that session resumption correctly re-seeds the RNG to maintain longitudinal reproducibility.
 -   **Timing & ISI:** Validates that silence gaps (ISI) and stimulus durations are sample-accurate to prevent temporal integration errors.
+-   **Regression Checksums:** "Gold standard" binary-stability tests with analytical companions (RMS/Spectral energy) to prevent silent drift in synthesis logic.
 
 ### C. Running the Audits
 To execute the scientific audit suite, navigate to the `web-app` directory and run:

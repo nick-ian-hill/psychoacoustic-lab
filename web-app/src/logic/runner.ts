@@ -15,6 +15,8 @@ export class ExperimentRunner {
   private currentTargetIndex = -1;
   private trialRng: seedrandom.PRNG | null = null;
   private preRenderedTrial: Promise<{ buffer: AudioBuffer; intervalLengths: number[]; resolvedPerturbations?: any[] }> | null = null;
+  private lastTrialBuffer: AudioBuffer | null = null;
+  private lastTrialIntervalLengths: number[] | null = null;
   private currentTrialMetadata: any = null;
   
   private container: HTMLElement;
@@ -349,6 +351,22 @@ export class ExperimentRunner {
     this.elements.playBtn.classList.add("playing");
     this.responseButtons.forEach(btn => btn.disabled = true);
 
+    const allowReplay = this.currentBlock?.paradigm.timing.allowReplay ?? false;
+    
+    if (allowReplay && this.lastTrialBuffer && this.isInputEnabled) {
+      // Replay the exact same buffer
+      this.isInputEnabled = false; // Disable during replay
+      const startTime = this.engine.getTime() + 0.1; // Small fixed lookahead for replay
+      const { source } = await this.engine.playBuffer(this.lastTrialBuffer, startTime);
+      this.highlightIntervals(this.lastTrialIntervalLengths!, startTime);
+      source.onended = () => {
+        this.elements.playBtn.classList.remove("playing");
+        this.elements.playBtn.disabled = false;
+        this.elements.playBtn.textContent = "Replay Stimulus";
+      };
+      return;
+    }
+
     const readyDelay = this.currentBlock?.paradigm.timing.readyDelayMs ?? 500;
     const startTime = this.engine.getTime() + (readyDelay / 1000);
     await this.playNextTrial(startTime);
@@ -368,9 +386,20 @@ export class ExperimentRunner {
       const { source, startTime } = await this.engine.playBuffer(buffer, scheduledTime);
       this.highlightIntervals(intervalLengths, startTime);
 
+      // Cache for potential replay
+      this.lastTrialBuffer = buffer;
+      this.lastTrialIntervalLengths = intervalLengths;
+
       source.onended = () => {
         this.elements.playBtn.classList.remove("playing");
-        this.elements.playBtn.disabled = true;
+        const allowReplay = this.currentBlock?.paradigm.timing.allowReplay ?? false;
+        if (allowReplay) {
+          this.elements.playBtn.disabled = false;
+          this.elements.playBtn.textContent = "Replay Stimulus";
+          this.elements.playBtnContainer.classList.remove("hidden");
+        } else {
+          this.elements.playBtn.disabled = true;
+        }
       };
     } catch (e: any) {
       console.error(e);
@@ -438,6 +467,10 @@ export class ExperimentRunner {
     const now = this.engine.getTime();
     lengths.forEach((len, idx) => {
       const btn = this.responseButtons[idx];
+      if (!btn) {
+        currentTime += len + isi;
+        return;
+      }
       const startDelay = (currentTime - now) * 1000;
       const endDelay = (currentTime + len - now) * 1000;
       

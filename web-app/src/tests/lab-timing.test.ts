@@ -92,7 +92,7 @@ describe('Experimental Timing Logic', () => {
     (runner as any).staircase = { processResponse: () => ({ correct: true }), isFinished: () => false, getHistory: () => [], getReversalCount: () => 0, getCurrentValue: () => 1 };
     (runner as any).currentBlock = { 
       id: 'test',
-      paradigm: { timing: { itiMs: 1000, feedbackDurationMs: 0 } },
+      paradigm: { intervals: [{ selectable: true }], timing: { itiMs: 1000, feedbackDurationMs: 0 } },
       stimuli: [],
       perturbations: [],
       meta: { summary: 'test' }
@@ -125,9 +125,12 @@ describe('Experimental Timing Logic', () => {
     
     (runner as any).currentBlock = { 
       id: 'test',
-      paradigm: { timing: { readyDelayMs: 500 } },
+      paradigm: { intervals: [{ selectable: true }], timing: { readyDelayMs: 500 } },
+      stimuli: [],
       meta: { summary: 'test' }
     };
+    (runner as any).currentConfig = { meta: { name: 'test' }, calibration: {}, globalLevelDb: 60, blocks: [] };
+    (runner as any).trialRng = () => 0.5;
     
     const playSpy = vi.spyOn(runner as any, 'playNextTrial');
     const ctx = (engine as any).ctx;

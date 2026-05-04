@@ -10,25 +10,31 @@ export function generateTrialState(
 ) {
   const paradigm = block.paradigm;
 
-  // 1. Identify which intervals are allowed to be the target
-  // We exclude intervals explicitly marked as non-selectable (anchors)
-  const selectableIndices = paradigm.intervals
-    .map((int, i) => (int.selectable !== false ? i : -1))
-    .filter(i => i !== -1);
-
-  if (selectableIndices.length === 0) {
-    throw new Error("Paradigm configuration error: No selectable intervals found.");
-  }
-
-  // 2. Pick the target interval
-  // In a standard m-AFC, this is randomized among the selectable intervals
+  // 1. Check if there is a fixed target defined. 
+  // If so, it overrides any randomization (Fixed-target task).
+  const fixedTargetIndex = paradigm.intervals.findIndex(int => int.fixed && int.condition === 'target');
+  
   let targetIndex: number;
-  if (paradigm.randomizeOrder === false) {
-    // If randomization is disabled, we default to the first selectable interval
-    // (This is rare in psychoacoustics but supported for specific calibration/demo tasks)
-    targetIndex = selectableIndices[0];
+
+  if (fixedTargetIndex !== -1) {
+    targetIndex = fixedTargetIndex;
   } else {
-    targetIndex = selectableIndices[Math.floor(rng() * selectableIndices.length)];
+    // 2. Identify which intervals are allowed to be the target.
+    // We exclude non-selectable intervals (markers) and fixed reference intervals (cues).
+    const selectableIndices = paradigm.intervals
+      .map((int, i) => (int.selectable !== false && !int.fixed ? i : -1))
+      .filter(i => i !== -1);
+
+    if (selectableIndices.length === 0) {
+      throw new Error("Paradigm configuration error: No valid target interval candidates found.");
+    }
+
+    // 3. Pick the target interval
+    if (paradigm.randomizeOrder === false) {
+      targetIndex = selectableIndices[0];
+    } else {
+      targetIndex = selectableIndices[Math.floor(rng() * selectableIndices.length)];
+    }
   }
 
   // 3. Construct the perturbation list for each interval

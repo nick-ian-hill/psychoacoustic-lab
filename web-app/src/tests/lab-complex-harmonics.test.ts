@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { synthesizeMultiComponent } from '../audio/synthesis.js';
+import seedrandom from 'seedrandom';
 
 describe('Harmonic Complexes - Phase Roving & Crest Factor', () => {
   const sampleRate = 44100;
@@ -32,7 +33,7 @@ describe('Harmonic Complexes - Phase Roving & Crest Factor', () => {
       components
     };
 
-    const { left } = synthesizeMultiComponent(config, sampleRate, Math.random);
+    const { left } = synthesizeMultiComponent(config, sampleRate, () => 0.5);
     const cf = calculateCrestFactor(left);
     
     // For many in-phase harmonics, peak is N * amplitude, RMS is sqrt(N/2) * amplitude
@@ -41,20 +42,12 @@ describe('Harmonic Complexes - Phase Roving & Crest Factor', () => {
   });
 
   it('should have a lower crest factor for random-phase harmonics', () => {
-    // We use a fixed seed for reproducibility in the test, 
-    // but the generator should use its internal logic if phaseDegrees is missing.
-    // Wait, synthesizeMultiComponent doesn't auto-randomize phases if missing, it uses 0.
-    // Let's check shared/schema.ts: phaseDegrees is optional.
-    
-    // In synthesis.ts: const basePhase = (comp.phaseDegrees || 0) * Math.PI / 180;
-    // So if missing, it's 0.
-    
-    // We need to use perturbations to achieve phase roving or define them in components.
+    const rng = seedrandom('crest-factor-test');
     
     const components = Array.from({ length: numComponents }, (_, i) => ({
       frequency: f0 * (i + 1),
       levelDb: -20,
-      phaseDegrees: Math.random() * 360 // Manual roving for this test
+      phaseDegrees: rng() * 360 // Seeded random phases
     }));
 
     const config = {
@@ -64,7 +57,7 @@ describe('Harmonic Complexes - Phase Roving & Crest Factor', () => {
       components
     };
 
-    const { left } = synthesizeMultiComponent(config, sampleRate, Math.random);
+    const { left } = synthesizeMultiComponent(config, sampleRate, rng);
     const cf = calculateCrestFactor(left);
     
     expect(cf).toBeLessThan(4.0);
@@ -88,7 +81,7 @@ describe('Harmonic Complexes - Phase Roving & Crest Factor', () => {
       components
     };
 
-    const { left } = synthesizeMultiComponent(config, sampleRate, Math.random);
+    const { left } = synthesizeMultiComponent(config, sampleRate, () => 0.5);
     const cf = calculateCrestFactor(left);
     
     // Schroeder phase usually gets CF below 3.0 for 10 components

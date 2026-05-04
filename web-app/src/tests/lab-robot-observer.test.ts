@@ -66,4 +66,36 @@ describe('Robot Observer - Staircase Convergence Validation', () => {
     expect(threshold).toBeGreaterThan(0.08);
     expect(threshold).toBeLessThan(0.12);
   });
+
+  it('should converge to the theoretical 79.4% threshold (3-down 1-up)', () => {
+    const rng = seedrandom('robot-observer-3down');
+    
+    const config: AdaptiveConfig = {
+      type: 'staircase',
+      parameter: 'gain',
+      initialValue: 30,
+      stepType: 'linear',
+      stepSizes: [4, 2, 1],
+      rule: { correctDown: 3 },
+      minValue: -20,
+      maxValue: 60,
+      unit: 'dB'
+    };
+
+    const targetThreshold = 10; // This is the 75% point of our logistic function
+    const slope = 0.8;
+    const sc = new StaircaseController(config);
+    
+    for (let i = 0; i < 500; i++) {
+      const currentValue = sc.getCurrentValue();
+      const pCorrect = 0.5 + 0.5 * (1 / (1 + Math.exp(-slope * (currentValue - targetThreshold))));
+      sc.processResponse(rng() < pCorrect);
+    }
+
+    const threshold = sc.calculateThreshold(10);
+    // 3-down tracks 79.4%, which is higher than our 75% point (10dB).
+    // So it should converge at > 10dB.
+    expect(threshold).toBeGreaterThan(10);
+    expect(threshold).toBeLessThan(15);
+  });
 });

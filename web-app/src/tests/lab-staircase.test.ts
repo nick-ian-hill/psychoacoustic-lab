@@ -102,6 +102,42 @@ describe('StaircaseController - Scientific Validation', () => {
       sc.processResponse(true);
       expect(sc.getCurrentValue()).toBe(8); // 10 - 2 = 8 (stays on first step size)
     });
+
+    it('should use initialN fast-start rule until switchReversalCount is reached', () => {
+      const fastConfig = {
+        ...linearConfig,
+        initialN: 1, // 1-down for fast start
+        rule: { correctDown: 3 }, // Normally 3-down
+        switchReversalCount: 2
+      };
+      const sc = new StaircaseController(fastConfig);
+
+      // Trial 1: Fast start (1-down) should apply
+      sc.processResponse(true);
+      expect(sc.getCurrentValue()).toBe(8); // Stepped down after only 1 correct
+
+      // Reversal 1 (Down -> Up)
+      sc.processResponse(false);
+      expect(sc.getReversalCount()).toBe(1);
+
+      // Should still be in fast start (reversalCount < switchReversalCount)
+      sc.processResponse(true);
+      expect(sc.getCurrentValue()).toBe(9); 
+      
+      // Reversal 2 (Down -> Up)
+      sc.processResponse(false); 
+      expect(sc.getReversalCount()).toBe(3);
+
+      // Now switchReversalCount (2) was reached in Trial 3. 
+      // Trial 4 (the false) already used rule.correctDown (3)? 
+      // No, wait, if revCount reached 2 at Trial 3, then Trial 4 starts with isFS = false.
+      sc.processResponse(true);
+      expect(sc.getCurrentValue()).toBe(10); // No change after 1 correct
+      sc.processResponse(true);
+      expect(sc.getCurrentValue()).toBe(10); // No change after 2 correct
+      sc.processResponse(true);
+      expect(sc.getCurrentValue()).toBe(9);  // Finally steps down after 3 correct
+    });
   });
 
   describe('Termination Rules', () => {
@@ -176,5 +212,25 @@ describe('StaircaseController - Scientific Validation', () => {
       const threshold = sc.calculateThreshold(0);
       expect(threshold).toBeCloseTo(Math.sqrt(50), 4);
     });
+  });
+
+  it('should support termination based on correct trials', () => {
+    const sc = new StaircaseController({ initialValue: 10, stepSizes: [2], rule: { correctDown: 1 } } as any);
+    sc.processResponse(true);
+    sc.processResponse(false);
+    sc.processResponse(true);
+    expect(sc.isFinished({ correctTrials: 2 })).toBe(true);
+    expect(sc.isFinished({ correctTrials: 3 })).toBe(false);
+  });
+
+  it('should discard initial reversals in threshold calculation', () => {
+    const sc = new StaircaseController({ initialValue: 10, stepSizes: [2], rule: { correctDown: 1 } } as any);
+    // Revs at: 8, 10, 8, 10, 8
+    sc.processResponse(true); sc.processResponse(false); // Rev 1 at 8
+    sc.processResponse(true); sc.processResponse(false); // Rev 2 at 10, Rev 3 at 8
+    sc.processResponse(true); sc.processResponse(false); // Rev 4 at 10, Rev 5 at 8
+    
+    expect(sc.calculateThreshold(4)).toBe(8);
+    expect(sc.calculateThreshold(2)).toBeCloseTo(8.66, 1);
   });
 });

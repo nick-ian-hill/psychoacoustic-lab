@@ -31,7 +31,7 @@ describe('Modulation Validation - AM, FM, Correlation', () => {
       }
 
       // With depth 0.5, peak carrier amplitude should be 1.0 * (1 + 0.5) = 1.5
-      expect(maxAmp).toBeCloseTo(1.5, 0.05);
+      expect(maxAmp).toBeCloseTo(1.5, 1);
 
       // Find the trough near 75ms (first AM trough)
       const tCenter = Math.floor(0.075 * sampleRate);
@@ -41,7 +41,7 @@ describe('Modulation Validation - AM, FM, Correlation', () => {
       }
       
       // With depth 0.5, trough carrier amplitude should be 1.0 * (1 - 0.5) = 0.5
-      expect(minPeak).toBeCloseTo(0.5, 0.05);
+      expect(minPeak).toBeCloseTo(0.5, 1);
     });
 
     it('should apply AM starting phase correctly (Peak vs Trough)', () => {
@@ -177,7 +177,36 @@ describe('Modulation Validation - AM, FM, Correlation', () => {
       const envCorr = correlate(env1, env2);
 
       expect(Math.abs(rawCorr)).toBeLessThan(0.1);
-      expect(envCorr).toBeGreaterThan(0.8); // High correlation due to shared AM
+      expect(envCorr).toBeGreaterThan(0.98); // High correlation due to shared AM
+    });
+  });
+
+  describe('Multiple Modulators', () => {
+    it('should support compounding multiple modulators on one component', () => {
+      const gen = {
+        type: 'multi_component',
+        durationMs: 100,
+        globalEnvelope: { attackMs: 0, releaseMs: 0 },
+        components: [{ 
+          frequency: 1000, 
+          levelDb: 0, 
+          modulators: [
+            { type: 'AM' as const, rateHz: 10, depth: 0.5 },
+            { type: 'AM' as const, rateHz: 100, depth: 0.5 }
+          ] 
+        }]
+      };
+      
+      const { left } = synthesizeMultiComponent(gen, sampleRate, () => 0.5);
+      // If both are at peak, amp is 1 * (1 + 0.5) * (1 + 0.5) = 2.25
+      
+      let max = 0;
+      for (let i = 0; i < left.length; i++) {
+        max = Math.max(max, Math.abs(left[i]));
+      }
+      
+      // Precision check: 2.25
+      expect(max).toBeCloseTo(2.25, 1);
     });
   });
 });

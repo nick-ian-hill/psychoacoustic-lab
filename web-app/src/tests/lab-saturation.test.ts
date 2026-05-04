@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { synthesizeMultiComponent } from '../audio/synthesis.js';
+import { synthesizeMultiComponent, normalizeStereo } from '../audio/synthesis.js';
 
-describe('Scientific Guard - Saturation & Clipping', () => {
+describe('Scientific Guard - Saturation & Normalization Pipeline', () => {
   const sampleRate = 44100;
 
-  it('should detect when summing components exceeds 0dBFS (1.0 amplitude)', () => {
-    // Generate two 0dB tones (amplitude 1.0 each)
-    // When summed, they will reach 2.0 amplitude.
+  it('should ensure the full synthesis pipeline (primitive + normalization) prevents clipping', () => {
+    // 1. Setup a generator that will definitely exceed 0dBFS (summing to 2.0 amplitude)
     const config = {
       type: 'multi_component' as const,
       durationMs: 10,
@@ -17,17 +16,24 @@ describe('Scientific Guard - Saturation & Clipping', () => {
       ]
     };
 
-    const { left } = synthesizeMultiComponent(config, sampleRate, Math.random);
+    // 2. Run the primitive synthesis (which allows > 1.0 for processing flexibility)
+    const { left, right } = synthesizeMultiComponent(config, sampleRate, Math.random);
     
-    let maxPeak = 0;
+    let preNormPeak = 0;
     for (let i = 0; i < left.length; i++) {
-        maxPeak = Math.max(maxPeak, Math.abs(left[i]));
+        preNormPeak = Math.max(preNormPeak, Math.abs(left[i]));
+    }
+    expect(preNormPeak).toBeGreaterThan(1.0); 
+
+    // 3. Apply the global normalization (as done in worker.ts before sending back)
+    normalizeStereo(left, right);
+
+    let postNormPeak = 0;
+    for (let i = 0; i < left.length; i++) {
+        postNormPeak = Math.max(postNormPeak, Math.abs(left[i]));
     }
 
-    // CURRENT BEHAVIOR: The engine does not explicitly clip in the Float32Array.
-    // This allows the caller to handle normalization or warnings.
-    // We verify this behavior so we can decide if we want to add a "Hard Clipper".
-    expect(maxPeak).toBeGreaterThan(1.0);
-    expect(maxPeak).toBeCloseTo(2.0, 4);
+    // 4. Verify the 0.9 safety margin is respected for consumer DAC headroom
+    expect(postNormPeak).toBeCloseTo(0.9, 5);
   });
 });
