@@ -7,7 +7,6 @@ import { resolvePerturbations } from '../audio/synthesis.js';
  * Trial-level vs Interval-level roving.
  */
 describe('Roving Scoping Logic Audit', () => {
-  const seed = 42;
   const adaptiveValue = 0;
 
   // This is a direct simulation of the worker.ts handler logic
