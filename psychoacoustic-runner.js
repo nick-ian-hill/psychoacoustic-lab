@@ -17,7 +17,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	constructor(e) {
 		this.ctx = new (window.AudioContext || window.webkitAudioContext)(), this.seed = e, this.worker = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/worker-CFuhzkG9.js", import.meta.url).href,
+			"" + new URL("assets/worker-BtL92E7p.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" }), this.worker.onmessage = (e) => {
 			let { id: t, left: n, right: r, intervalLengths: i } = e.data, a = this.pendingRequests.get(t);
@@ -142,10 +142,13 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 //#endregion
 //#region src/logic/trial.ts
 function d(e, t = Math.random) {
-	let n = e.paradigm, r = n.intervals.map((e, t) => e.selectable === !1 ? -1 : t).filter((e) => e !== -1);
-	if (r.length === 0) throw Error("Paradigm configuration error: No selectable intervals found.");
-	let i;
-	i = n.randomizeOrder === !1 ? r[0] : r[Math.floor(t() * r.length)];
+	let n = e.paradigm, r = n.intervals.findIndex((e) => e.fixed && e.condition === "target"), i;
+	if (r !== -1) i = r;
+	else {
+		let e = n.intervals.map((e, t) => e.selectable !== !1 && !e.fixed ? t : -1).filter((e) => e !== -1);
+		if (e.length === 0) throw Error("Paradigm configuration error: No valid target interval candidates found.");
+		i = n.randomizeOrder === !1 ? e[0] : e[Math.floor(t() * e.length)];
+	}
 	let a = n.intervals.map((e, t) => {
 		let r = t === i, a = [];
 		return e.perturbations && a.push(...e.perturbations), r && n.targetPerturbation && a.push(n.targetPerturbation), a;
@@ -448,6 +451,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	currentTargetIndex = -1;
 	trialRng = null;
 	preRenderedTrial = null;
+	lastTrialBuffer = null;
+	lastTrialIntervalLengths = null;
 	currentTrialMetadata = null;
 	container;
 	elements;
@@ -591,7 +596,14 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	}
 	async handlePlayClick() {
 		if (!this.engine) return;
-		await this.engine.resume(), this.currentBlockStartTime ||= (/* @__PURE__ */ new Date()).toISOString(), this.elements.playBtnContainer.classList.add("hidden"), this.elements.playBtn.disabled = !0, this.elements.playBtn.classList.add("playing"), this.responseButtons.forEach((e) => e.disabled = !0);
+		if (await this.engine.resume(), this.currentBlockStartTime ||= (/* @__PURE__ */ new Date()).toISOString(), this.elements.playBtnContainer.classList.add("hidden"), this.elements.playBtn.disabled = !0, this.elements.playBtn.classList.add("playing"), this.responseButtons.forEach((e) => e.disabled = !0), (this.currentBlock?.paradigm.timing.allowReplay ?? !1) && this.lastTrialBuffer && this.isInputEnabled) {
+			this.isInputEnabled = !1;
+			let e = this.engine.getTime() + .1, { source: t } = await this.engine.playBuffer(this.lastTrialBuffer, e);
+			this.highlightIntervals(this.lastTrialIntervalLengths, e), t.onended = () => {
+				this.elements.playBtn.classList.remove("playing"), this.elements.playBtn.disabled = !1, this.elements.playBtn.textContent = "Replay Stimulus";
+			};
+			return;
+		}
 		let e = this.currentBlock?.paradigm.timing.readyDelayMs ?? 500, t = this.engine.getTime() + e / 1e3;
 		await this.playNextTrial(t);
 	}
@@ -601,8 +613,8 @@ var f = /* @__PURE__ */ o(((e, t) => {
 			let { buffer: t, intervalLengths: n, resolvedPerturbations: r } = await this.preRenderedTrial;
 			this.preRenderedTrial = null, this.currentTrialMetadata = r, this.clearFeedback();
 			let { source: i, startTime: a } = await this.engine.playBuffer(t, e);
-			this.highlightIntervals(n, a), i.onended = () => {
-				this.elements.playBtn.classList.remove("playing"), this.elements.playBtn.disabled = !0;
+			this.highlightIntervals(n, a), this.lastTrialBuffer = t, this.lastTrialIntervalLengths = n, i.onended = () => {
+				this.elements.playBtn.classList.remove("playing"), this.currentBlock?.paradigm.timing.allowReplay ?? !1 ? (this.elements.playBtn.disabled = !1, this.elements.playBtn.textContent = "Replay Stimulus", this.elements.playBtnContainer.classList.remove("hidden")) : this.elements.playBtn.disabled = !0;
 			};
 		} catch (e) {
 			console.error(e), this.elements.playBtn.classList.remove("playing"), this.elements.playBtn.textContent = "Error";
@@ -630,7 +642,12 @@ var f = /* @__PURE__ */ o(((e, t) => {
 	highlightIntervals(e, t) {
 		let n = t, r = (this.currentBlock?.paradigm.timing.isiMs || 0) / 1e3, i = (this.currentBlock?.paradigm.timing.responseDelayMs || 250) / 1e3, a = this.engine.getTime();
 		e.forEach((e, t) => {
-			let i = this.responseButtons[t], o = (n - a) * 1e3, s = (n + e - a) * 1e3;
+			let i = this.responseButtons[t];
+			if (!i) {
+				n += e + r;
+				return;
+			}
+			let o = (n - a) * 1e3, s = (n + e - a) * 1e3;
 			o <= 0 && s > 0 ? (i.classList.add("active"), setTimeout(() => i.classList.remove("active"), s)) : o > 0 && (setTimeout(() => i.classList.add("active"), o), setTimeout(() => i.classList.remove("active"), s)), n += e + r;
 		});
 		let o = Math.max(0, (n - r + i - a) * 1e3);
