@@ -140,7 +140,9 @@ export function synthesizeMultiComponent(
     if (perturbations) {
       for (const p of perturbations) {
         if (p.type === "onset_asynchrony" && p.targetFrequency === comp.frequency) {
-          onset += resolveValue((p as any).delayMs, adaptiveValue, rng);
+          const delayMs = resolveValue((p as any).delayMs, adaptiveValue, rng);
+          const delaySamples = Math.round(delayMs / 1000 * sampleRate);
+          onset += (delaySamples / sampleRate * 1000);
         }
         if (p.type === "itd" && (!p.targetFrequency || p.targetFrequency === comp.frequency)) {
           const pAny = p as any;
@@ -149,7 +151,10 @@ export function synthesizeMultiComponent(
           if (pEar === "both" || pEar === "left" || pEar === "right") {
             const mode = pAny.mode || "both";
             if (mode === "envelope" || mode === "both") {
-              onset += resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng) / 1000;
+              const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
+              // Use the same quantization as Step 2 to ensure buffer alignment
+              const itdSamples = Math.round(itdUs / 1000000 * sampleRate);
+              onset += (itdSamples / sampleRate * 1000);
             }
           }
         }
@@ -203,29 +208,42 @@ export function synthesizeMultiComponent(
             const delta = resolveValue(p.deltaDegrees, adaptiveValue, rng);
             phase += delta * Math.PI / 180;
           } else if (p.type === "onset_asynchrony") {
-            onsetOffsetMs += resolveValue(p.delayMs, adaptiveValue, rng);
+            const delayMs = resolveValue(p.delayMs, adaptiveValue, rng);
+            const delaySec = delayMs / 1000;
+            
+            // 1. Integer shift for the buffer (quantized to samples)
+            const delaySamples = Math.round(delaySec * sampleRate);
+            const quantizedDelayMs = delaySamples / sampleRate * 1000;
+            
+            // 2. Phase compensation for the carrier (sub-sample precision)
+            const residualSec = delaySec - (delaySamples / sampleRate);
+            const subSamplePhaseShift = -2 * Math.PI * freq * residualSec;
+
+            onsetOffsetMs += quantizedDelayMs;
+            phase += subSamplePhaseShift;
           } else if (p.type === "itd") {
             const mode = pAny.mode || "both";
             const itdUs = resolveValue(pAny.deltaMicroseconds, adaptiveValue, rng);
+            const itdSec = itdUs / 1000000;
             
-            // Quantize the temporal delay to samples immediately to avoid phase drift
-            const itdSamples = Math.floor(itdUs / 1000000 * sampleRate);
+            // 1. Integer shift for the buffer/envelope (quantized to samples)
+            const itdSamples = Math.round(itdSec * sampleRate);
             const quantizedItdMs = itdSamples / sampleRate * 1000;
-            const deltaPhaseRad = 2 * Math.PI * freq * (itdSamples / sampleRate);
+            
+            // 2. Phase compensation for the carrier (sub-sample precision)
+            const residualSec = itdSec - (itdSamples / sampleRate);
+            const subSamplePhaseShift = -2 * Math.PI * freq * residualSec;
 
-             if (mode === "fine_structure") {
-                // Ongoing ITD: Phase shift based on continuous value is standard, 
-                // but we use the microsecond value for high precision.
-                const continuousPhaseRad = 2 * Math.PI * freq * (itdUs / 1000000);
-                phase -= continuousPhaseRad;
-             } else if (mode === "envelope") {
-                // Envelope ITD: Onset shift (quantized) + Phase compensation (quantized)
+            if (mode === "fine_structure") {
+                phase += (-2 * Math.PI * freq * itdSec);
+            } else if (mode === "envelope") {
                 onsetOffsetMs += quantizedItdMs;
-                phase += deltaPhaseRad;
-             } else if (mode === "both") {
-                // True ITD: Onset shift (quantized). Carrier follows naturally.
+                phase += (2 * Math.PI * freq * itdSamples / sampleRate);
+            } else if (mode === "both") {
+                // True ITD: Integer sample shift + Fractional phase shift
                 onsetOffsetMs += quantizedItdMs;
-             }
+                phase += subSamplePhaseShift;
+            }
           }
         }
       }
@@ -245,8 +263,8 @@ export function synthesizeMultiComponent(
 
     // We use the same onset for buffer range calculation as before, 
     // but now it's normalized relative to the earliest global onset.
-    const leftOnsetSamples = Math.floor((leftState.onsetMs + globalOffsetMs) / 1000 * sampleRate);
-    const rightOnsetSamples = Math.floor((rightState.onsetMs + globalOffsetMs) / 1000 * sampleRate);
+    const leftOnsetSamples = Math.round((leftState.onsetMs + globalOffsetMs) / 1000 * sampleRate);
+    const rightOnsetSamples = Math.round((rightState.onsetMs + globalOffsetMs) / 1000 * sampleRate);
 
     // Phase accumulators for each ear
     let leftPhase = leftState.phase;
@@ -273,11 +291,13 @@ export function synthesizeMultiComponent(
                const sharedEnv = sharedEnvelopes.get(mod.sharedEnvelopeId)!;
                modVal = sharedEnv[i % sharedEnv.length];
             } else {
-               modVal = Math.sin(2 * Math.PI * mod.rateHz * tL + (mod.phaseDegrees || 0) * Math.PI / 180);
+               const modRate = resolveValue(mod.rateHz, adaptiveValue, rng);
+               modVal = Math.sin(2 * Math.PI * modRate * (i / sampleRate) + (mod.phaseDegrees || 0) * Math.PI / 180);
             }
             
-            if (mod.type === "AM") instAmp *= (1 + mod.depth * modVal);
-            else if (mod.type === "FM") instFreq += mod.depth * modVal;
+            const modType = mod.type.toUpperCase();
+            if (modType === "AM") instAmp *= (1 + mod.depth * modVal);
+            else if (modType === "FM") instFreq += mod.depth * modVal;
           }
         }
         left[i] += instAmp * Math.sin(leftPhase) * envelope;
@@ -298,11 +318,13 @@ export function synthesizeMultiComponent(
                const sharedEnv = sharedEnvelopes.get(mod.sharedEnvelopeId)!;
                modVal = sharedEnv[i % sharedEnv.length];
             } else {
-               modVal = Math.sin(2 * Math.PI * mod.rateHz * tR + (mod.phaseDegrees || 0) * Math.PI / 180);
+               const modRate = resolveValue(mod.rateHz, adaptiveValue, rng);
+               modVal = Math.sin(2 * Math.PI * modRate * (i / sampleRate) + (mod.phaseDegrees || 0) * Math.PI / 180);
             }
             
-            if (mod.type === "AM") instAmp *= (1 + mod.depth * modVal);
-            else if (mod.type === "FM") instFreq += mod.depth * modVal;
+            const modType = mod.type.toUpperCase();
+            if (modType === "AM") instAmp *= (1 + mod.depth * modVal);
+            else if (modType === "FM") instFreq += mod.depth * modVal;
           }
         }
         right[i] += instAmp * Math.sin(rightPhase) * envelope;

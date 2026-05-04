@@ -45,6 +45,21 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
 
   const renderedIntervals: { left: Float32Array; right: Float32Array }[] = [];
   const allResolvedPerturbations: any[] = [];
+
+  // 1. Pre-resolve trial-scoped perturbations ONCE per trial
+  // This ensures that "scope: trial" perturbations have the same random value across intervals.
+  const trialRng = seedrandom(`${seed}-trial`);
+  const trialResolvedMap = new Map<Perturbation, any>();
+  
+  intervals.forEach(interval => {
+    interval.perturbations?.forEach(p => {
+      if (p.scope === 'trial' && !trialResolvedMap.has(p)) {
+        // We resolve it using the trial-level RNG
+        const resolved = resolvePerturbations([p], adaptiveValue, trialRng);
+        if (resolved) trialResolvedMap.set(p, resolved[0]);
+      }
+    });
+  });
   
   for (let intervalIdx = 0; intervalIdx < intervals.length; intervalIdx++) {
     const interval = intervals[intervalIdx];
@@ -80,8 +95,16 @@ self.onmessage = async (event: MessageEvent<RenderTrialMessage>) => {
     };
     interval.generators.forEach(scanForEnvelopes);
     
-    // Resolve random/adaptive perturbations ONCE per interval to ensure consistency across generators
-    const resolvedPerturbations = resolvePerturbations(interval.perturbations, adaptiveValue, intervalRng);
+    // 2. Resolve perturbations: 
+    // Use the pre-resolved trial value if scope is 'trial', otherwise resolve freshly for this interval.
+    const resolvedPerturbations = interval.perturbations?.map(p => {
+      if (p.scope === 'trial' && trialResolvedMap.has(p)) {
+        return trialResolvedMap.get(p);
+      }
+      // Standard per-interval resolution
+      const resolved = resolvePerturbations([p], adaptiveValue, intervalRng);
+      return resolved ? resolved[0] : p;
+    });
 
     const layers: { left: Float32Array; right: Float32Array }[] = [];
     let maxLength = 0;

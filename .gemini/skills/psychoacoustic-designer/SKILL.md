@@ -73,6 +73,10 @@ Use the hierarchical block architecture to build scientifically rigorous session
 *   **Frequency Roving:** Control absolute frequency cues in relative relationship tasks (harmonicity, spectral shape) by roving the fundamental frequency or center frequency across intervals.
 *   **Phase Roving:** Prevent temporal peak cues in harmonic complexes by randomizing starting phases. Use `calc_phases` with `random` type.
 
+### Roving Scoping Strategy
+*   **Interval Scoping (`scope: "interval"`):** Necessary when the listener must compare spectral shapes *between* intervals. If the level were fixed within a trial, they could use absolute level differences.
+*   **Trial Scoping (`scope: "trial"`):** Necessary when the experiment requires a stable pedestal within a trial. It prevents the listener from learning absolute levels over many trials but keeps the trial itself "clean" for relative comparison.
+
 ### Temporal Processing
 *   **Temporal Window:** The ear integrates power over a sliding window (roughly 10-20ms). (Moore et al., 1988; Plack & Moore, 1990).
 *   **TMTF:** Measure AM detection thresholds across rates to map temporal resolution. (Viemeister, 1979).

@@ -36,10 +36,10 @@ describe('Temporal Validation - ITD & Asynchrony', () => {
       type: 'multi_component',
       durationMs: 100,
       globalEnvelope: { attackMs: 0, releaseMs: 0 },
-      components: [{ frequency: 1000, levelDb: 0, ear: 'both' }]
+      components: [{ frequency: 1000, levelDb: 0, ear: 'both', phaseDegrees: 90 }]
     };
 
-    const itdUs = 1000; // 1ms delay = 44.1 samples
+    const itdUs = 1000; // 1ms delay
     const perturbations = [{
       type: 'itd' as const,
       ear: 'left' as const,
@@ -68,7 +68,7 @@ describe('Temporal Validation - ITD & Asynchrony', () => {
     while (Math.abs(right[firstRight]) < 0.0001) firstRight++;
 
     const sampleDelay = firstLeft - firstRight;
-    const expectedSampleDelay = Math.floor(itdUs / 1000000 * sampleRate);
+    const expectedSampleDelay = Math.round(itdUs / 1000000 * sampleRate);
     expect(sampleDelay).toBe(expectedSampleDelay);
   });
 });

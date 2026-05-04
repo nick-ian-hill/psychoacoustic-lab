@@ -97,6 +97,7 @@ export const StimulusGeneratorSchema = z.union([
 export const BasePerturbationSchema = z.object({
   applyTo: z.enum(["target", "all"]).optional().describe("Whether this perturbation applies only to the target interval (default) or all intervals (useful for roving)."),
   stimulusIndex: z.number().int().optional().describe("Optional: Target a specific generator by its index in the stimuli array. If omitted, applies to all matching generators."),
+  scope: z.enum(["interval", "trial"]).default("interval").optional().describe("interval: resolved freshly for every interval; trial: resolved once per trial and constant across all intervals."),
 });
 
 export const SpectralProfilePerturbationSchema = BasePerturbationSchema.extend({
