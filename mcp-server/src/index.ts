@@ -18,16 +18,12 @@ import {
   ExperimentConfigSchema,
 } from "../../shared/schema.js";
 
-// Minimal seeded PRNG (Mulberry32) — no external dependency required.
-function mulberry32(seed: number): () => number {
-  let s = seed >>> 0;
-  return function () {
-    s += 0x6d2b79f5;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import {
+  mulberry32,
+  internalCalcFrequencies,
+  internalCalcPhases,
+  internalCalcAmplitudes
+} from "../../shared/math.js";
 
 class PsychoacousticServer {
   private server: Server;
@@ -82,10 +78,11 @@ class PsychoacousticServer {
           inputSchema: {
             type: "object",
             properties: {
-              type: { type: "string", enum: ["linear", "log", "erb"] },
+              type: { type: "string", enum: ["linear", "log", "erb", "stretched"] },
               minFreq: { type: "number", minimum: 20, maximum: 20000 },
               maxFreq: { type: "number", minimum: 20, maximum: 20000 },
-              numComponents: { type: "integer", minimum: 1, maximum: 100 }
+              numComponents: { type: "integer", minimum: 1, maximum: 100 },
+              inharmonicityB: { type: "number", description: "Required for 'stretched' type. String inharmonicity coefficient (B)." }
             },
             required: ["type", "minFreq", "maxFreq", "numComponents"]
           }
@@ -177,7 +174,8 @@ class PsychoacousticServer {
               durationMs: { type: "integer", minimum: 10, maximum: 5000 },
               levelDb: { type: "number", minimum: 0, maximum: 100, description: "Level of the fundamental component (dB SPL)." },
               sampleRate: { type: "integer", default: 44100 },
-              seed: { type: "integer", description: "Required for 'random' phases." }
+              seed: { type: "integer", description: "Required for 'random' phases." },
+              inharmonicityB: { type: "number", description: "String inharmonicity coefficient (B). If provided, partials are stretched: f_n = n*f0 * sqrt(1 + B(n^2 - 1)). Use ~0.0177 for f0=200Hz to hit the 4th partial 'dead zone'." }
             },
             required: ["f0", "numHarmonics", "durationMs", "levelDb"]
           }
@@ -299,7 +297,8 @@ class PsychoacousticServer {
                   lowFreq: { type: "number", minimum: 20, maximum: 20000 },
                   highFreq: { type: "number", minimum: 20, maximum: 20000 }
                 }
-              }
+              },
+              inharmonicityB: { type: "number", description: "Required for 'stretched' freqSpacing. String inharmonicity coefficient (B)." }
             },
             required: ["type", "durationMs"],
             if: { properties: { phaseType: { const: "random" } } },
@@ -577,71 +576,10 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
     return { content: [{ type: "text", text: reference }] };
   }
 
-  private internalCalcFrequencies(type: "linear" | "log" | "erb", minFreq: number, maxFreq: number, numComponents: number): number[] {
-    const freqs: number[] = [];
-    if (numComponents === 1) return [minFreq];
-
-    if (type === "linear") {
-      const step = (maxFreq - minFreq) / (numComponents - 1);
-      for (let i = 0; i < numComponents; i++) freqs.push(minFreq + i * step);
-    } else if (type === "log") {
-      const logStart = Math.log10(minFreq);
-      const logEnd = Math.log10(maxFreq);
-      const step = (logEnd - logStart) / (numComponents - 1);
-      for (let i = 0; i < numComponents; i++) freqs.push(Math.pow(10, logStart + i * step));
-    } else if (type === "erb") {
-      const hzToErb = (hz: number) => 21.4 * Math.log10(4.37 * (hz / 1000) + 1);
-      const erbToHz = (erb: number) => ((Math.pow(10, erb / 21.4) - 1) / 4.37) * 1000;
-      const startErb = hzToErb(minFreq);
-      const endErb = hzToErb(maxFreq);
-      const step = (endErb - startErb) / (numComponents - 1);
-      for (let i = 0; i < numComponents; i++) freqs.push(erbToHz(startErb + i * step));
-    }
-    return freqs.map(f => parseFloat(f.toFixed(3)));
-  }
-
-  private internalCalcPhases(type: "sine" | "random" | "schroeder_positive" | "schroeder_negative", numComponents: number, seed?: number): number[] {
-    const phases: number[] = [];
-    if (type === "sine") {
-      for (let i = 0; i < numComponents; i++) phases.push(0);
-    } else if (type === "random") {
-      if (seed === undefined) throw new Error("A 'seed' is required for random phases.");
-      const rng = mulberry32(seed);
-      for (let i = 0; i < numComponents; i++) phases.push(rng() * 360);
-    } else if (type.startsWith("schroeder")) {
-      const sign = type === "schroeder_positive" ? 1 : -1;
-      for (let k = 1; k <= numComponents; k++) {
-        const rad = sign * Math.PI * k * (k - 1) / numComponents;
-        phases.push((rad * 180 / Math.PI) % 360);
-      }
-    }
-    return phases.map(p => parseFloat(p.toFixed(2)));
-  }
-
-  private internalCalcAmplitudes(type: "flat" | "pink_noise_tilt", baseLevelDb: number, numComponents: number, frequencies?: number[]): number[] {
-    const levels: number[] = [];
-    if (type === "flat") {
-      for (let i = 0; i < numComponents; i++) levels.push(baseLevelDb);
-    } else if (type === "pink_noise_tilt") {
-      if (frequencies && frequencies.length === numComponents) {
-        const f0 = frequencies[0];
-        for (let i = 0; i < numComponents; i++) {
-          const octaves = Math.log2(frequencies[i] / f0);
-          levels.push(baseLevelDb - 3 * octaves);
-        }
-      } else {
-        for (let i = 0; i < numComponents; i++) {
-          levels.push(baseLevelDb - 10 * Math.log10(i + 1));
-        }
-      }
-    }
-    return levels.map(l => parseFloat(l.toFixed(2)));
-  }
-
   private handleCalcFrequencies(args: any) {
-    const { type, minFreq, maxFreq, numComponents } = args;
+    const { type, minFreq, maxFreq, numComponents, inharmonicityB } = args;
     try {
-      const freqs = this.internalCalcFrequencies(type, minFreq, maxFreq, numComponents);
+      const freqs = internalCalcFrequencies(type, minFreq, maxFreq, numComponents, inharmonicityB);
       return { content: [{ type: "text", text: JSON.stringify(freqs) }] };
     } catch (e: any) {
       return { isError: true, content: [{ type: "text", text: e.message }] };
@@ -651,7 +589,7 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
   private handleCalcPhases(args: any) {
     const { type, numComponents, seed } = args;
     try {
-      const phases = this.internalCalcPhases(type, numComponents, seed);
+      const phases = internalCalcPhases(type, numComponents, seed);
       return { content: [{ type: "text", text: JSON.stringify(phases) }] };
     } catch (e: any) {
       return { isError: true, content: [{ type: "text", text: e.message }] };
@@ -660,7 +598,7 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
 
   private handleCalcAmplitudes(args: any) {
     const { type, baseLevelDb, numComponents, frequencies } = args;
-    const levels = this.internalCalcAmplitudes(type, baseLevelDb, numComponents, frequencies);
+    const levels = internalCalcAmplitudes(type, baseLevelDb, numComponents, frequencies);
     let warning = "";
     if (type === "pink_noise_tilt" && (!frequencies || frequencies.length !== numComponents)) {
       warning = "\n\nNOTE: For accurate 3dB/octave pink tilt, provide a 'frequencies' array. The result uses an index-based approximation.";
@@ -673,14 +611,14 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
       type, durationMs, ear, applyTo, envelope,
       numComponents, minFreq, maxFreq, freqSpacing,
       phaseType, levelType, baseLevelDb, seed,
-      noiseType, bandLimit
+      noiseType, bandLimit, inharmonicityB
     } = args;
 
     if (type === "multi_component") {
       try {
-        const freqs = this.internalCalcFrequencies(freqSpacing || "linear", minFreq || 1000, maxFreq || 1000, numComponents || 1);
-        const phases = this.internalCalcPhases(phaseType || "sine", numComponents || 1, seed);
-        const levels = this.internalCalcAmplitudes(levelType || "flat", baseLevelDb || 70, numComponents || 1, freqs);
+        const freqs = internalCalcFrequencies(freqSpacing || "linear", minFreq || 1000, maxFreq || 1000, numComponents || 1, inharmonicityB);
+        const phases = internalCalcPhases(phaseType || "sine", numComponents || 1, seed);
+        const levels = internalCalcAmplitudes(levelType || "flat", baseLevelDb || 70, numComponents || 1, freqs);
 
         const components = freqs.map((f, i) => ({
           frequency: f,
@@ -718,14 +656,21 @@ In Profile Analysis, omit 'stimulusIndex' but specify 'targetFrequency' to apply
   }
 
   private handleGenerateHarmonicComplex(args: any) {
-    const { f0, numHarmonics, spectralTiltDbPerOctave = 0, startingPhase, durationMs, levelDb, sampleRate = 44100, seed } = args;
+    const { f0, numHarmonics, spectralTiltDbPerOctave = 0, startingPhase, durationMs, levelDb, sampleRate = 44100, seed, inharmonicityB = 0 } = args;
     const frequencies: number[] = [];
     for (let k = 1; k <= numHarmonics; k++) {
-      const f = f0 * k;
+      let f = f0 * k;
+      if (inharmonicityB > 0) {
+        f = f * Math.sqrt(1 + inharmonicityB * (k * k - 1));
+      }
       if (f < sampleRate / 2) frequencies.push(f);
     }
-    const levels = frequencies.map(f => levelDb + spectralTiltDbPerOctave * Math.log2(f / f0));
-    const phases = this.internalCalcPhases(startingPhase || "sine", frequencies.length, seed);
+    const levels = frequencies.map((f, i) => {
+      const k = i + 1;
+      const idealF = f0 * k;
+      return levelDb + spectralTiltDbPerOctave * Math.log2(f / f0);
+    });
+    const phases = internalCalcPhases(startingPhase || "sine", frequencies.length, seed);
 
     const components = frequencies.map((f, i) => ({
       frequency: parseFloat(f.toFixed(2)),

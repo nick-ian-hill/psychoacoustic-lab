@@ -35,6 +35,13 @@ Base initial values and boundaries on these human limits, grounded in seminal JA
 | **AM Detection** | TMTF low-pass cut-off | ~50–60 Hz for broadband noise. (Viemeister, 1979) |
 | **Masking / Tonotopy** | Energetic masking within ERB | Use "erb" for modeling. (Moore & Glasberg, 1983) |
 
+## Acoustic Formulae & Stretched Harmonics
+
+When synthesizing complex tones that require control over harmonic fusion, use the **Stretched Harmonics** (String Inharmonicity) formula:
+$$f_n = n \cdot f_0 \sqrt{1 + B(n^2 - 1)}$$
+*   **$B$ (Inharmonicity Coefficient):** Controls the degree of "stretch." Use `freqSpacing: "stretched"` in Tier 2/3 tools.
+*   **Strategic Stretches:** At $f_0 = 200$ Hz, $B \approx 0.0177$ is highly effective for mistuning experiments as it pushes the 4th partial to $\approx 901.3$ Hz—a "spectral dead zone" exactly between the 4th (800 Hz) and 5th (1000 Hz) harmonics, preventing virtual pitch fusion.
+
 ## Methodological Paradigms
 
 ### Adaptive Staircases (n-down/1-up)
